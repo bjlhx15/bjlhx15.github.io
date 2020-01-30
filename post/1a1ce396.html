@@ -46,19 +46,21 @@
   };
 </script>
 
-  <meta name="description" content="关闭页脚的powered、hexo 首页文章只显示一部分、菜单显示数量、代码块">
+  <meta name="description" content="hexo new 命令使用：创建普通页面、创建”分类”选项、创建“标签”选项">
 <meta property="og:type" content="article">
-<meta property="og:title" content="005-模板-NexT-其他优化-页脚、菜单显示数量、代码块">
-<meta property="og:url" content="http://blog.bjlhx.top/2020/01/29/hexo/005-%E6%A8%A1%E6%9D%BF-NexT-%E5%85%B6%E4%BB%96%E4%BC%98%E5%8C%96-%E9%A1%B5%E8%84%9A%E3%80%81%E8%8F%9C%E5%8D%95%E6%98%BE%E7%A4%BA%E6%95%B0%E9%87%8F%E3%80%81%E4%BB%A3%E7%A0%81%E5%9D%97/index.html">
+<meta property="og:title" content="002-命令new-页面分类标签">
+<meta property="og:url" content="http://blog.bjlhx.top/post/1a1ce396.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="关闭页脚的powered、hexo 首页文章只显示一部分、菜单显示数量、代码块">
+<meta property="og:description" content="hexo new 命令使用：创建普通页面、创建”分类”选项、创建“标签”选项">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-01-29T14:30:06.000Z">
-<meta property="article:modified_time" content="2020-01-30T14:20:46.704Z">
+<meta property="article:published_time" content="2020-01-29T09:50:48.000Z">
+<meta property="article:modified_time" content="2020-01-30T15:03:20.694Z">
 <meta property="article:author" content="李宏旭">
+<meta property="article:tag" content="hexo">
+<meta property="article:tag" content="hexo分类">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://blog.bjlhx.top/2020/01/29/hexo/005-%E6%A8%A1%E6%9D%BF-NexT-%E5%85%B6%E4%BB%96%E4%BC%98%E5%8C%96-%E9%A1%B5%E8%84%9A%E3%80%81%E8%8F%9C%E5%8D%95%E6%98%BE%E7%A4%BA%E6%95%B0%E9%87%8F%E3%80%81%E4%BB%A3%E7%A0%81%E5%9D%97/">
+<link rel="canonical" href="http://blog.bjlhx.top/post/1a1ce396.html">
 
 
 <script id="page-configurations">
@@ -70,7 +72,7 @@
   };
 </script>
 
-  <title>005-模板-NexT-其他优化-页脚、菜单显示数量、代码块 | Blog</title>
+  <title>002-命令new-页面分类标签 | Blog</title>
   
 
 
@@ -222,7 +224,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/2020/01/29/hexo/005-%E6%A8%A1%E6%9D%BF-NexT-%E5%85%B6%E4%BB%96%E4%BC%98%E5%8C%96-%E9%A1%B5%E8%84%9A%E3%80%81%E8%8F%9C%E5%8D%95%E6%98%BE%E7%A4%BA%E6%95%B0%E9%87%8F%E3%80%81%E4%BB%A3%E7%A0%81%E5%9D%97/">
+    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/post/1a1ce396.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -235,7 +237,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          005-模板-NexT-其他优化-页脚、菜单显示数量、代码块
+          002-命令new-页面分类标签
         </h1>
 
         <div class="post-meta">
@@ -245,14 +247,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-29 22:30:06" itemprop="dateCreated datePublished" datetime="2020-01-29T22:30:06+08:00">2020-01-29</time>
+              <time title="创建时间：2020-01-29 17:50:48" itemprop="dateCreated datePublished" datetime="2020-01-29T17:50:48+08:00">2020-01-29</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 22:20:46" itemprop="dateModified" datetime="2020-01-30T22:20:46+08:00">2020-01-30</time>
+                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -284,24 +286,38 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>关闭页脚的powered、hexo 首页文章只显示一部分、菜单显示数量、代码块</p>
+        <p>hexo new 命令使用：创建普通页面、创建”分类”选项、创建“标签”选项</p>
 <a id="more"></a>
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new [layout] title</span><br></pre></td></tr></table></figure>
+<p>创建一个新文章。如果未提供布局，则Hexo将使用_config.yml中的default_layout: post。如果标题包含空格，请用引号引起来。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Option	Description</span><br><span class="line">-p, --path	Post path. Customize the path of the post.</span><br><span class="line">-r, --replace	Replace the current post if existed.</span><br><span class="line">-s, --slug	Post slug. Customize the URL of the post.</span><br></pre></td></tr></table></figure>
+<h2 id="创建新页面"><a href="#创建新页面" class="headerlink" title="创建新页面"></a>创建新页面</h2><p>默认情况下，Hexo将使用标题定义文件的路径。对于页面，它将创建该名称的目录以及其中的index.md文件。使用–path选项覆盖该行为并定义文件路径：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new page --path about/me <span class="string">"About me"</span></span><br></pre></td></tr></table></figure>
+<p>将创建源/about/me.md文件，文件的标题设置为“关于我”。 请注意，标题是必填项。</p>
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><h2 id="创建普通页面"><a href="#创建普通页面" class="headerlink" title="创建普通页面"></a>创建普通页面</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo new <span class="string">"My New Post"</span></span><br><span class="line">或</span><br><span class="line">hexo new post <span class="string">"My New Post 2"</span></span><br></pre></td></tr></table></figure>
 
-<h1 id="关闭页脚的powered"><a href="#关闭页脚的powered" class="headerlink" title="关闭页脚的powered"></a>关闭页脚的powered</h1><p>进入：themes/next/_config.yml，找到footer 下 powered、theme 关闭即可</p>
-<h1 id="hexo首页文章只显示一部分"><a href="#hexo首页文章只显示一部分" class="headerlink" title="hexo首页文章只显示一部分"></a>hexo首页文章只显示一部分</h1><p>方式一、Front-matter<br>在Front-matter中添加了描述并将其值设置为文章摘要，则默认情况下，NexT会将描述摘录为首页的前导文本。如果没有描述，则全部内容将为首页中的前导文字。<br>您可以通过在主题配置文件中将excerpt_description的值设置为false来禁用它。</p>
-<p>方式二、在文章中加上<code>&lt;!--more--&gt;</code> 标记 ，该标记以后部分就不在显示了，只有展开全部才显示，这是hexo定义的。</p>
-<p>方式三、插件【不推荐】</p>
-<h1 id="菜单标签显示数值"><a href="#菜单标签显示数值" class="headerlink" title="菜单标签显示数值"></a>菜单标签显示数值</h1><p>在menu_settings如果设置icon: false则无图标，badges: true则标签都会显示数字</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">menu_settings:</span><br><span class="line">  icons: true</span><br><span class="line">  badges: true #默认是false</span><br></pre></td></tr></table></figure>
-
-<h1 id="代码块设置"><a href="#代码块设置" class="headerlink" title="代码块设置"></a>代码块设置</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">codeblock:</span><br><span class="line">  # Code Highlight theme</span><br><span class="line">  # Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic</span><br><span class="line">  # See: https:&#x2F;&#x2F;github.com&#x2F;chriskempson&#x2F;tomorrow-theme</span><br><span class="line">  highlight_theme: normal</span><br><span class="line">  # Add copy button on codeblock</span><br><span class="line">  copy_button:</span><br><span class="line">    enable: false</span><br><span class="line">    # Show text copy result.</span><br><span class="line">    show_result: false</span><br><span class="line">    # Available values: default | flat | mac</span><br><span class="line">    style:</span><br></pre></td></tr></table></figure>
-
-
-
-
-
-
-
+<h2 id="创建”分类”选项"><a href="#创建”分类”选项" class="headerlink" title="创建”分类”选项"></a>创建”分类”选项</h2><h3 id="生成“分类”页并添加tpye属性"><a href="#生成“分类”页并添加tpye属性" class="headerlink" title="生成“分类”页并添加tpye属性"></a>生成“分类”页并添加tpye属性</h3><p>打开命令行，进入博客所在文件夹。执行命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new page categories</span><br></pre></td></tr></table></figure>
+<p>成功后，会有路径提示</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/<span class="built_in">source</span>/categories/index.md</span><br></pre></td></tr></table></figure>
+<p>打开 index.md 修改如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: 文章分类</span><br><span class="line">date: 2019-05-27 13:47:40</span><br><span class="line">type: &quot;categories&quot;</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+<p>保存关闭即可。主要是为了生存的分类有超链接，不执行此步，也会有分类，但是点击分类时候，没有超链接</p>
+<h3 id="给文章添加“categories”属性"><a href="#给文章添加“categories”属性" class="headerlink" title="给文章添加“categories”属性"></a>给文章添加“categories”属性</h3><p>打开需要添加分类的文章，为其添加categories属性。下方的categories: web前端表示添加这篇文章到“web前端”这个分类。注意：hexo一篇文章只能属于一个分类，也就是说如果在“- web前端”下方添加“-xxx”，hexo不会产生两个分类，而是把分类嵌套（即该文章属于 “- web前端”下的 “-xxx ”分类）。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: 002-分类标签.md</span><br><span class="line">date: 2020-01-29 17:50:48</span><br><span class="line">categories: </span><br><span class="line">- hexo</span><br><span class="line">tags:</span><br><span class="line">- hexo</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+<p>至此，成功给文章添加分类，点击首页的“分类”可以看到该分类下的所有文章。当然，只有添加了categories: xxx的文章才会被收录到首页的“分类”中。</p>
+<h2 id="创建“标签”选项"><a href="#创建“标签”选项" class="headerlink" title="创建“标签”选项"></a>创建“标签”选项</h2><h3 id="生成“标签”页并添加tpye属性"><a href="#生成“标签”页并添加tpye属性" class="headerlink" title="生成“标签”页并添加tpye属性"></a>生成“标签”页并添加tpye属性</h3><p>打开命令行，进入博客所在文件夹。执行命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new page tags</span><br></pre></td></tr></table></figure>
+<p>成功后会提示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">INFO  Created: ~/Documents/<span class="built_in">source</span>/tags/index.md</span><br></pre></td></tr></table></figure>
+<p>根据上面的路径，找到index.md这个文件，打开后默认内容是这样的：<br>添加type: “tags”到内容中，添加后是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: 标签</span><br><span class="line">date: 2020-01-29 17:41:12</span><br><span class="line">type: tags</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+<p>保存并关闭文件。</p>
+<h3 id="给文章添加“tags”属性"><a href="#给文章添加“tags”属性" class="headerlink" title="给文章添加“tags”属性"></a>给文章添加“tags”属性</h3><p>打开需要添加标签的文章，为其添加tags属性。下方的tags:下方的 - hexo - hexo分类</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: 002-分类标签.md</span><br><span class="line">date: 2020-01-29 17:50:48</span><br><span class="line">categories: </span><br><span class="line">- hexo</span><br><span class="line">tags:</span><br><span class="line">- hexo</span><br><span class="line">- hexo分类</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
+<p>至此，成功给文章添加分类，点击首页的“标签”可以看到该标签下的所有文章。当然，只有添加了tags: xxx的文章才会被收录到首页的“标签”中。</p>
+<p>其实，这两个的设置几乎一样！可以打开scaffolds/post.md文件，在tages:上面加入categories:,保存后，之后执行hexo new 文章名命令生成的文件，页面里就有categories:项了。</p>
+<p>scaffolds目录下，是新建页面的模板，执行新建命令时，是根据这里的模板页来完成的，所以可以在这里根据你自己的需求添加一些默认值。</p>
 
     </div>
 
@@ -337,7 +353,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://blog.bjlhx.top/2020/01/29/hexo/005-%E6%A8%A1%E6%9D%BF-NexT-%E5%85%B6%E4%BB%96%E4%BC%98%E5%8C%96-%E9%A1%B5%E8%84%9A%E3%80%81%E8%8F%9C%E5%8D%95%E6%98%BE%E7%A4%BA%E6%95%B0%E9%87%8F%E3%80%81%E4%BB%A3%E7%A0%81%E5%9D%97/" title="005-模板-NexT-其他优化-页脚、菜单显示数量、代码块">http://blog.bjlhx.top/2020/01/29/hexo/005-模板-NexT-其他优化-页脚、菜单显示数量、代码块/</a>
+    <a href="http://blog.bjlhx.top/post/1a1ce396.html" title="002-命令new-页面分类标签">http://blog.bjlhx.top/post/1a1ce396.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -347,6 +363,10 @@
 
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hexo/" rel="tag"># hexo</a>
+              <a href="/tags/hexo%E5%88%86%E7%B1%BB/" rel="tag"># hexo分类</a>
+          </div>
 
         
 
@@ -354,12 +374,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/01/29/hexo/004-%E6%A8%A1%E6%9D%BF-NexT-%E8%8F%9C%E5%8D%95%E3%80%81%E4%BE%A7%E6%A0%8F%E3%80%81%E5%A4%B4%E5%83%8F%E3%80%81%E9%98%85%E8%AF%BB%E9%87%8F/" rel="prev" title="0004-模板-NexT-菜单、侧栏、头像、阅读量">
-      <i class="fa fa-chevron-left"></i> 0004-模板-NexT-菜单、侧栏、头像、阅读量
+    <a href="/post/82195907.html" rel="prev" title="001-命令-服务、生成、部署、清理">
+      <i class="fa fa-chevron-left"></i> 001-命令-服务、生成、部署、清理
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/01/29/hexo/006-%E6%A8%A1%E6%9D%BF-NexT-%E4%B8%89%E6%96%B9%E6%9C%8D%E5%8A%A1-%E6%90%9C%E7%B4%A2%E3%80%81%E7%BB%9F%E8%AE%A1%E5%88%86%E6%9E%90%E3%80%81%E8%AF%84%E8%AE%BA/" rel="next" title="006-模板-NexT-三方服务-搜索、统计分析、评论">
-      006-模板-NexT-三方服务-搜索、统计分析、评论 <i class="fa fa-chevron-right"></i>
+    <a href="/post/9b3473a2.html" rel="next" title="003-模板-scaffolds">
+      003-模板-scaffolds <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -444,7 +464,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#关闭页脚的powered"><span class="nav-number">1.</span> <span class="nav-text">关闭页脚的powered</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hexo首页文章只显示一部分"><span class="nav-number">2.</span> <span class="nav-text">hexo首页文章只显示一部分</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#菜单标签显示数值"><span class="nav-number">3.</span> <span class="nav-text">菜单标签显示数值</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#代码块设置"><span class="nav-number">4.</span> <span class="nav-text">代码块设置</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#创建新页面"><span class="nav-number">1.1.</span> <span class="nav-text">创建新页面</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#使用"><span class="nav-number">2.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#创建普通页面"><span class="nav-number">2.1.</span> <span class="nav-text">创建普通页面</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建”分类”选项"><span class="nav-number">2.2.</span> <span class="nav-text">创建”分类”选项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#生成“分类”页并添加tpye属性"><span class="nav-number">2.2.1.</span> <span class="nav-text">生成“分类”页并添加tpye属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#给文章添加“categories”属性"><span class="nav-number">2.2.2.</span> <span class="nav-text">给文章添加“categories”属性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建“标签”选项"><span class="nav-number">2.3.</span> <span class="nav-text">创建“标签”选项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#生成“标签”页并添加tpye属性"><span class="nav-number">2.3.1.</span> <span class="nav-text">生成“标签”页并添加tpye属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#给文章添加“tags”属性"><span class="nav-number">2.3.2.</span> <span class="nav-text">给文章添加“tags”属性</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -46,20 +46,19 @@
   };
 </script>
 
-  <meta name="description" content="模板以scaffolds&#x2F;post.md为例，对updated、permalink等参数进行说明">
+  <meta name="description" content="关闭页脚的powered、hexo 首页文章只显示一部分、菜单显示数量、代码块">
 <meta property="og:type" content="article">
-<meta property="og:title" content="003-模板-scaffolds">
-<meta property="og:url" content="http://blog.bjlhx.top/2020/01/29/hexo/003-%E6%A8%A1%E6%9D%BF-scaffolds/index.html">
+<meta property="og:title" content="005-模板-NexT-其他优化-页脚、菜单显示数量、代码块">
+<meta property="og:url" content="http://blog.bjlhx.top/post/12b9aaef.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="模板以scaffolds&#x2F;post.md为例，对updated、permalink等参数进行说明">
+<meta property="og:description" content="关闭页脚的powered、hexo 首页文章只显示一部分、菜单显示数量、代码块">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-01-29T09:50:49.000Z">
-<meta property="article:modified_time" content="2020-01-30T14:20:46.703Z">
+<meta property="article:published_time" content="2020-01-29T14:30:06.000Z">
+<meta property="article:modified_time" content="2020-01-30T15:03:20.694Z">
 <meta property="article:author" content="李宏旭">
-<meta property="article:tag" content="hexo">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://blog.bjlhx.top/2020/01/29/hexo/003-%E6%A8%A1%E6%9D%BF-scaffolds/">
+<link rel="canonical" href="http://blog.bjlhx.top/post/12b9aaef.html">
 
 
 <script id="page-configurations">
@@ -71,7 +70,7 @@
   };
 </script>
 
-  <title>003-模板-scaffolds | Blog</title>
+  <title>005-模板-NexT-其他优化-页脚、菜单显示数量、代码块 | Blog</title>
   
 
 
@@ -223,7 +222,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/2020/01/29/hexo/003-%E6%A8%A1%E6%9D%BF-scaffolds/">
+    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/post/12b9aaef.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -236,7 +235,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          003-模板-scaffolds
+          005-模板-NexT-其他优化-页脚、菜单显示数量、代码块
         </h1>
 
         <div class="post-meta">
@@ -246,14 +245,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-29 17:50:49" itemprop="dateCreated datePublished" datetime="2020-01-29T17:50:49+08:00">2020-01-29</time>
+              <time title="创建时间：2020-01-29 22:30:06" itemprop="dateCreated datePublished" datetime="2020-01-29T22:30:06+08:00">2020-01-29</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 22:20:46" itemprop="dateModified" datetime="2020-01-30T22:20:46+08:00">2020-01-30</time>
+                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -285,32 +284,21 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>模板以scaffolds/post.md为例，对updated、permalink等参数进行说明</p>
+        <p>关闭页脚的powered、hexo 首页文章只显示一部分、菜单显示数量、代码块</p>
 <a id="more"></a>
-<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="scaffolds-post-md-说明"><a href="#scaffolds-post-md-说明" class="headerlink" title="scaffolds\post.md 说明"></a>scaffolds\post.md 说明</h2><p>打开.\scaffolds\post.md文件，默认参数如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: &#123;&#123; title &#125;&#125;</span><br><span class="line">date: &#123;&#123; date &#125;&#125;</span><br><span class="line">tags:</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-<p>当我们在命令行中输入：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new ABC</span><br></pre></td></tr></table></figure>
-<p>则会在.\source_post\目录下产生一个ABC.md文件，内容如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: ABC</span><br><span class="line">date: 2015-12-29 20:20:47</span><br><span class="line">tags:</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
 
-<h2 id="permalink设置"><a href="#permalink设置" class="headerlink" title="permalink设置"></a>permalink设置</h2><p>修改.\scaffolds\post.md，增加一个permalink属性：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: &#123;&#123; title &#125;&#125;</span><br><span class="line">date: &#123;&#123; date &#125;&#125;</span><br><span class="line">tags:</span><br><span class="line">permalink:</span><br><span class="line">---</span><br></pre></td></tr></table></figure>
-<p>让permalink为空，则Hexo会使用默认设置。默认设置是什么呢？就是你的根目录下的_config.yml中定义好的内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">url: http:&#x2F;&#x2F;blog.bjlhx.top</span><br><span class="line">root: &#x2F;</span><br><span class="line">permalink: :year&#x2F;:month&#x2F;:day&#x2F;:title&#x2F;</span><br><span class="line">permalink_defaults:</span><br></pre></td></tr></table></figure>
-<p>:year表示年份，:month表示月份，:date表示日期。最终的展示效果为<a href="https://likianta.coding.me/2017/09/04/title/这种形式。" target="_blank" rel="noopener">https://likianta.coding.me/2017/09/04/title/这种形式。</a></p>
-<p>方式一、可以把图中的斜杠改为短横线，效果会变成<a href="https://likianta.coding.me/2017-09-04/title/。" target="_blank" rel="noopener">https://likianta.coding.me/2017-09-04/title/。</a></p>
-<p>方式二、将默认设置改成了permalink: :year/:category/:title，其最终的网址就是<a href="https://likianta.coding.me/2017/xx分组/xx标题。" target="_blank" rel="noopener">https://likianta.coding.me/2017/xx分组/xx标题。</a></p>
-<p>分类设置:参看上文</p>
-<p>另外需要注意的是，.\scaffolds\post.md中的permalink请一定要留空。</p>
-<p>官网中虽然说.\scaffolds\post.md中的permalink内容可以覆盖根目录的默认设置，但实测发现会引起网址bug。</p>
-<p>比如说你在.\scaffolds\post.md中修改为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">permalink: :year:month&#x2F;:title</span><br></pre></td></tr></table></figure>
+<h1 id="关闭页脚的powered"><a href="#关闭页脚的powered" class="headerlink" title="关闭页脚的powered"></a>关闭页脚的powered</h1><p>进入：themes/next/_config.yml，找到footer 下 powered、theme 关闭即可</p>
+<h1 id="hexo首页文章只显示一部分"><a href="#hexo首页文章只显示一部分" class="headerlink" title="hexo首页文章只显示一部分"></a>hexo首页文章只显示一部分</h1><p>方式一、Front-matter<br>在Front-matter中添加了描述并将其值设置为文章摘要，则默认情况下，NexT会将描述摘录为首页的前导文本。如果没有描述，则全部内容将为首页中的前导文字。<br>您可以通过在主题配置文件中将excerpt_description的值设置为false来禁用它。</p>
+<p>方式二、在文章中加上<code>&lt;!--more--&gt;</code> 标记 ，该标记以后部分就不在显示了，只有展开全部才显示，这是hexo定义的。</p>
+<p>方式三、插件【不推荐】</p>
+<h1 id="菜单标签显示数值"><a href="#菜单标签显示数值" class="headerlink" title="菜单标签显示数值"></a>菜单标签显示数值</h1><p>在menu_settings如果设置icon: false则无图标，badges: true则标签都会显示数字</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">menu_settings:</span><br><span class="line">  icons: true</span><br><span class="line">  badges: true #默认是false</span><br></pre></td></tr></table></figure>
 
-<p>Hexo会误把它当成一个字符串进行解析，结果就会生成：<a href="https://likianta.coding.me/2017/09/04/:year:month/:title/（一个错误的URL路径）。" target="_blank" rel="noopener">https://likianta.coding.me/2017/09/04/:year:month/:title/（一个错误的URL路径）。</a></p>
-<p>不过如果我们在具体的文章中手动写上的话是不会报错的：</p>
-<p>.\source_post\ABC.md:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: 003-scaffolds.md</span><br><span class="line">date: 2020-01-29 17:50:48</span><br><span class="line">permalink: https:&#x2F;&#x2F;bjlhx.top&#x2F;2020&#x2F;01&#x2F;29&#x2F;ABC&#x2F;</span><br></pre></td></tr></table></figure>
+<h1 id="代码块设置"><a href="#代码块设置" class="headerlink" title="代码块设置"></a>代码块设置</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">codeblock:</span><br><span class="line">  # Code Highlight theme</span><br><span class="line">  # Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic</span><br><span class="line">  # See: https:&#x2F;&#x2F;github.com&#x2F;chriskempson&#x2F;tomorrow-theme</span><br><span class="line">  highlight_theme: normal</span><br><span class="line">  # Add copy button on codeblock</span><br><span class="line">  copy_button:</span><br><span class="line">    enable: false</span><br><span class="line">    # Show text copy result.</span><br><span class="line">    show_result: false</span><br><span class="line">    # Available values: default | flat | mac</span><br><span class="line">    style:</span><br></pre></td></tr></table></figure>
+
+
+
+
 
 
 
@@ -349,7 +337,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://blog.bjlhx.top/2020/01/29/hexo/003-%E6%A8%A1%E6%9D%BF-scaffolds/" title="003-模板-scaffolds">http://blog.bjlhx.top/2020/01/29/hexo/003-模板-scaffolds/</a>
+    <a href="http://blog.bjlhx.top/post/12b9aaef.html" title="005-模板-NexT-其他优化-页脚、菜单显示数量、代码块">http://blog.bjlhx.top/post/12b9aaef.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -359,9 +347,6 @@
 
 
       <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/hexo/" rel="tag"># hexo</a>
-          </div>
 
         
 
@@ -369,12 +354,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/01/29/hexo/002-%E5%91%BD%E4%BB%A4new-%E9%A1%B5%E9%9D%A2%E5%88%86%E7%B1%BB%E6%A0%87%E7%AD%BE/" rel="prev" title="002-命令new-页面分类标签">
-      <i class="fa fa-chevron-left"></i> 002-命令new-页面分类标签
+    <a href="/post/e89588.html" rel="prev" title="0004-模板-NexT-菜单、侧栏、头像、阅读量">
+      <i class="fa fa-chevron-left"></i> 0004-模板-NexT-菜单、侧栏、头像、阅读量
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/01/29/hexo/004-%E6%A8%A1%E6%9D%BF-NexT-%E8%8F%9C%E5%8D%95%E3%80%81%E4%BE%A7%E6%A0%8F%E3%80%81%E5%A4%B4%E5%83%8F%E3%80%81%E9%98%85%E8%AF%BB%E9%87%8F/" rel="next" title="0004-模板-NexT-菜单、侧栏、头像、阅读量">
-      0004-模板-NexT-菜单、侧栏、头像、阅读量 <i class="fa fa-chevron-right"></i>
+    <a href="/post/f6f5115.html" rel="next" title="006-模板-NexT-三方服务-搜索、统计分析、评论">
+      006-模板-NexT-三方服务-搜索、统计分析、评论 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -459,7 +444,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#scaffolds-post-md-说明"><span class="nav-number">1.1.</span> <span class="nav-text">scaffolds\post.md 说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#permalink设置"><span class="nav-number">1.2.</span> <span class="nav-text">permalink设置</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#关闭页脚的powered"><span class="nav-number">1.</span> <span class="nav-text">关闭页脚的powered</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hexo首页文章只显示一部分"><span class="nav-number">2.</span> <span class="nav-text">hexo首页文章只显示一部分</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#菜单标签显示数值"><span class="nav-number">3.</span> <span class="nav-text">菜单标签显示数值</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#代码块设置"><span class="nav-number">4.</span> <span class="nav-text">代码块设置</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

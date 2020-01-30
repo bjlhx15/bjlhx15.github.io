@@ -46,19 +46,21 @@
   };
 </script>
 
-  <meta name="description" content="摘要：文章底部版权、文章底部打赏">
+  <meta name="description" content="一步一步，搭建网站系统域名申请与绑定、 build-site">
 <meta property="og:type" content="article">
-<meta property="og:title" content="008-模板-NexT-版权.md">
-<meta property="og:url" content="http://blog.bjlhx.top/2020/01/30/hexo/008-%E6%A8%A1%E6%9D%BF-NexT-%E7%89%88%E6%9D%83/index.html">
+<meta property="og:title" content="001-建站系统系列">
+<meta property="og:url" content="http://blog.bjlhx.top/post/f87cfa7a.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="摘要：文章底部版权、文章底部打赏">
+<meta property="og:description" content="一步一步，搭建网站系统域名申请与绑定、 build-site">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-01-30T13:03:35.000Z">
-<meta property="article:modified_time" content="2020-01-30T14:20:46.704Z">
+<meta property="og:image" content="http://blog.bjlhx.top/images/post/build_site/domain.png">
+<meta property="article:published_time" content="2020-01-30T09:09:39.000Z">
+<meta property="article:modified_time" content="2020-01-30T15:03:20.690Z">
 <meta property="article:author" content="李宏旭">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blog.bjlhx.top/images/post/build_site/domain.png">
 
-<link rel="canonical" href="http://blog.bjlhx.top/2020/01/30/hexo/008-%E6%A8%A1%E6%9D%BF-NexT-%E7%89%88%E6%9D%83/">
+<link rel="canonical" href="http://blog.bjlhx.top/post/f87cfa7a.html">
 
 
 <script id="page-configurations">
@@ -70,7 +72,7 @@
   };
 </script>
 
-  <title>008-模板-NexT-版权.md | Blog</title>
+  <title>001-建站系统系列 | Blog</title>
   
 
 
@@ -222,7 +224,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/2020/01/30/hexo/008-%E6%A8%A1%E6%9D%BF-NexT-%E7%89%88%E6%9D%83/">
+    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/post/f87cfa7a.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -235,7 +237,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          008-模板-NexT-版权.md
+          001-建站系统系列
         </h1>
 
         <div class="post-meta">
@@ -246,7 +248,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2020-01-30 21:03:35 / 修改时间：22:20:46" itemprop="dateCreated datePublished" datetime="2020-01-30T21:03:35+08:00">2020-01-30</time>
+              <time title="创建时间：2020-01-30 17:09:39 / 修改时间：23:03:20" itemprop="dateCreated datePublished" datetime="2020-01-30T17:09:39+08:00">2020-01-30</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -254,8 +256,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
+                  <a href="/categories/build-site/" itemprop="url" rel="index">
+                    <span itemprop="name">build_site</span>
                   </a>
                 </span>
             </span>
@@ -278,27 +280,19 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>摘要：文章底部版权、文章底部打赏</p>
+        <p>一步一步，搭建网站系统<br>域名申请与绑定、</p>
+<p><a href="https://blog.bjlhx.top/categories/build-site/">build-site</a></p>
 <a id="more"></a>
 
-<h1 id="文章底部版权"><a href="#文章底部版权" class="headerlink" title="文章底部版权"></a>文章底部版权</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在 Next7.2.0官方对版权声明的设置做出了大改动，在主题配置文件_config.yml中已经找不到设置版权声明的post_copyright选项</p>
-<p>旧版本：Next下，设置post_copyright为true，或是修改themes/next/layout/_macro/post-copyright.swig文件，自定义版权声明样式</p>
-<p>新版本：Next下，网上一片教程，没有post_copyright选项了，各种改代码。</p>
-<h2 id="探究新版版权"><a href="#探究新版版权" class="headerlink" title="探究新版版权"></a>探究新版版权</h2><p>发现：themes/next/layout/_partials/post/post-copyright.swig 还是有版权定义。</p>
-<p>查看版权配置文件：themes/next/layout/_macro/post.swig</p>
-<p>打开，直接搜搜：post-copyright.swig，</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;%- if theme.creative_commons.license and theme.creative_commons.post %&#125;</span><br><span class="line">  &#123;&#123; partial(&#39;_partials&#x2F;post&#x2F;post-copyright.swig&#39;) &#125;&#125;</span><br><span class="line">&#123;%- endif %&#125;</span><br></pre></td></tr></table></figure>
-<p>查看样式什么时候导入：themes/next/source/css/_common/components/post/post.styl<br><code>@import &#39;post-copyright&#39; if (hexo-config(&#39;creative_commons.post&#39;));</code><br>即配置文件中 有creative_commons</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">creative_commons:</span></span><br><span class="line">  <span class="attr">license:</span> <span class="string">by-nc-sa</span></span><br><span class="line">  <span class="attr">sidebar:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">post:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">language:</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="文章底部打赏"><a href="#文章底部打赏" class="headerlink" title="文章底部打赏"></a>文章底部打赏</h1><h2 id="配置使用"><a href="#配置使用" class="headerlink" title="配置使用"></a>配置使用</h2><p>查看 源码 发现 reward，配置：reward_settings</p>
-<ol>
-<li><p>打赏图片增加<br>支付宝，微信获取付款图片<br>source/images/reward/bjlhx-wx.bmp<br>source/images/reward/bjlhx-wx.bmp</p>
-</li>
-<li><p>配置</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Reward (Donate)</span></span><br><span class="line"><span class="comment"># Front-matter variable (unsupport animation).</span></span><br><span class="line"><span class="attr">reward_settings:</span></span><br><span class="line">  <span class="comment"># If true, reward will be displayed in every article by default.</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">animation:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">comment:</span> <span class="string">一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</span></span><br><span class="line"></span><br><span class="line"><span class="attr">reward:</span></span><br><span class="line">  <span class="attr">wechatpay:</span> <span class="string">/images/reward/bjlhx-wx.bmp</span></span><br><span class="line">  <span class="attr">alipay:</span> <span class="string">/images/reward/bjlhx-zfb.bmp</span></span><br><span class="line">  <span class="comment">#bitcoin: /images/bitcoin.png</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
+<h1 id="域名申请与绑定"><a href="#域名申请与绑定" class="headerlink" title="域名申请与绑定"></a>域名申请与绑定</h1><h2 id="阿里云"><a href="#阿里云" class="headerlink" title="阿里云"></a>阿里云</h2><p><a href="https://www.aliyun.com" target="_blank" rel="noopener">https://www.aliyun.com</a></p>
+<p>控制台→域名，可以注册域名，top域名比较便宜，个人申请使用：bjlhx.top</p>
+<p><a href="https://wanwang.aliyun.com/domain/" target="_blank" rel="noopener">https://wanwang.aliyun.com/domain/</a>  首年1块</p>
+<h3 id="CNAME-域名解析"><a href="#CNAME-域名解析" class="headerlink" title="CNAME 域名解析"></a>CNAME 域名解析</h3><p>主要是一个域名解析到另一个域名</p>
+<h4 id="域名解析配置"><a href="#域名解析配置" class="headerlink" title="域名解析配置"></a>域名解析配置</h4><p><img src="/images/post/build_site/domain.png" alt=""></p>
+<h4 id="站点根目录增加"><a href="#站点根目录增加" class="headerlink" title="站点根目录增加"></a>站点根目录增加</h4><p>文件：CNAME</p>
+<p>内容：blog.bjlhx.top</p>
+<p>等待10分钟，然后访问 <a href="http://blog.bjlhx.top/">http://blog.bjlhx.top/</a> 就能看到 <a href="http://bjlhx15.github.io" target="_blank" rel="noopener">http://bjlhx15.github.io</a> 一样的页面，证明绑定成功了。 </p>
+<h3 id="IP解析"><a href="#IP解析" class="headerlink" title="IP解析"></a>IP解析</h3><p>域名解析到指定的IP，A记录</p>
 
     </div>
 
@@ -334,7 +328,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://blog.bjlhx.top/2020/01/30/hexo/008-%E6%A8%A1%E6%9D%BF-NexT-%E7%89%88%E6%9D%83/" title="008-模板-NexT-版权.md">http://blog.bjlhx.top/2020/01/30/hexo/008-模板-NexT-版权/</a>
+    <a href="http://blog.bjlhx.top/post/f87cfa7a.html" title="001-建站系统系列">http://blog.bjlhx.top/post/f87cfa7a.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -351,10 +345,13 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/01/30/build_site/002-github%20pages%E5%BB%BA%E7%AB%99%EF%BC%8C%E7%BB%91%E5%AE%9A%E4%B8%BB%E9%A2%98/" rel="prev" title="002-github pages建站，绑定主题">
-      <i class="fa fa-chevron-left"></i> 002-github pages建站，绑定主题
+    <a href="/post/6fe23d4d.html" rel="prev" title="007-hero-config配置说明">
+      <i class="fa fa-chevron-left"></i> 007-hero-config配置说明
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/post/e012e91a.html" rel="next" title="002-github pages建站，绑定主题">
+      002-github pages建站，绑定主题 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -438,7 +435,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#文章底部版权"><span class="nav-number">1.</span> <span class="nav-text">文章底部版权</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#概述"><span class="nav-number">1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#探究新版版权"><span class="nav-number">1.2.</span> <span class="nav-text">探究新版版权</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#文章底部打赏"><span class="nav-number">2.</span> <span class="nav-text">文章底部打赏</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#配置使用"><span class="nav-number">2.1.</span> <span class="nav-text">配置使用</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#域名申请与绑定"><span class="nav-number">1.</span> <span class="nav-text">域名申请与绑定</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#阿里云"><span class="nav-number">1.1.</span> <span class="nav-text">阿里云</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CNAME-域名解析"><span class="nav-number">1.1.1.</span> <span class="nav-text">CNAME 域名解析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#域名解析配置"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">域名解析配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#站点根目录增加"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">站点根目录增加</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IP解析"><span class="nav-number">1.1.2.</span> <span class="nav-text">IP解析</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -46,21 +46,20 @@
   };
 </script>
 
-  <meta name="description" content="一步一步，搭建网站系统域名申请与绑定、 build-site">
+  <meta name="description" content="初始化代码库：hexo init；本地服务运行 ：hexo s；生成静态文件：hexo g；部署远程站点：hexo d；清理缓存：hexo clean">
 <meta property="og:type" content="article">
-<meta property="og:title" content="001-建站系统系列">
-<meta property="og:url" content="http://blog.bjlhx.top/2020/01/30/build_site/001-%E5%BB%BA%E7%AB%99%E7%B3%BB%E7%BB%9F%E7%B3%BB%E5%88%97/index.html">
+<meta property="og:title" content="001-命令-服务、生成、部署、清理">
+<meta property="og:url" content="http://blog.bjlhx.top/post/82195907.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="一步一步，搭建网站系统域名申请与绑定、 build-site">
+<meta property="og:description" content="初始化代码库：hexo init；本地服务运行 ：hexo s；生成静态文件：hexo g；部署远程站点：hexo d；清理缓存：hexo clean">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://blog.bjlhx.top/images/post/build_site/domain.png">
-<meta property="article:published_time" content="2020-01-30T09:09:39.000Z">
-<meta property="article:modified_time" content="2020-01-30T14:20:46.699Z">
+<meta property="article:published_time" content="2020-01-29T09:45:36.000Z">
+<meta property="article:modified_time" content="2020-01-30T15:03:20.692Z">
 <meta property="article:author" content="李宏旭">
+<meta property="article:tag" content="hexo">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://blog.bjlhx.top/images/post/build_site/domain.png">
 
-<link rel="canonical" href="http://blog.bjlhx.top/2020/01/30/build_site/001-%E5%BB%BA%E7%AB%99%E7%B3%BB%E7%BB%9F%E7%B3%BB%E5%88%97/">
+<link rel="canonical" href="http://blog.bjlhx.top/post/82195907.html">
 
 
 <script id="page-configurations">
@@ -72,7 +71,7 @@
   };
 </script>
 
-  <title>001-建站系统系列 | Blog</title>
+  <title>001-命令-服务、生成、部署、清理 | Blog</title>
   
 
 
@@ -224,7 +223,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/2020/01/30/build_site/001-%E5%BB%BA%E7%AB%99%E7%B3%BB%E7%BB%9F%E7%B3%BB%E5%88%97/">
+    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/post/82195907.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -237,7 +236,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          001-建站系统系列
+          001-命令-服务、生成、部署、清理
         </h1>
 
         <div class="post-meta">
@@ -246,18 +245,24 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-01-30 17:09:39 / 修改时间：22:20:46" itemprop="dateCreated datePublished" datetime="2020-01-30T17:09:39+08:00">2020-01-30</time>
+              <time title="创建时间：2020-01-29 17:45:36" itemprop="dateCreated datePublished" datetime="2020-01-29T17:45:36+08:00">2020-01-29</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/build-site/" itemprop="url" rel="index">
-                    <span itemprop="name">build_site</span>
+                  <a href="/categories/hexo/" itemprop="url" rel="index">
+                    <span itemprop="name">hexo</span>
                   </a>
                 </span>
             </span>
@@ -280,19 +285,21 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>一步一步，搭建网站系统<br>域名申请与绑定、</p>
-<p><a href="https://blog.bjlhx.top/categories/build-site/">build-site</a></p>
+        <p>初始化代码库：<code>hexo init</code>；<br>本地服务运行 ：<code>hexo s</code>；生成静态文件：<code>hexo g</code>；部署远程站点：<code>hexo d</code>；清理缓存：<code>hexo clean</code></p>
 <a id="more"></a>
+<h2 id="快速入门"><a href="#快速入门" class="headerlink" title="快速入门"></a>快速入门</h2><h3 id="初始化代码库"><a href="#初始化代码库" class="headerlink" title="初始化代码库"></a>初始化代码库</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
+<p>下载代码，因为 init 初始化需要一个空目录，否则报错</p>
+<h3 id="本地服务运行"><a href="#本地服务运行" class="headerlink" title="本地服务运行"></a>本地服务运行</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo server</span><br><span class="line">或</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
 
-<h1 id="域名申请与绑定"><a href="#域名申请与绑定" class="headerlink" title="域名申请与绑定"></a>域名申请与绑定</h1><h2 id="阿里云"><a href="#阿里云" class="headerlink" title="阿里云"></a>阿里云</h2><p><a href="https://www.aliyun.com" target="_blank" rel="noopener">https://www.aliyun.com</a></p>
-<p>控制台→域名，可以注册域名，top域名比较便宜，个人申请使用：bjlhx.top</p>
-<p><a href="https://wanwang.aliyun.com/domain/" target="_blank" rel="noopener">https://wanwang.aliyun.com/domain/</a>  首年1块</p>
-<h3 id="CNAME-域名解析"><a href="#CNAME-域名解析" class="headerlink" title="CNAME 域名解析"></a>CNAME 域名解析</h3><p>主要是一个域名解析到另一个域名</p>
-<h4 id="域名解析配置"><a href="#域名解析配置" class="headerlink" title="域名解析配置"></a>域名解析配置</h4><p><img src="/images/post/build_site/domain.png" alt=""></p>
-<h4 id="站点根目录增加"><a href="#站点根目录增加" class="headerlink" title="站点根目录增加"></a>站点根目录增加</h4><p>文件：CNAME</p>
-<p>内容：blog.bjlhx.top</p>
-<p>等待10分钟，然后访问 <a href="http://blog.bjlhx.top/">http://blog.bjlhx.top/</a> 就能看到 <a href="http://bjlhx15.github.io" target="_blank" rel="noopener">http://bjlhx15.github.io</a> 一样的页面，证明绑定成功了。 </p>
-<h3 id="IP解析"><a href="#IP解析" class="headerlink" title="IP解析"></a>IP解析</h3><p>域名解析到指定的IP，A记录</p>
+<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
+<h3 id="生成静态文件"><a href="#生成静态文件" class="headerlink" title="生成静态文件"></a>生成静态文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo generate</span><br><span class="line">或</span><br><span class="line">hexo g</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
+<h3 id="部署远程站点"><a href="#部署远程站点" class="headerlink" title="部署远程站点"></a>部署远程站点</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo deploy</span><br><span class="line">或</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
+<h3 id="命令用于清理缓存文件，是一个比较常用的命令"><a href="#命令用于清理缓存文件，是一个比较常用的命令" class="headerlink" title="命令用于清理缓存文件，是一个比较常用的命令"></a>命令用于清理缓存文件，是一个比较常用的命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br></pre></td></tr></table></figure>
+<p>更过官方帮助：<br><a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a><br><a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a><br><a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a><br><a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a><br><a href="https://hexo.io/docs/commands" target="_blank" rel="noopener">commands</a></p>
 
     </div>
 
@@ -328,7 +335,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://blog.bjlhx.top/2020/01/30/build_site/001-%E5%BB%BA%E7%AB%99%E7%B3%BB%E7%BB%9F%E7%B3%BB%E5%88%97/" title="001-建站系统系列">http://blog.bjlhx.top/2020/01/30/build_site/001-建站系统系列/</a>
+    <a href="http://blog.bjlhx.top/post/82195907.html" title="001-命令-服务、生成、部署、清理">http://blog.bjlhx.top/post/82195907.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -338,6 +345,9 @@
 
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hexo/" rel="tag"># hexo</a>
+          </div>
 
         
 
@@ -345,12 +355,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/01/30/hexo/007-hero-config%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E/" rel="prev" title="007-hero-config配置说明">
-      <i class="fa fa-chevron-left"></i> 007-hero-config配置说明
+    <a href="/post/26856f5b.html" rel="prev" title="java 基础">
+      <i class="fa fa-chevron-left"></i> java 基础
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/01/30/build_site/002-github%20pages%E5%BB%BA%E7%AB%99%EF%BC%8C%E7%BB%91%E5%AE%9A%E4%B8%BB%E9%A2%98/" rel="next" title="002-github pages建站，绑定主题">
-      002-github pages建站，绑定主题 <i class="fa fa-chevron-right"></i>
+    <a href="/post/1a1ce396.html" rel="next" title="002-命令new-页面分类标签">
+      002-命令new-页面分类标签 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -435,7 +445,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#域名申请与绑定"><span class="nav-number">1.</span> <span class="nav-text">域名申请与绑定</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#阿里云"><span class="nav-number">1.1.</span> <span class="nav-text">阿里云</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CNAME-域名解析"><span class="nav-number">1.1.1.</span> <span class="nav-text">CNAME 域名解析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#域名解析配置"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">域名解析配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#站点根目录增加"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">站点根目录增加</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IP解析"><span class="nav-number">1.1.2.</span> <span class="nav-text">IP解析</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#快速入门"><span class="nav-number">1.</span> <span class="nav-text">快速入门</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#初始化代码库"><span class="nav-number">1.1.</span> <span class="nav-text">初始化代码库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#本地服务运行"><span class="nav-number">1.2.</span> <span class="nav-text">本地服务运行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#生成静态文件"><span class="nav-number">1.3.</span> <span class="nav-text">生成静态文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#部署远程站点"><span class="nav-number">1.4.</span> <span class="nav-text">部署远程站点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令用于清理缓存文件，是一个比较常用的命令"><span class="nav-number">1.5.</span> <span class="nav-text">命令用于清理缓存文件，是一个比较常用的命令</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
