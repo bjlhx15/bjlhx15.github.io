@@ -46,19 +46,20 @@
   };
 </script>
 
-  <meta name="description" content="摘要：文章底部版权、文章底部打赏">
+  <meta name="description" content="初始化代码库：hexo init；本地服务运行 ：hexo s；生成静态文件：hexo g；部署远程站点：hexo d；清理缓存：hexo clean">
 <meta property="og:type" content="article">
-<meta property="og:title" content="008-模板-NexT-版权.md">
-<meta property="og:url" content="http://blog.bjlhx.top/post/a8d3813e.html">
+<meta property="og:title" content="001-命令-服务、生成、部署、清理">
+<meta property="og:url" content="http://blog.bjlhx.top/articles/20200129/82195907.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="摘要：文章底部版权、文章底部打赏">
+<meta property="og:description" content="初始化代码库：hexo init；本地服务运行 ：hexo s；生成静态文件：hexo g；部署远程站点：hexo d；清理缓存：hexo clean">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-01-30T13:03:35.000Z">
-<meta property="article:modified_time" content="2020-01-30T15:03:20.695Z">
+<meta property="article:published_time" content="2020-01-29T09:45:36.000Z">
+<meta property="article:modified_time" content="2020-01-30T15:03:20.692Z">
 <meta property="article:author" content="李宏旭">
+<meta property="article:tag" content="hexo">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://blog.bjlhx.top/post/a8d3813e.html">
+<link rel="canonical" href="http://blog.bjlhx.top/articles/20200129/82195907.html">
 
 
 <script id="page-configurations">
@@ -70,7 +71,7 @@
   };
 </script>
 
-  <title>008-模板-NexT-版权.md | Blog</title>
+  <title>001-命令-服务、生成、部署、清理 | Blog</title>
   
 
 
@@ -222,7 +223,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/post/a8d3813e.html">
+    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/articles/20200129/82195907.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -235,7 +236,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          008-模板-NexT-版权.md
+          001-命令-服务、生成、部署、清理
         </h1>
 
         <div class="post-meta">
@@ -244,10 +245,16 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-01-30 21:03:35 / 修改时间：23:03:20" itemprop="dateCreated datePublished" datetime="2020-01-30T21:03:35+08:00">2020-01-30</time>
+              <time title="创建时间：2020-01-29 17:45:36" itemprop="dateCreated datePublished" datetime="2020-01-29T17:45:36+08:00">2020-01-29</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
@@ -278,27 +285,21 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>摘要：文章底部版权、文章底部打赏</p>
+        <p>初始化代码库：<code>hexo init</code>；<br>本地服务运行 ：<code>hexo s</code>；生成静态文件：<code>hexo g</code>；部署远程站点：<code>hexo d</code>；清理缓存：<code>hexo clean</code></p>
 <a id="more"></a>
+<h2 id="快速入门"><a href="#快速入门" class="headerlink" title="快速入门"></a>快速入门</h2><h3 id="初始化代码库"><a href="#初始化代码库" class="headerlink" title="初始化代码库"></a>初始化代码库</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
+<p>下载代码，因为 init 初始化需要一个空目录，否则报错</p>
+<h3 id="本地服务运行"><a href="#本地服务运行" class="headerlink" title="本地服务运行"></a>本地服务运行</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo server</span><br><span class="line">或</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
 
-<h1 id="文章底部版权"><a href="#文章底部版权" class="headerlink" title="文章底部版权"></a>文章底部版权</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在 Next7.2.0官方对版权声明的设置做出了大改动，在主题配置文件_config.yml中已经找不到设置版权声明的post_copyright选项</p>
-<p>旧版本：Next下，设置post_copyright为true，或是修改themes/next/layout/_macro/post-copyright.swig文件，自定义版权声明样式</p>
-<p>新版本：Next下，网上一片教程，没有post_copyright选项了，各种改代码。</p>
-<h2 id="探究新版版权"><a href="#探究新版版权" class="headerlink" title="探究新版版权"></a>探究新版版权</h2><p>发现：themes/next/layout/_partials/post/post-copyright.swig 还是有版权定义。</p>
-<p>查看版权配置文件：themes/next/layout/_macro/post.swig</p>
-<p>打开，直接搜搜：post-copyright.swig，</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;%- if theme.creative_commons.license and theme.creative_commons.post %&#125;</span><br><span class="line">  &#123;&#123; partial(&#39;_partials&#x2F;post&#x2F;post-copyright.swig&#39;) &#125;&#125;</span><br><span class="line">&#123;%- endif %&#125;</span><br></pre></td></tr></table></figure>
-<p>查看样式什么时候导入：themes/next/source/css/_common/components/post/post.styl<br><code>@import &#39;post-copyright&#39; if (hexo-config(&#39;creative_commons.post&#39;));</code><br>即配置文件中 有creative_commons</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">creative_commons:</span></span><br><span class="line">  <span class="attr">license:</span> <span class="string">by-nc-sa</span></span><br><span class="line">  <span class="attr">sidebar:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">post:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">language:</span></span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
+<h3 id="生成静态文件"><a href="#生成静态文件" class="headerlink" title="生成静态文件"></a>生成静态文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo generate</span><br><span class="line">或</span><br><span class="line">hexo g</span><br></pre></td></tr></table></figure>
 
-<h1 id="文章底部打赏"><a href="#文章底部打赏" class="headerlink" title="文章底部打赏"></a>文章底部打赏</h1><h2 id="配置使用"><a href="#配置使用" class="headerlink" title="配置使用"></a>配置使用</h2><p>查看 源码 发现 reward，配置：reward_settings</p>
-<ol>
-<li><p>打赏图片增加<br>支付宝，微信获取付款图片<br>source/images/reward/bjlhx-wx.bmp<br>source/images/reward/bjlhx-wx.bmp</p>
-</li>
-<li><p>配置</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Reward (Donate)</span></span><br><span class="line"><span class="comment"># Front-matter variable (unsupport animation).</span></span><br><span class="line"><span class="attr">reward_settings:</span></span><br><span class="line">  <span class="comment"># If true, reward will be displayed in every article by default.</span></span><br><span class="line">  <span class="attr">enable:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">animation:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">comment:</span> <span class="string">一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</span></span><br><span class="line"></span><br><span class="line"><span class="attr">reward:</span></span><br><span class="line">  <span class="attr">wechatpay:</span> <span class="string">/images/reward/bjlhx-wx.bmp</span></span><br><span class="line">  <span class="attr">alipay:</span> <span class="string">/images/reward/bjlhx-zfb.bmp</span></span><br><span class="line">  <span class="comment">#bitcoin: /images/bitcoin.png</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
+<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
+<h3 id="部署远程站点"><a href="#部署远程站点" class="headerlink" title="部署远程站点"></a>部署远程站点</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo deploy</span><br><span class="line">或</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
+<h3 id="命令用于清理缓存文件，是一个比较常用的命令"><a href="#命令用于清理缓存文件，是一个比较常用的命令" class="headerlink" title="命令用于清理缓存文件，是一个比较常用的命令"></a>命令用于清理缓存文件，是一个比较常用的命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br></pre></td></tr></table></figure>
+<p>更过官方帮助：<br><a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a><br><a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a><br><a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a><br><a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a><br><a href="https://hexo.io/docs/commands" target="_blank" rel="noopener">commands</a></p>
 
     </div>
 
@@ -334,7 +335,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://blog.bjlhx.top/post/a8d3813e.html" title="008-模板-NexT-版权.md">http://blog.bjlhx.top/post/a8d3813e.html</a>
+    <a href="http://blog.bjlhx.top/articles/20200129/82195907.html" title="001-命令-服务、生成、部署、清理">http://blog.bjlhx.top/articles/20200129/82195907.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -344,6 +345,9 @@
 
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hexo/" rel="tag"># hexo</a>
+          </div>
 
         
 
@@ -351,10 +355,13 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/post/e012e91a.html" rel="prev" title="002-github pages建站，绑定主题">
-      <i class="fa fa-chevron-left"></i> 002-github pages建站，绑定主题
+    <a href="/articles/20190526/26856f5b.html" rel="prev" title="java 基础">
+      <i class="fa fa-chevron-left"></i> java 基础
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/articles/20200129/1a1ce396.html" rel="next" title="002-命令new-页面分类标签">
+      002-命令new-页面分类标签 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -438,7 +445,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#文章底部版权"><span class="nav-number">1.</span> <span class="nav-text">文章底部版权</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#概述"><span class="nav-number">1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#探究新版版权"><span class="nav-number">1.2.</span> <span class="nav-text">探究新版版权</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#文章底部打赏"><span class="nav-number">2.</span> <span class="nav-text">文章底部打赏</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#配置使用"><span class="nav-number">2.1.</span> <span class="nav-text">配置使用</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#快速入门"><span class="nav-number">1.</span> <span class="nav-text">快速入门</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#初始化代码库"><span class="nav-number">1.1.</span> <span class="nav-text">初始化代码库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#本地服务运行"><span class="nav-number">1.2.</span> <span class="nav-text">本地服务运行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#生成静态文件"><span class="nav-number">1.3.</span> <span class="nav-text">生成静态文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#部署远程站点"><span class="nav-number">1.4.</span> <span class="nav-text">部署远程站点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令用于清理缓存文件，是一个比较常用的命令"><span class="nav-number">1.5.</span> <span class="nav-text">命令用于清理缓存文件，是一个比较常用的命令</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
