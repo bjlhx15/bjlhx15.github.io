@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>008-模板-NexT-版权.md</title>
-    <url>/articles/20200130/a8d3813e.html</url>
+    <title>008-模板-NexT-版权、打赏</title>
+    <url>/articles/20200130/7021388e.html</url>
     <content><![CDATA[<p>摘要：文章底部版权、文章底部打赏</p>
 <a id="more"></a>
 
@@ -247,8 +247,8 @@ theme: next</code></pre>
       </categories>
   </entry>
   <entry>
-    <title>0004-模板-NexT-菜单、侧栏、头像、阅读量</title>
-    <url>/articles/20200129/e89588.html</url>
+    <title>004-模板-NexT-菜单、侧栏、头像、阅读量</title>
+    <url>/articles/20200129/8ecccc4b.html</url>
     <content><![CDATA[<p>Hexo 框架允许我们更换合适的主题，以便于构建不同风格的网站，这里介绍目前最常使用的一款主题之NexT</p>
 <p>设置Scheme、设置动态背景、设置侧栏行为、设置菜单、设置头像、添加社交链接、添加文字统计功能、添加阅读量统计功能</p>
 <a id="more"></a>
