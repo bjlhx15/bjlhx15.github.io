@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('http://blog.bjlhx.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="Hexo 框架允许我们更换合适的主题，以便于构建不同风格的网站，这里介绍目前最常使用的一款主题之NexT 设置Scheme、设置动态背景、设置侧栏行为、设置菜单、设置头像、添加社交链接、添加文字统计功能、添加阅读量统计功能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="0004-模板-NexT-菜单、侧栏、头像、阅读量">
+<meta property="og:url" content="http://blog.bjlhx.top/2020/01/29/hexo/004-%E6%A8%A1%E6%9D%BF-NexT-%E8%8F%9C%E5%8D%95%E3%80%81%E4%BE%A7%E6%A0%8F%E3%80%81%E5%A4%B4%E5%83%8F%E3%80%81%E9%98%85%E8%AF%BB%E9%87%8F/index.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="Hexo 框架允许我们更换合适的主题，以便于构建不同风格的网站，这里介绍目前最常使用的一款主题之NexT 设置Scheme、设置动态背景、设置侧栏行为、设置菜单、设置头像、添加社交链接、添加文字统计功能、添加阅读量统计功能">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-01-29T12:55:26.000Z">
+<meta property="article:modified_time" content="2020-01-30T14:20:46.703Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://blog.bjlhx.top/2020/01/29/hexo/004-%E6%A8%A1%E6%9D%BF-NexT-%E8%8F%9C%E5%8D%95%E3%80%81%E4%BE%A7%E6%A0%8F%E3%80%81%E5%A4%B4%E5%83%8F%E3%80%81%E9%98%85%E8%AF%BB%E9%87%8F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>0004-模板-NexT-菜单、侧栏、头像、阅读量 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">11</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.bjlhx.top/2020/01/29/hexo/004-%E6%A8%A1%E6%9D%BF-NexT-%E8%8F%9C%E5%8D%95%E3%80%81%E4%BE%A7%E6%A0%8F%E3%80%81%E5%A4%B4%E5%83%8F%E3%80%81%E9%98%85%E8%AF%BB%E9%87%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          0004-模板-NexT-菜单、侧栏、头像、阅读量
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-29 20:55:26" itemprop="dateCreated datePublished" datetime="2020-01-29T20:55:26+08:00">2020-01-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-01-30 22:20:46" itemprop="dateModified" datetime="2020-01-30T22:20:46+08:00">2020-01-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/hexo/" itemprop="url" rel="index">
+                    <span itemprop="name">hexo</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Hexo 框架允许我们更换合适的主题，以便于构建不同风格的网站，这里介绍目前最常使用的一款主题之NexT</p>
+<p>设置Scheme、设置动态背景、设置侧栏行为、设置菜单、设置头像、添加社交链接、添加文字统计功能、添加阅读量统计功能</p>
+<a id="more"></a>
+<h1 id="NexT-安装"><a href="#NexT-安装" class="headerlink" title="NexT 安装"></a>NexT 安装</h1><p>几个概念：</p>
+<p>在使用 Hexo 框架建立的网站中，存在两份重要的配置文件，它们的文件名称都是 _config.yml</p>
+<p>一份是 站点配置文件，位于 站点根目录 下，用于网站的基础配置</p>
+<p>另外一份是 主题配置文件，位于 themes 目录 下，用于主题的相关配置</p>
+<p>不同的主题会有不同的主题配置文件，由主题作者所提供</p>
+<h2 id="下载-NexT"><a href="#下载-NexT" class="headerlink" title="下载 NexT"></a>下载 NexT</h2><p>在 站点根目录 中打开 git bash 窗口，使用如下命令下载 NexT 主题文件到 themes 目录 中</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/theme-next/hexo-theme-next themes/next</span><br><span class="line">或</span><br><span class="line">git <span class="built_in">clone</span> https://github.com/iissnan/hexo-theme-next themes/next</span><br><span class="line">或</span><br><span class="line">git <span class="built_in">clone</span> git://github.com/iissnan/hexo-theme-next themes/next</span><br></pre></td></tr></table></figure>
+
+<h2 id="启用-NexT"><a href="#启用-NexT" class="headerlink" title="启用 NexT"></a>启用 NexT</h2><p>打开 站点配置文件， 将 theme 选项的值改为 next，注意要在属性和值之间要加上一个空格</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># Extensions</span><br><span class="line">## Plugins: https:&#x2F;&#x2F;hexo.io&#x2F;plugins&#x2F;</span><br><span class="line">## Themes: https:&#x2F;&#x2F;hexo.io&#x2F;themes&#x2F;</span><br><span class="line">theme: next</span><br></pre></td></tr></table></figure>
+<p>此时，登陆自己的站点，应该可以看到更改已经成功</p>
+<h1 id="NexT-配置"><a href="#NexT-配置" class="headerlink" title="NexT 配置"></a>NexT 配置</h1><h2 id="设置Scheme"><a href="#设置Scheme" class="headerlink" title="设置Scheme"></a>设置Scheme</h2><p>Scheme 是用于 改变网站布局 的一个设置项，NexT 目前提供四种 Scheme：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Muse ：默认 Scheme，黑白主调，大量留白</span><br><span class="line">Mist：Muse 的紧凑版本，整洁有序的单栏外观</span><br><span class="line">Pisces：双栏 Scheme，小家碧玉的清新</span><br><span class="line">Gemini：新增 Scheme</span><br></pre></td></tr></table></figure>
+<p>更改时，打开 主题配置文件，通过搜索关键字 Scheme Settings 定位，然后将使用的 scheme 打开注释即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># ---------------------------------------------------------------</span><br><span class="line"># Scheme Settings</span><br><span class="line"># ---------------------------------------------------------------</span><br><span class="line"></span><br><span class="line"># Schemes</span><br><span class="line">#scheme: Muse</span><br><span class="line">#scheme: Mist</span><br><span class="line">scheme: Pisces</span><br><span class="line">#scheme: Gemini</span><br></pre></td></tr></table></figure>
+
+<h2 id="设置动态背景"><a href="#设置动态背景" class="headerlink" title="设置动态背景"></a>设置动态背景</h2><p>更改时，打开 主题配置文件，通过搜索关键字 Canvas-nest 定位，然后将 canvas_nest 的值改成 true 即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># Canvas-nest</span><br><span class="line">canvas_nest: true</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="设置侧栏行为"><a href="#设置侧栏行为" class="headerlink" title="设置侧栏行为"></a>设置侧栏行为</h2><p>默认情况下，侧栏仅在文章页面（拥有目录列表时）才显示，并放置于右侧位置</p>
+<p>可以通过修改 主题配置文件 中的 Sidebar Settings 字段控制侧栏的行为</p>
+<p>（1）侧栏位置：position<br>left：靠左放置;<br>right：靠右放置;</p>
+<p>（2）侧栏显示时机：display<br>post：默认行为，在文章页面（拥有目录列表时）显示;<br>always：在所有页面中都显示;<br>hide：在所有页面中都隐藏;<br>remove：完全移除</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># Sidebar Position, available value: left | right (only for Pisces | Gemini).</span><br><span class="line">position: left</span><br><span class="line">#position: right</span><br><span class="line"></span><br><span class="line"># Sidebar Display, available value (only for Muse | Mist):</span><br><span class="line">#  - post    expand on posts automatically. Default.</span><br><span class="line">#  - always  expand for all pages automatically</span><br><span class="line">#  - hide    expand only when click on the sidebar toggle icon.</span><br><span class="line">#  - remove  Totally remove sidebar including sidebar toggle.</span><br><span class="line">display: post</span><br><span class="line">#display: always</span><br><span class="line">#display: hide</span><br><span class="line">#display: remove</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="设置菜单"><a href="#设置菜单" class="headerlink" title="设置菜单"></a>设置菜单</h2><p>（1）设置菜单项</p>
+<p>打开 主题配置文件，搜索关键字 Menu Settings 进行定位，各个菜单项通过 # 注释开启或关闭</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># ---------------------------------------------------------------</span><br><span class="line"># Menu Settings</span><br><span class="line"># ---------------------------------------------------------------</span><br><span class="line"></span><br><span class="line"># When running the site in a subdirectory (e.g. domain.tld&#x2F;blog), remove the leading slash from link value (&#x2F;archives -&gt; archives).</span><br><span class="line"># Usage: &#96;Key: &#x2F;link&#x2F; || icon&#96;</span><br><span class="line"># Key is the name of menu item. If translate for this menu will find in languages - this translate will be loaded; if not - Key name will be used. Key is case-senstive.</span><br><span class="line"># Value before &#96;||&#96; delimeter is the target link.</span><br><span class="line"># Value after &#96;||&#96; delimeter is the name of FontAwesome icon. If icon (with or without delimeter) is not specified, question icon will be loaded.</span><br><span class="line">menu:</span><br><span class="line">  home: &#x2F; || home</span><br><span class="line">  #about: &#x2F;about&#x2F; || user</span><br><span class="line">  #tags: &#x2F;tags&#x2F; || tags</span><br><span class="line">  categories: &#x2F;categories&#x2F; || th</span><br><span class="line">  archives: &#x2F;archives&#x2F; || archive</span><br><span class="line">  #schedule: &#x2F;schedule&#x2F; || calendar</span><br><span class="line">  #sitemap: &#x2F;sitemap.xml || sitemap</span><br><span class="line">  #commonweal: &#x2F;404&#x2F; || heartbeat</span><br></pre></td></tr></table></figure>
+<p>部分菜单项的功能描述如下：<br>home：主页;about：关于;tags：标签;categories：分类;archives：归档;</p>
+<p>菜单具体 参看002</p>
+<h2 id="设置头像"><a href="#设置头像" class="headerlink" title="设置头像"></a>设置头像</h2><p>打开 主题配置文件， 搜索关键字 Sidebar Avatar 进行定位，将 avatar 的值设置成头像图片的链接地址即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># Sidebar Avatar</span><br><span class="line"># in theme directory(source&#x2F;images): &#x2F;images&#x2F;avatar.gif</span><br><span class="line"># in site  directory(source&#x2F;uploads): &#x2F;uploads&#x2F;avatar.gif</span><br><span class="line">avatar: &lt;url&gt;</span><br></pre></td></tr></table></figure>
+<p>头像图片的链接地址可以是：  </p>
+<ul>
+<li>完整的互联网地址：例如，<a href="https://www.example.com/avatar.jpg" target="_blank" rel="noopener">https://www.example.com/avatar.jpg</a></li>
+<li>站点内的相对地址：例如，假设图片命名为 avatar.jpg，存放在 source/images/ 目录下，则链接地址可以写成 /images/avatar.jpg</li>
+</ul>
+<h2 id="添加社交链接"><a href="#添加社交链接" class="headerlink" title="添加社交链接"></a>添加社交链接</h2><p>打开 主题配置文件，搜索关键字 Social Links 进行定位，social 的值按 Key: permalink || icon 格式设置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># Social Links.</span><br><span class="line"># Usage: &#96;Key: permalink || icon&#96;</span><br><span class="line"># Key is the link label showing to end users.</span><br><span class="line"># Value before &#96;||&#96; delimeter is the target permalink.</span><br><span class="line"># Value after &#96;||&#96; delimeter is the name of FontAwesome icon. If icon (with or without delimeter) is not specified, globe icon will be loaded.</span><br><span class="line">social:</span><br><span class="line">  GitHub: https:&#x2F;&#x2F;github.com&#x2F;Forwhfang || Github</span><br><span class="line">  CSDN: https:&#x2F;&#x2F;blog.csdn.net&#x2F;wsmrzx || CSDN</span><br><span class="line">  cnblogs: https:&#x2F;&#x2F;www.cnblogs.com&#x2F;wsmrzx || cnblogs</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="添加文字统计功能"><a href="#添加文字统计功能" class="headerlink" title="添加文字统计功能"></a>添加文字统计功能</h2><p>进入 站点根目录，打开 git bash 窗口，输入如下命令安装插件<br><code>pm install hexo-wordcount --save</code><br>然后打开 主题配置文件，进行如下配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># Post wordcount display settings</span><br><span class="line"># Dependencies: https:&#x2F;&#x2F;github.com&#x2F;willin&#x2F;hexo-wordcount</span><br><span class="line">post_wordcount:</span><br><span class="line">  item_text: true</span><br><span class="line">  wordcount: true</span><br><span class="line">  min2read: true</span><br><span class="line">  totalcount: true</span><br><span class="line">  separated_meta: true</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="添加阅读量统计功能"><a href="#添加阅读量统计功能" class="headerlink" title="添加阅读量统计功能"></a>添加阅读量统计功能</h2><p>在 主题配置文件 中修改 busuanzi_count 字段启用不蒜子统计功能</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># Show PV&#x2F;UV of the website&#x2F;page with busuanzi.</span><br><span class="line"># Get more information on http:&#x2F;&#x2F;ibruce.info&#x2F;2015&#x2F;04&#x2F;04&#x2F;busuanzi&#x2F;</span><br><span class="line">busuanzi_count:</span><br><span class="line">  # count values only if the other configs are false</span><br><span class="line">  enable: true</span><br><span class="line">  # custom uv span for the whole site</span><br><span class="line">  site_uv: true</span><br><span class="line">  site_uv_header: &lt;i class&#x3D;&quot;fa fa-user&quot;&gt;&lt;&#x2F;i&gt;</span><br><span class="line">  site_uv_footer: </span><br><span class="line">  # custom pv span for the whole site</span><br><span class="line">  site_pv: true</span><br><span class="line">  site_pv_header: &lt;i class&#x3D;&quot;fa fa-eye&quot;&gt;&lt;&#x2F;i&gt;</span><br><span class="line">  site_pv_footer: </span><br><span class="line">  # custom pv span for one page only</span><br><span class="line">  page_pv: true</span><br><span class="line">  page_pv_header: &lt;i class&#x3D;&quot;fa fa-file-o&quot;&gt;&lt;&#x2F;i&gt;</span><br><span class="line">  page_pv_footer:</span><br></pre></td></tr></table></figure>
+<p>【参考资料】</p>
+<ul>
+<li><a href="http://theme-next.iissnan.com/getting-started.html" target="_blank" rel="noopener">iissnan/hexo-theme-start</a></li>
+<li><a href="https://github.com/iissnan/hexo-theme-next/wiki" target="_blank" rel="noopener">iissnan/hexo-theme-next</a></li>
+<li><a href="http://theme-next.iissnan.com/third-party-services.html" target="_blank" rel="noopener">third-party-services</a></li>
+<li><a href="https://hexo.io/plugins/" target="_blank" rel="noopener">hexo.io/plugins</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://blog.bjlhx.top/2020/01/29/hexo/004-%E6%A8%A1%E6%9D%BF-NexT-%E8%8F%9C%E5%8D%95%E3%80%81%E4%BE%A7%E6%A0%8F%E3%80%81%E5%A4%B4%E5%83%8F%E3%80%81%E9%98%85%E8%AF%BB%E9%87%8F/" title="0004-模板-NexT-菜单、侧栏、头像、阅读量">http://blog.bjlhx.top/2020/01/29/hexo/004-模板-NexT-菜单、侧栏、头像、阅读量/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/01/29/hexo/003-%E6%A8%A1%E6%9D%BF-scaffolds/" rel="prev" title="003-模板-scaffolds">
+      <i class="fa fa-chevron-left"></i> 003-模板-scaffolds
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/01/29/hexo/005-%E6%A8%A1%E6%9D%BF-NexT-%E5%85%B6%E4%BB%96%E4%BC%98%E5%8C%96-%E9%A1%B5%E8%84%9A%E3%80%81%E8%8F%9C%E5%8D%95%E6%98%BE%E7%A4%BA%E6%95%B0%E9%87%8F%E3%80%81%E4%BB%A3%E7%A0%81%E5%9D%97/" rel="next" title="005-模板-NexT-其他优化-页脚、菜单显示数量、代码块">
+      005-模板-NexT-其他优化-页脚、菜单显示数量、代码块 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#NexT-安装"><span class="nav-number">1.</span> <span class="nav-text">NexT 安装</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#下载-NexT"><span class="nav-number">1.1.</span> <span class="nav-text">下载 NexT</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启用-NexT"><span class="nav-number">1.2.</span> <span class="nav-text">启用 NexT</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#NexT-配置"><span class="nav-number">2.</span> <span class="nav-text">NexT 配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#设置Scheme"><span class="nav-number">2.1.</span> <span class="nav-text">设置Scheme</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置动态背景"><span class="nav-number">2.2.</span> <span class="nav-text">设置动态背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置侧栏行为"><span class="nav-number">2.3.</span> <span class="nav-text">设置侧栏行为</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置菜单"><span class="nav-number">2.4.</span> <span class="nav-text">设置菜单</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置头像"><span class="nav-number">2.5.</span> <span class="nav-text">设置头像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#添加社交链接"><span class="nav-number">2.6.</span> <span class="nav-text">添加社交链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#添加文字统计功能"><span class="nav-number">2.7.</span> <span class="nav-text">添加文字统计功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#添加阅读量统计功能"><span class="nav-number">2.8.</span> <span class="nav-text">添加阅读量统计功能</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>
