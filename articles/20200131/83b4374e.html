@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.bjlhx.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：MySQL InnoDB数据存储是以B+树索引方式存储存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
+<meta property="og:type" content="article">
+<meta property="og:title" content="001-mysql-物理存储、InnoDB数据B+树存储">
+<meta property="og:url" content="https://blog.bjlhx.top/articles/20200131/83b4374e.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：MySQL InnoDB数据存储是以B+树索引方式存储存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/mysql-disk.jpg">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/file-0k.jpg">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/file-1k.jpg">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/index-01.jpg">
+<meta property="article:published_time" content="2020-01-31T01:12:52.000Z">
+<meta property="article:modified_time" content="2020-01-31T14:57:25.456Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/mysql-disk.jpg">
+
+<link rel="canonical" href="https://blog.bjlhx.top/articles/20200131/83b4374e.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>001-mysql-物理存储、InnoDB数据B+树存储 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">13</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200131/83b4374e.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          001-mysql-物理存储、InnoDB数据B+树存储
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-01-31 09:12:52 / 修改时间：22:57:25" itemprop="dateCreated datePublished" datetime="2020-01-31T09:12:52+08:00">2020-01-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/db-mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：MySQL InnoDB数据存储是以B+树索引方式存储<br>存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="存储单元"><a href="#存储单元" class="headerlink" title="存储单元"></a>存储单元</h2><p>磁盘扇区、文件系统、InnoDB 存储引擎都有各自的最小存储单元。存储数据的最小单位，类比放菜的盘子。</p>
+<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt=""></p>
+<h3 id="磁盘扇区存储单元-扇区-512字节"><a href="#磁盘扇区存储单元-扇区-512字节" class="headerlink" title="磁盘扇区存储单元-扇区-512字节"></a>磁盘扇区存储单元-扇区-512字节</h3><p>在计算机中磁盘存储数据最小单元是扇区，一个扇区的大小是 512 字节</p>
+<h3 id="文件系统存储单元-块-4k"><a href="#文件系统存储单元-块-4k" class="headerlink" title="文件系统存储单元-块-4k"></a>文件系统存储单元-块-4k</h3><p>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。</p>
+<p>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]</p>
+<p><img src="/images/post/db-mysql/001/file-0k.jpg" alt="">  <img src="/images/post/db-mysql/001/file-1k.jpg" alt=""></p>
+<h3 id="InnoDB存储单元-页-16k"><a href="#InnoDB存储单元-页-16k" class="headerlink" title="InnoDB存储单元-页-16k"></a>InnoDB存储单元-页-16k</h3><p>InnoDB 存储引擎也有自己的最小储存单元——页(Page)，一个页的大小是 16K。</p>
+<p>InnoDB 的所有数据文件(后缀为 ibd 的文件)，他的大小始终都是 16384(16K)的整数倍。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ ll |grep ibd </span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_index_stats.ibd</span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_table_stats.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_master_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_relay_log_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_worker_info.ibd</span><br></pre></td></tr></table></figure>
+
+<h2 id="mysql-InnoDB-B-树组织数据、查询数据"><a href="#mysql-InnoDB-B-树组织数据、查询数据" class="headerlink" title="mysql InnoDB-B+树组织数据、查询数据"></a>mysql InnoDB-B+树组织数据、查询数据</h2><p>在MySQL中，InnoDB页的大小默认是16k，当然也可以通过参数设置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">show variables like &#39;innodb_page_size&#39;;</span><br><span class="line">-- innodb_page_size	16384</span><br></pre></td></tr></table></figure>
+<h3 id="方式一、直接按页存储【假想】"><a href="#方式一、直接按页存储【假想】" class="headerlink" title="方式一、直接按页存储【假想】"></a>方式一、直接按页存储【假想】</h3><p>数据表中的数据都是存储在页中的，所以一个页中能存储多少行数据呢？假设一行数据的大小是 1K，那么一个页可以存放 16 行这样的数据。</p>
+<p>如果数据库按这样的方式存储，那么查找数据就成为一个问题。不知道要查找的数据存在哪个页中，每次查询都需要把所有的页遍历一遍，时间复杂度为 n。</p>
+<h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例解说：</p>
+<ol>
+<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt=""></li>
+</ol>
+<p>先将数据记录按主键进行排序，分别存放在不同的页中（为了便于理解这里一个页中只存放 3 条记录，实际情况可以存放很多）。</p>
+<p>除了存放数据的页以外，还有存放键值+指针的页，如图中 page number=3 的页，该页存放键值和指向数据页的指针，这样的页由 N 个键值+指针组成。</p>
+<p>当然它也是排好序的。这样的数据组织形式，我们称为索引组织表。  </p>
+<ol start="2">
+<li>B+树-查询数据<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">5</span>;</span><br></pre></td></tr></table></figure>
+id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么知道 user 表的根页在哪呢？</li>
+</ol>
+<p>其实每张表的根页位置在表空间文件中是固定的，即 page number=3 的页（后续说明）。</p>
+<p>找到根页后通过二分查找法，定位到 id=5 的数据应该在指针 P5 指向的页中，那么进一步去 page number=5 的页中查找，同样通过二分查询法即可找到 id=5 的记录：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">5    zhao2   27</span><br></pre></td></tr></table></figure>
+<p>小结：  InnoDB 中主键索引 B+ 树是如何组织数据、查询数据</p>
+<p>InnoDB 存储引擎的最小存储单元是页，页可以用于存放数据也可以用于存放键值+指针，在 B+ 树中叶子节点存放数据，非叶子节点存放键值+指针。</p>
+<p>索引组织表通过非叶子节点的二分查找法以及指针确定数据在哪个页中，进而在去数据页中查找到需要的数据。</p>
+<h2 id="mysql-InnoDB-B-树存储数据量"><a href="#mysql-InnoDB-B-树存储数据量" class="headerlink" title="mysql InnoDB-B+树存储数据量"></a>mysql InnoDB-B+树存储数据量</h2><h3 id="数据量估算"><a href="#数据量估算" class="headerlink" title="数据量估算"></a>数据量估算</h3><p><strong>以B+ 树高为 2为例计算</strong></p>
+<p>假设 B+ 树高为 2，即存在一个根节点和若干个叶子节点，那么这棵 B+ 树的存放总记录数为：根节点指针数*单个叶子节点记录行数。</p>
+<p>上文已经说明单个叶子节点（页）中的记录数=16K/1K=16。（这里假设一行记录的数据大小为 1K，实际上现在很多互联网业务数据记录大小通常就是 1K 左右）。</p>
+<p>那么现在需要计算出非叶子节点能存放多少指针？假设主键 ID 为 bigint 类型，长度为 8 字节，而指针大小在 InnoDB 源码中设置为 6 字节，这样一共 14 字节。</p>
+<p>一个页中能存放多少这样的单元，其实就代表有多少指针，即 16384/14=1170。</p>
+<p>可以算出一棵高度为 2 的 B+ 树，能存放 1170*16=18720 条这样的数据记录。</p>
+<p>根据同样的原理可以算出一个高度为 3 的 B+ 树可以存放：1170<em>1170</em>16=21902400 条这样的记录。</p>
+<p>所以在 InnoDB 中 B+ 树高度一般为 1-3 层，它就能满足千万级的数据存储。</p>
+<p>在查找数据时一次页的查找代表一次 IO，所以通过主键索引查询通常只需要 1-3 次 IO 操作即可查找到数据。</p>
+<h3 id="InnoDB-主键索引-B-树的高度"><a href="#InnoDB-主键索引-B-树的高度" class="headerlink" title="InnoDB 主键索引 B+ 树的高度"></a>InnoDB 主键索引 B+ 树的高度</h3><p>上面通过推断得出 B+ 树的高度通常是 1-3，下面我们从另外一个侧面证明这个结论。</p>
+<p>在 InnoDB 的表空间文件中，约定 page number 为 3 的代表主键索引的根页，而在根页偏移量为 64 的地方存放了该 B+ 树的 page level。</p>
+<p>如果 page level 为 1，树高为 2，page level 为 2，则树高为 3。即 B+ 树的高度=page level+1；</p>
+<p>查询系统表：page level。</p>
+<p>在实际操作之前，可以通过 InnoDB 元数据表确认主键索引根页的 page number 为 3，也可以从《InnoDB 存储引擎》这本书中得到确认：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO</span><br><span class="line">FROM</span><br><span class="line">    information_schema.INNODB_SYS_INDEXES a,</span><br><span class="line">    information_schema.INNODB_SYS_TABLES b</span><br><span class="line">WHERE a.table_id &#x3D; b.table_id AND a.space &lt;&gt; 0;</span><br></pre></td></tr></table></figure>
+<p>输出</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">blockchain_manager&#x2F;member	    PRIMARY	    22	3	6	3</span><br><span class="line">blockchain_manager&#x2F;member_group	PRIMARY	    23	3	7	3</span><br><span class="line">blockchain_manager&#x2F;permission	PRIMARY	    24	3	8	3</span><br><span class="line">blockchain_manager&#x2F;permission	idx_group	56	0	8	4</span><br></pre></td></tr></table></figure>
+<p>可以看出数据库 blockchain_manager 下的 member 表、member 表、permission表主键索引根页的 page number 均为 3，而其他的二级索引 page number 为 4。</p>
+<p>关于二级索引与主键索引的区别请参考 MySQL 相关书籍，</p>
+<h2 id="实际操作查看"><a href="#实际操作查看" class="headerlink" title="实际操作查看"></a>实际操作查看</h2><h3 id="创建测试数据"><a href="#创建测试数据" class="headerlink" title="创建测试数据"></a>创建测试数据</h3><h4 id="测试表"><a href="#测试表" class="headerlink" title="测试表"></a>测试表</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE &#96;table5hang&#96; (</span><br><span class="line">  &#96;id&#96; bigint(20) NOT NULL AUTO_INCREMENT,</span><br><span class="line">  &#96;username&#96; varchar(255) DEFAULT NULL,</span><br><span class="line">  &#96;age&#96; int(11) DEFAULT NULL,</span><br><span class="line">  PRIMARY KEY (&#96;id&#96;)</span><br><span class="line">) ENGINE&#x3D;InnoDB DEFAULT CHARSET&#x3D;utf8;</span><br></pre></td></tr></table></figure>
+<p>修改表名，依次创建 table15w、table500w、table1000w</p>
+<h4 id="测试数据-添加"><a href="#测试数据-添加" class="headerlink" title="测试数据 添加"></a>测试数据 添加</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">delimiter //  <span class="comment">#定义标识符为双斜杠</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">PROCEDURE</span> my_procedure () <span class="comment">#创建无参存储过程</span></span><br><span class="line"><span class="keyword">BEGIN</span></span><br><span class="line">    <span class="keyword">DECLARE</span> n <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span> ; <span class="comment"># 申明变量</span></span><br><span class="line">    <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang(username,age)  values '</span>;</span><br><span class="line">    <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">    WHILE n &lt; 6 DO</span><br><span class="line">        <span class="keyword">set</span> @execdata=<span class="keyword">concat</span>(@execdata,<span class="string">"("</span>,<span class="string">"'name-"</span>,n,<span class="string">"',"</span>,n%<span class="number">100</span>,<span class="string">")"</span>);</span><br><span class="line"></span><br><span class="line">        if n%5=0</span><br><span class="line">        then</span><br><span class="line">            <span class="keyword">set</span> @execSql = <span class="keyword">concat</span>(@execSql,@execdata,<span class="string">";"</span>);</span><br><span class="line">            <span class="comment">#select @execSql;</span></span><br><span class="line">            <span class="keyword">prepare</span> stmt <span class="keyword">from</span> @execSql;</span><br><span class="line">            <span class="keyword">execute</span> stmt;</span><br><span class="line">            <span class="keyword">DEALLOCATE</span> <span class="keyword">prepare</span> stmt;</span><br><span class="line">            <span class="keyword">commit</span>;  </span><br><span class="line"></span><br><span class="line">            <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang (username,age)  values '</span>;</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line">        ELSE</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="keyword">concat</span>(@execdata,<span class="string">','</span>);</span><br><span class="line">        <span class="keyword">end</span> <span class="keyword">if</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">SET</span> n = n + <span class="number">1</span> ; <span class="comment">#循环一次,i加一</span></span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span> ; <span class="comment">#结束while循环</span></span><br><span class="line">    <span class="comment">#select count(*) from test_table;</span></span><br><span class="line"><span class="keyword">END</span></span><br><span class="line">//</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> my_procedure(); <span class="comment">#调用存储过程</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br></pre></td></tr></table></figure>
+<p>插入数据，依次修改表名：table15w、table500w、table1000w 以及插入条数</p>
+<p>根据性能 500w、1000w 数据量的需要分批插入。</p>
+<p>查看文件结构，mysql每次建库，会在data下创建以库名为名的文件夹，内部文件是表名，如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">-rw-rw----  1    54B  1 31 11:36 db.opt</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table1000w.frm</span><br><span class="line">-rw-rw----  1   460M  1 31 12:41 table1000w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table15w.frm</span><br><span class="line">-rw-rw----  1    15M  1 31 11:54 table15w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table500w.frm</span><br><span class="line">-rw-rw----  1   236M  1 31 12:19 table500w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:40 table5hang.frm</span><br><span class="line">-rw-rw----  1    96K  1 31 11:51 table5hang.ibd</span><br></pre></td></tr></table></figure>
+
+<p>因为主键索引 B+ 树的根页在整个表空间文件中的第 3 个页开始，所以可以算出它在文件中的偏移量：16384*3=49152（16384 为页大小）。</p>
+<p>另外根据《InnoDB 存储引擎》中描述在根页的 64 偏移量位置前 2 个字节，保存了 page level 的值。</p>
+<p>因此想要的 page level 的值在整个文件中的偏移量为：16384*3+64=49152+64=49216，前 2 个字节中。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">hexdump -s 49216 -n 10 table5hang.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 00 00 00 00 00 00 00 00 3c                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table15w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 01 00 00 00 00 00 00 00 3b                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table500w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 3a                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table1000w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 39                  </span><br><span class="line">000c04a</span><br></pre></td></tr></table></figure>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>table5hang 表数据行数为 5 条，B+ 树高度为 1，<br>table15w   表数据行数为 15 万，B+ 树高度为 2，<br>table500w  表数据行数为 500 万，B+ 树高度为 3，<br>table1000w 表数据行数为 1000 万，B+ 树高度为 3。</p>
+<p>500w、1000w 两个表树的高度都是 3。换句话说这两个表通过索引查询效率并没有太大差异，因为都只需要做 3 次 IO。<br>那么如果有一张表行数是一千万，那么他的 B+ 树高度依旧是 3，查询效率仍然不会相差太大。region 表只有 5 行数据，当然他的 B+ 树高度为 1。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table500w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table1000w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.bjlhx.top/articles/20200131/83b4374e.html" title="001-mysql-物理存储、InnoDB数据B+树存储">https://blog.bjlhx.top/articles/20200131/83b4374e.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20200130/7021388e.html" rel="prev" title="008-模板-NexT-版权、打赏">
+      <i class="fa fa-chevron-left"></i> 008-模板-NexT-版权、打赏
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20200131/e01cc3be.html" rel="next" title="002-mysql索引-从树到B+树，聚集索引与非聚集索引">
+      002-mysql索引-从树到B+树，聚集索引与非聚集索引 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#存储单元"><span class="nav-number">1.1.</span> <span class="nav-text">存储单元</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘扇区存储单元-扇区-512字节"><span class="nav-number">1.1.1.</span> <span class="nav-text">磁盘扇区存储单元-扇区-512字节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文件系统存储单元-块-4k"><span class="nav-number">1.1.2.</span> <span class="nav-text">文件系统存储单元-块-4k</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InnoDB存储单元-页-16k"><span class="nav-number">1.1.3.</span> <span class="nav-text">InnoDB存储单元-页-16k</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-InnoDB-B-树组织数据、查询数据"><span class="nav-number">1.2.</span> <span class="nav-text">mysql InnoDB-B+树组织数据、查询数据</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#方式一、直接按页存储【假想】"><span class="nav-number">1.2.1.</span> <span class="nav-text">方式一、直接按页存储【假想】</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方式二、用-B-树的方式组织数据【实际】"><span class="nav-number">1.2.2.</span> <span class="nav-text">方式二、用 B+ 树的方式组织数据【实际】</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-InnoDB-B-树存储数据量"><span class="nav-number">1.3.</span> <span class="nav-text">mysql InnoDB-B+树存储数据量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据量估算"><span class="nav-number">1.3.1.</span> <span class="nav-text">数据量估算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InnoDB-主键索引-B-树的高度"><span class="nav-number">1.3.2.</span> <span class="nav-text">InnoDB 主键索引 B+ 树的高度</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实际操作查看"><span class="nav-number">1.4.</span> <span class="nav-text">实际操作查看</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建测试数据"><span class="nav-number">1.4.1.</span> <span class="nav-text">创建测试数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#测试表"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">测试表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#测试数据-添加"><span class="nav-number">1.4.1.2.</span> <span class="nav-text">测试数据 添加</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小结"><span class="nav-number">1.4.1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>

@@ -1,6 +1,210 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>002-mysql索引-从树到B+树，聚集索引与非聚集索引</title>
+    <url>/articles/20200131/e01cc3be.html</url>
+    <content><![CDATA[<p>索引是一种数据结构，用于帮助我们在大量数据中快速定位到我们想要查找的数据。</p>
+<p>索引在 MySQL 数据库中分三类：</p>
+<ul>
+<li>B+ 树索引</li>
+<li>Hash 索引</li>
+<li>全文索引</li>
+</ul>
+<p>B+ 树索引，由二叉查找树，平衡二叉树和 B 树这三种数据结构 演化来的。</p>
+<a id="more"></a>
+
+<h1 id="用树的概念理解mysql数据库"><a href="#用树的概念理解mysql数据库" class="headerlink" title="用树的概念理解mysql数据库"></a>用树的概念理解mysql数据库</h1><h2 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a>二叉查找树</h2><p><a href="https://www.cnblogs.com/bjlhx/p/10870875.html" target="_blank" rel="noopener">006-数据结构-树形结构-二叉树、二叉查找树、平衡二叉查找树-AVL树</a></p>
+<p>数据库表 对应 二叉查找树</p>
+<p><img src="/images/post/db-mysql/002/erchachazhao.jpg" alt=""></p>
+<p>从图中可以看到，为 user 表（用户信息表）建立了一个二叉查找树的索引。</p>
+<p>图中的圆为二叉查找树的节点，节点中存储了键（key）和数据（data）。键对应 user 表中的 id，数据对应 user 表中的行数据。</p>
+<p>二叉查找树的特点就是任何节点的左子节点的键值都小于当前节点的键值，右子节点的键值都大于当前节点的键值。顶端的节点我们称为根节点，没有子节点的节点我们称之为叶节点。</p>
+<p>如果我们需要查找 id=12 的用户信息，利用我们创建的二叉查找树索引，查找流程如下：</p>
+<ol>
+<li>将根节点作为当前节点，把 12 与当前节点的键值 10 比较，12 大于 10，接下来把当前节点&gt;的右子节点作为当前节点。</li>
+<li>继续把 12 和当前节点的键值 13 比较，发现 12 小于 13，把当前节点的左子节点作为当前节点。</li>
+<li>把 12 和当前节点的键值 12 对比，12 等于 12，满足条件，我们从当前节点中取出 data，即 id=12，name=xm。</li>
+</ol>
+<p>利用二叉查找树我们只需要 3 次即可找到匹配的数据。如果在表中一条条的查找的话，需要 6 次才能找到。</p>
+<h2 id="平衡二叉树"><a href="#平衡二叉树" class="headerlink" title="平衡二叉树"></a>平衡二叉树</h2><p>上面利用二叉查找树可以快速的找到数据。但是，如果上面的二叉查找树是这样的构造【以5为根节点】：</p>
+<p><img src="/images/post/db-mysql/002/pinghengerchashu.jpg" alt=""></p>
+<p>可以看到二叉查找树变成了一个链表。如果需要查找 id=17 的用户信息，需要查找 7 次，也就相当于全表扫描了。</p>
+<p>导致这个现象的原因其实是二叉查找树变得不平衡了，也就是高度太高了，从而导致查找效率的不稳定。</p>
+<p>为了解决这个问题，需要保证二叉查找树一直保持平衡，就需要用到平衡二叉树。</p>
+<p>平衡二叉树又称 AVL 树，在满足二叉查找树特性的基础上，要求每个节点的左右子树的高度差不能超过 1。</p>
+<p>下面是平衡二叉树和非平衡二叉树的对比：</p>
+<p><img src="/images/post/db-mysql/002/pinghengerchashu-2.jpg" alt=""></p>
+<p>由平衡二叉树的构造可以发现第一张图中的二叉树其实就是一棵平衡二叉树。</p>
+<p>平衡二叉树保证了树的构造是平衡的，当插入或删除数据导致不满足平衡二叉树不平衡时，平衡二叉树会进行调整树上的节点来保持平衡。具体的调整方式,参看。</p>
+<p>平衡二叉树相比于二叉查找树来说，查找效率更稳定，总体的查找速度也更快。</p>
+<h2 id="B树"><a href="#B树" class="headerlink" title="B树"></a>B树</h2><p>因为内存的易失性。一般情况下，都会选择将 user 表中的数据和索引存储在磁盘这种外围设备中。</p>
+<p>但是和内存相比，从磁盘中读取数据的速度会慢上百倍千倍甚至万倍，所以，应当尽量减少从磁盘中读取数据的次数。</p>
+<p>另外，从磁盘中读取数据时，都是按照磁盘块来读取的，并不是一条一条的读。</p>
+<p>如果能把尽量多的数据放进磁盘块中，那一次磁盘读取操作就会读取更多数据，那查找数据的时间也会大幅度降低。</p>
+<p>如果用树这种数据结构作为索引的数据结构，那每查找一次数据就需要从磁盘中读取一个节点，也就是一个磁盘块。</p>
+<p>平衡二叉树是每个节点只存储一个键值和数据的。那说明什么？说明每个磁盘块仅仅存储一个键值和数据！那如果要存储海量的数据呢</p>
+<p>可以想象到二叉树的节点将会非常多，高度也会极其高，查找数据时也会进行很多次磁盘 IO，查找数据的效率将会极低！</p>
+<p><img src="/images/post/db-mysql/002/btree-1.jpg" alt=""></p>
+<p>为了解决平衡二叉树的这个弊端，应该寻找一种单个节点可以存储多个键值和数据的平衡树。也就是我们接下来要说的 B 树。</p>
+<p>B 树（Balance Tree）即为平衡树的意思，下图即是一棵 B 树：</p>
+<p>B树，<a href="https://www.cnblogs.com/bjlhx/p/10898059.html" target="_blank" rel="noopener">参看</a></p>
+<p><img src="/images/post/db-mysql/002/btree-2.jpg" alt=""></p>
+<p>图中的 p 节点为指向子节点的指针，二叉查找树和平衡二叉树其实也有。</p>
+<p>图中的每个节点称为页，页就是上面说的磁盘块，在 MySQL 中数据读取的基本单位都是页，所以这里叫做页更符合 MySQL 中索引的底层数据结构。</p>
+<p>从上图可以看出，B 树相对于平衡二叉树，每个节点存储了更多的键值（key）和数据（data），并且每个节点拥有更多的子节点，子节点的个数一般称为阶，上述图中的 B 树为 3 阶 B 树，高度也会很低。</p>
+<p>基于这个特性，B 树查找数据读取磁盘的次数将会很少，数据的查找效率也会比平衡二叉树高很多。</p>
+<p>假如要查找 id=28 的用户信息，那么在上图 B 树中查找的流程如下：</p>
+<ul>
+<li>先找到根节点也就是页 1，判断 28 在键值 17 和 35 之间，那么根据页 1 中的指针 p2 找到页 3。</li>
+<li>将 28 和页 3 中的键值相比较，28 在 26 和 30 之间，根据页 3 中的指针 p2 找到页 8。</li>
+<li>将 28 和页 8 中的键值相比较，发现有匹配的键值 28，键值 28 对应的用户信息为（28，bv）。</li>
+</ul>
+<h2 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h2><p><a href="https://www.cnblogs.com/bjlhx/p/10898373.html" target="_blank" rel="noopener">参看</a></p>
+<p>B+ 树是对 B 树的进一步优化。看下 B+ 树的结构图：</p>
+<p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
+<p>根据上图看下 B+ 树和 B 树有什么不同：</p>
+<p>①B+ 树非叶子节点上是不存储数据的，仅存储键值，而 B 树节点中不仅存储键值，也会存储数据。</p>
+<p>之所以这么做是因为在数据库中页的大小是固定的，InnoDB 中页的默认大小是 16KB。</p>
+<p>如果不存储数据，那么就会存储更多的键值，相应的树的阶数（节点的子节点树）就会更大，树就会更矮更胖，如此一来查找数据进行磁盘的 IO 次数又会再次减少，数据查询的效率也会更快。</p>
+<p>另外，B+ 树的阶数是等于键值的数量的，如果 B+ 树一个节点可以存储 1000 个键值，那么 3 层 B+ 树可以存储 1000×1000×1000=10 亿个数据。</p>
+<p>一般根节点是常驻内存的，所以一般我们查找 10 亿数据，只需要 2 次磁盘 IO。</p>
+<p>②因为 B+ 树索引的所有数据均存储在叶子节点，而且数据是按照顺序排列的。</p>
+<p>那么 B+ 树使得范围查找，排序查找，分组查找以及去重查找变得异常简单。而 B 树因为数据分散在各个节点，要实现这一点是很不容易的。</p>
+<p>上图 B+ 树中各个页之间是通过双向链表连接的，叶子节点中的数据是通过单向链表连接的。</p>
+<p>其实上面的 B 树也可以对各个节点加上链表。这些不是它们之前的区别，是因为在 MySQL 的 InnoDB 存储引擎中，索引就是这样存储的。</p>
+<p>也就是说上图中的 B+ 树索引就是 InnoDB 中 B+ 树索引真正的实现方式，准确的说应该是聚集索引。</p>
+<p>通过上图可以看到，在 InnoDB 中，通过数据页之间通过双向链表连接以及叶子节点中数据之间通过单向链表连接的方式可以找到表中所有的数据。</p>
+<p>MyISAM 中的 B+ 树索引实现与 InnoDB 中的略有不同。在 MyISAM 中，B+ 树索引的叶子节点并不存储数据，而是存储数据的文件地址。</p>
+<h1 id="mysql聚集索引-VS-非聚集索引"><a href="#mysql聚集索引-VS-非聚集索引" class="headerlink" title="mysql聚集索引 VS 非聚集索引"></a>mysql聚集索引 VS 非聚集索引</h1><h2 id="聚集索引-VS-非聚集索引-概念"><a href="#聚集索引-VS-非聚集索引-概念" class="headerlink" title="聚集索引 VS 非聚集索引 概念"></a>聚集索引 VS 非聚集索引 概念</h2><p>在上面介绍 B+ 树索引的时候，提到了图中的索引其实是聚集索引的实现方式。</p>
+<p>那什么是聚集索引呢？在 MySQL 中，B+ 树索引按照存储方式的不同分为聚集索引和非聚集索引。</p>
+<p>主要说明下 InnoDB 中的聚集索引和非聚集索引：</p>
+<p>①聚集索引（聚簇索引）：以 InnoDB 作为存储引擎的表，表中的数据都会有一个主键，即使不创建主键，系统也会帮你创建一个隐式的主键。</p>
+<p>这是因为 InnoDB 是把数据存放在 B+ 树中的，而 B+ 树的键值就是主键，在 B+ 树的叶子节点中，存储了表中所有的数据。</p>
+<p>这种以主键作为 B+ 树索引的键值而构建的 B+ 树索引，称之为聚集索引。</p>
+<p>②非聚集索引（非聚簇索引）：以主键以外的列值作为键值构建的 B+ 树索引，我们称之为非聚集索引。</p>
+<p>非聚集索引与聚集索引的区别在于非聚集索引的叶子节点不存储表中的数据，而是存储该列对应的主键，想要查找数据还需要根据主键再去聚集索引中进行查找，这个再根据聚集索引查找数据的过程，称为回表。</p>
+<h2 id="利用聚集索引-和-非聚集索引-查找数据"><a href="#利用聚集索引-和-非聚集索引-查找数据" class="headerlink" title="利用聚集索引 和 非聚集索引 查找数据"></a>利用聚集索引 和 非聚集索引 查找数据</h2><h3 id="利用聚集索引查找数据"><a href="#利用聚集索引查找数据" class="headerlink" title="利用聚集索引查找数据"></a>利用聚集索引查找数据</h3><p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
+<p>聚集索引，表中的数据存储在其中。</p>
+<p>现在假设要查找 id&gt;=18 并且 id&lt;40 的用户数据。对应的 sql 语句为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>&gt;=<span class="number">18</span> <span class="keyword">and</span> <span class="keyword">id</span> &lt;<span class="number">40</span></span><br></pre></td></tr></table></figure>
+<p>其中 id 为主键，具体的查找过程如下：</p>
+<p>①一般根节点都是常驻内存的，也就是说页 1 已经在内存中了，此时不需要到磁盘中读取数据，直接从内存中读取即可。</p>
+<p>从内存中读取到页 1，要查找这个 id&gt;=18 and id&lt;40 或者范围值，我们首先需要找到 id=18 的键值。</p>
+<p>从页 1 中我们可以找到键值 18，此时我们需要根据指针 p2，定位到页 3。</p>
+<p>②要从页 3 中查找数据，需要拿着 p2 指针去磁盘中进行读取页 3。</p>
+<p>从磁盘中读取页 3 后将页 3 放入内存中，然后进行查找，可以找到键值 18，然后再拿到页 3 中的指针 p1，定位到页 8。</p>
+<p>③同样的页 8 页不在内存中，我们需要再去磁盘中将页 8 读取到内存中。</p>
+<p>将页 8 读取到内存中后。因为页中的数据是链表进行连接的，而且键值是按照顺序存放的，此时可以根据二分查找法定位到键值 18。</p>
+<p>此时因为已经到数据页了，此时我们已经找到一条满足条件的数据了，就是键值 18 对应的数据。</p>
+<p>因为是范围查找，而且此时所有的数据又都存在叶子节点，并且是有序排列的，那么我们就可以对页 8 中的键值依次进行遍历查找并匹配满足条件的数据。</p>
+<p>可以一直找到键值为 22 的数据，然后页 8 中就没有数据了，此时我们需要拿着页 8 中的 p 指针去读取页 9 中的数据。</p>
+<p>④因为页 9 不在内存中，就又会加载页 9 到内存中，并通过和页 8 中一样的方式进行数据的查找，直到将页 12 加载到内存中，发现 41 大于 40，此时不满足条件。那么查找到此终止。</p>
+<p>最终我们找到满足条件的所有数据，总共 12 条记录：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">(18,kl),(19,kl),(22,hj),(24,io),(25,vg),(29,jk),(31,jk),(33,rt),(34,ty),(35,yu),(37,rt),(39,rt)。</span><br></pre></td></tr></table></figure>
+<p>具体的查找流程图：</p>
+<p><img src="/images/post/db-mysql/002/jucu-chazhao.jpeg" alt=""></p>
+<h3 id="利用非聚集索引查找数据"><a href="#利用非聚集索引查找数据" class="headerlink" title="利用非聚集索引查找数据"></a>利用非聚集索引查找数据</h3><p>上述表结构 只有主键 和 名称，扩展下表</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">id  name    luckyNum</span><br><span class="line">1   zs      23</span><br><span class="line">2   ls      7</span><br></pre></td></tr></table></figure>
+<p>使用 luckyNum 建立非聚集索引</p>
+<p>在叶子节点中，不再存储所有的数据了，存储的是键值和主键。对于叶子节点中的 x-y，比如 1-1。左边的 1 表示的是索引的键值，右边的 1 表示的是主键值。</p>
+<p><img src="/images/post/db-mysql/002/feijuji-1.jpeg" alt=""></p>
+<p>如果要找到幸运数字为 33 的用户信息，对应的 sql 语句为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> luckNum=<span class="number">33</span></span><br></pre></td></tr></table></figure>
+<p>查找的流程跟聚集索引一样，最终会找到主键值 47，找到主键后,需要再到聚集索引中查找具体对应的数据信息，此时又回到了聚集索引的查找流程。</p>
+<p><img src="/images/post/db-mysql/002/feijuji-chazhao.jpeg" alt=""></p>
+<p>在 MyISAM 中，聚集索引和非聚集索引的叶子节点都会存储数据的文件地址。</p>
+<p>因为 B 树不管叶子节点还是非叶子节点，都会保存数据，这样导致在非叶子节点中能保存的指针数量变少（有些资料也称为扇出）。<br>指针少的情况下要保存大量数据，只能增加树的高度，导致 IO 操作变多，查询性能变低。</p>
+<p>参看地址：<a href="https://blog.51cto.com/14480698/2451603" target="_blank" rel="noopener">https://blog.51cto.com/14480698/2451603</a></p>
+]]></content>
+      <categories>
+        <category>db-mysql</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-mysql-物理存储、InnoDB数据B+树存储</title>
+    <url>/articles/20200131/83b4374e.html</url>
+    <content><![CDATA[<p>摘要：MySQL InnoDB数据存储是以B+树索引方式存储<br>存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="存储单元"><a href="#存储单元" class="headerlink" title="存储单元"></a>存储单元</h2><p>磁盘扇区、文件系统、InnoDB 存储引擎都有各自的最小存储单元。存储数据的最小单位，类比放菜的盘子。</p>
+<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt=""></p>
+<h3 id="磁盘扇区存储单元-扇区-512字节"><a href="#磁盘扇区存储单元-扇区-512字节" class="headerlink" title="磁盘扇区存储单元-扇区-512字节"></a>磁盘扇区存储单元-扇区-512字节</h3><p>在计算机中磁盘存储数据最小单元是扇区，一个扇区的大小是 512 字节</p>
+<h3 id="文件系统存储单元-块-4k"><a href="#文件系统存储单元-块-4k" class="headerlink" title="文件系统存储单元-块-4k"></a>文件系统存储单元-块-4k</h3><p>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。</p>
+<p>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]</p>
+<p><img src="/images/post/db-mysql/001/file-0k.jpg" alt="">  <img src="/images/post/db-mysql/001/file-1k.jpg" alt=""></p>
+<h3 id="InnoDB存储单元-页-16k"><a href="#InnoDB存储单元-页-16k" class="headerlink" title="InnoDB存储单元-页-16k"></a>InnoDB存储单元-页-16k</h3><p>InnoDB 存储引擎也有自己的最小储存单元——页(Page)，一个页的大小是 16K。</p>
+<p>InnoDB 的所有数据文件(后缀为 ibd 的文件)，他的大小始终都是 16384(16K)的整数倍。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ ll |grep ibd </span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_index_stats.ibd</span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_table_stats.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_master_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_relay_log_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_worker_info.ibd</span><br></pre></td></tr></table></figure>
+
+<h2 id="mysql-InnoDB-B-树组织数据、查询数据"><a href="#mysql-InnoDB-B-树组织数据、查询数据" class="headerlink" title="mysql InnoDB-B+树组织数据、查询数据"></a>mysql InnoDB-B+树组织数据、查询数据</h2><p>在MySQL中，InnoDB页的大小默认是16k，当然也可以通过参数设置：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">show variables like &#39;innodb_page_size&#39;;</span><br><span class="line">-- innodb_page_size	16384</span><br></pre></td></tr></table></figure>
+<h3 id="方式一、直接按页存储【假想】"><a href="#方式一、直接按页存储【假想】" class="headerlink" title="方式一、直接按页存储【假想】"></a>方式一、直接按页存储【假想】</h3><p>数据表中的数据都是存储在页中的，所以一个页中能存储多少行数据呢？假设一行数据的大小是 1K，那么一个页可以存放 16 行这样的数据。</p>
+<p>如果数据库按这样的方式存储，那么查找数据就成为一个问题。不知道要查找的数据存在哪个页中，每次查询都需要把所有的页遍历一遍，时间复杂度为 n。</p>
+<h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例解说：</p>
+<ol>
+<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt=""></li>
+</ol>
+<p>先将数据记录按主键进行排序，分别存放在不同的页中（为了便于理解这里一个页中只存放 3 条记录，实际情况可以存放很多）。</p>
+<p>除了存放数据的页以外，还有存放键值+指针的页，如图中 page number=3 的页，该页存放键值和指向数据页的指针，这样的页由 N 个键值+指针组成。</p>
+<p>当然它也是排好序的。这样的数据组织形式，我们称为索引组织表。  </p>
+<ol start="2">
+<li>B+树-查询数据<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">5</span>;</span><br></pre></td></tr></table></figure>
+id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么知道 user 表的根页在哪呢？</li>
+</ol>
+<p>其实每张表的根页位置在表空间文件中是固定的，即 page number=3 的页（后续说明）。</p>
+<p>找到根页后通过二分查找法，定位到 id=5 的数据应该在指针 P5 指向的页中，那么进一步去 page number=5 的页中查找，同样通过二分查询法即可找到 id=5 的记录：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">5    zhao2   27</span><br></pre></td></tr></table></figure>
+<p>小结：  InnoDB 中主键索引 B+ 树是如何组织数据、查询数据</p>
+<p>InnoDB 存储引擎的最小存储单元是页，页可以用于存放数据也可以用于存放键值+指针，在 B+ 树中叶子节点存放数据，非叶子节点存放键值+指针。</p>
+<p>索引组织表通过非叶子节点的二分查找法以及指针确定数据在哪个页中，进而在去数据页中查找到需要的数据。</p>
+<h2 id="mysql-InnoDB-B-树存储数据量"><a href="#mysql-InnoDB-B-树存储数据量" class="headerlink" title="mysql InnoDB-B+树存储数据量"></a>mysql InnoDB-B+树存储数据量</h2><h3 id="数据量估算"><a href="#数据量估算" class="headerlink" title="数据量估算"></a>数据量估算</h3><p><strong>以B+ 树高为 2为例计算</strong></p>
+<p>假设 B+ 树高为 2，即存在一个根节点和若干个叶子节点，那么这棵 B+ 树的存放总记录数为：根节点指针数*单个叶子节点记录行数。</p>
+<p>上文已经说明单个叶子节点（页）中的记录数=16K/1K=16。（这里假设一行记录的数据大小为 1K，实际上现在很多互联网业务数据记录大小通常就是 1K 左右）。</p>
+<p>那么现在需要计算出非叶子节点能存放多少指针？假设主键 ID 为 bigint 类型，长度为 8 字节，而指针大小在 InnoDB 源码中设置为 6 字节，这样一共 14 字节。</p>
+<p>一个页中能存放多少这样的单元，其实就代表有多少指针，即 16384/14=1170。</p>
+<p>可以算出一棵高度为 2 的 B+ 树，能存放 1170*16=18720 条这样的数据记录。</p>
+<p>根据同样的原理可以算出一个高度为 3 的 B+ 树可以存放：1170<em>1170</em>16=21902400 条这样的记录。</p>
+<p>所以在 InnoDB 中 B+ 树高度一般为 1-3 层，它就能满足千万级的数据存储。</p>
+<p>在查找数据时一次页的查找代表一次 IO，所以通过主键索引查询通常只需要 1-3 次 IO 操作即可查找到数据。</p>
+<h3 id="InnoDB-主键索引-B-树的高度"><a href="#InnoDB-主键索引-B-树的高度" class="headerlink" title="InnoDB 主键索引 B+ 树的高度"></a>InnoDB 主键索引 B+ 树的高度</h3><p>上面通过推断得出 B+ 树的高度通常是 1-3，下面我们从另外一个侧面证明这个结论。</p>
+<p>在 InnoDB 的表空间文件中，约定 page number 为 3 的代表主键索引的根页，而在根页偏移量为 64 的地方存放了该 B+ 树的 page level。</p>
+<p>如果 page level 为 1，树高为 2，page level 为 2，则树高为 3。即 B+ 树的高度=page level+1；</p>
+<p>查询系统表：page level。</p>
+<p>在实际操作之前，可以通过 InnoDB 元数据表确认主键索引根页的 page number 为 3，也可以从《InnoDB 存储引擎》这本书中得到确认：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO</span><br><span class="line">FROM</span><br><span class="line">    information_schema.INNODB_SYS_INDEXES a,</span><br><span class="line">    information_schema.INNODB_SYS_TABLES b</span><br><span class="line">WHERE a.table_id &#x3D; b.table_id AND a.space &lt;&gt; 0;</span><br></pre></td></tr></table></figure>
+<p>输出</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">blockchain_manager&#x2F;member	    PRIMARY	    22	3	6	3</span><br><span class="line">blockchain_manager&#x2F;member_group	PRIMARY	    23	3	7	3</span><br><span class="line">blockchain_manager&#x2F;permission	PRIMARY	    24	3	8	3</span><br><span class="line">blockchain_manager&#x2F;permission	idx_group	56	0	8	4</span><br></pre></td></tr></table></figure>
+<p>可以看出数据库 blockchain_manager 下的 member 表、member 表、permission表主键索引根页的 page number 均为 3，而其他的二级索引 page number 为 4。</p>
+<p>关于二级索引与主键索引的区别请参考 MySQL 相关书籍，</p>
+<h2 id="实际操作查看"><a href="#实际操作查看" class="headerlink" title="实际操作查看"></a>实际操作查看</h2><h3 id="创建测试数据"><a href="#创建测试数据" class="headerlink" title="创建测试数据"></a>创建测试数据</h3><h4 id="测试表"><a href="#测试表" class="headerlink" title="测试表"></a>测试表</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE &#96;table5hang&#96; (</span><br><span class="line">  &#96;id&#96; bigint(20) NOT NULL AUTO_INCREMENT,</span><br><span class="line">  &#96;username&#96; varchar(255) DEFAULT NULL,</span><br><span class="line">  &#96;age&#96; int(11) DEFAULT NULL,</span><br><span class="line">  PRIMARY KEY (&#96;id&#96;)</span><br><span class="line">) ENGINE&#x3D;InnoDB DEFAULT CHARSET&#x3D;utf8;</span><br></pre></td></tr></table></figure>
+<p>修改表名，依次创建 table15w、table500w、table1000w</p>
+<h4 id="测试数据-添加"><a href="#测试数据-添加" class="headerlink" title="测试数据 添加"></a>测试数据 添加</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">delimiter //  <span class="comment">#定义标识符为双斜杠</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">PROCEDURE</span> my_procedure () <span class="comment">#创建无参存储过程</span></span><br><span class="line"><span class="keyword">BEGIN</span></span><br><span class="line">    <span class="keyword">DECLARE</span> n <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span> ; <span class="comment"># 申明变量</span></span><br><span class="line">    <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang(username,age)  values '</span>;</span><br><span class="line">    <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">    WHILE n &lt; 6 DO</span><br><span class="line">        <span class="keyword">set</span> @execdata=<span class="keyword">concat</span>(@execdata,<span class="string">"("</span>,<span class="string">"'name-"</span>,n,<span class="string">"',"</span>,n%<span class="number">100</span>,<span class="string">")"</span>);</span><br><span class="line"></span><br><span class="line">        if n%5=0</span><br><span class="line">        then</span><br><span class="line">            <span class="keyword">set</span> @execSql = <span class="keyword">concat</span>(@execSql,@execdata,<span class="string">";"</span>);</span><br><span class="line">            <span class="comment">#select @execSql;</span></span><br><span class="line">            <span class="keyword">prepare</span> stmt <span class="keyword">from</span> @execSql;</span><br><span class="line">            <span class="keyword">execute</span> stmt;</span><br><span class="line">            <span class="keyword">DEALLOCATE</span> <span class="keyword">prepare</span> stmt;</span><br><span class="line">            <span class="keyword">commit</span>;  </span><br><span class="line"></span><br><span class="line">            <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang (username,age)  values '</span>;</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line">        ELSE</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="keyword">concat</span>(@execdata,<span class="string">','</span>);</span><br><span class="line">        <span class="keyword">end</span> <span class="keyword">if</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">SET</span> n = n + <span class="number">1</span> ; <span class="comment">#循环一次,i加一</span></span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span> ; <span class="comment">#结束while循环</span></span><br><span class="line">    <span class="comment">#select count(*) from test_table;</span></span><br><span class="line"><span class="keyword">END</span></span><br><span class="line">//</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> my_procedure(); <span class="comment">#调用存储过程</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br></pre></td></tr></table></figure>
+<p>插入数据，依次修改表名：table15w、table500w、table1000w 以及插入条数</p>
+<p>根据性能 500w、1000w 数据量的需要分批插入。</p>
+<p>查看文件结构，mysql每次建库，会在data下创建以库名为名的文件夹，内部文件是表名，如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-rw-rw----  1    54B  1 31 11:36 db.opt</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table1000w.frm</span><br><span class="line">-rw-rw----  1   460M  1 31 12:41 table1000w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table15w.frm</span><br><span class="line">-rw-rw----  1    15M  1 31 11:54 table15w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table500w.frm</span><br><span class="line">-rw-rw----  1   236M  1 31 12:19 table500w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:40 table5hang.frm</span><br><span class="line">-rw-rw----  1    96K  1 31 11:51 table5hang.ibd</span><br></pre></td></tr></table></figure>
+
+<p>因为主键索引 B+ 树的根页在整个表空间文件中的第 3 个页开始，所以可以算出它在文件中的偏移量：16384*3=49152（16384 为页大小）。</p>
+<p>另外根据《InnoDB 存储引擎》中描述在根页的 64 偏移量位置前 2 个字节，保存了 page level 的值。</p>
+<p>因此想要的 page level 的值在整个文件中的偏移量为：16384*3+64=49152+64=49216，前 2 个字节中。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -s 49216 -n 10 table5hang.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 00 00 00 00 00 00 00 00 3c                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table15w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 01 00 00 00 00 00 00 00 3b                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table500w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 3a                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table1000w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 39                  </span><br><span class="line">000c04a</span><br></pre></td></tr></table></figure>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>table5hang 表数据行数为 5 条，B+ 树高度为 1，<br>table15w   表数据行数为 15 万，B+ 树高度为 2，<br>table500w  表数据行数为 500 万，B+ 树高度为 3，<br>table1000w 表数据行数为 1000 万，B+ 树高度为 3。</p>
+<p>500w、1000w 两个表树的高度都是 3。换句话说这两个表通过索引查询效率并没有太大差异，因为都只需要做 3 次 IO。<br>那么如果有一张表行数是一千万，那么他的 B+ 树高度依旧是 3，查询效率仍然不会相差太大。region 表只有 5 行数据，当然他的 B+ 树高度为 1。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table500w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table1000w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+]]></content>
+      <categories>
+        <category>db-mysql</category>
+      </categories>
+  </entry>
+  <entry>
     <title>008-模板-NexT-版权、打赏</title>
     <url>/articles/20200130/7021388e.html</url>
     <content><![CDATA[<p>摘要：文章底部版权、文章底部打赏</p>
