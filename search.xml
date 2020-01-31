@@ -13,7 +13,7 @@
 <p>B+ 树索引，由二叉查找树，平衡二叉树和 B 树这三种数据结构 演化来的。</p>
 <a id="more"></a>
 
-<h1 id="用树的概念理解mysql数据库"><a href="#用树的概念理解mysql数据库" class="headerlink" title="用树的概念理解mysql数据库"></a>用树的概念理解mysql数据库</h1><h2 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a>二叉查找树</h2><p><a href="https://www.cnblogs.com/bjlhx/p/10870875.html" target="_blank" rel="noopener">006-数据结构-树形结构-二叉树、二叉查找树、平衡二叉查找树-AVL树</a></p>
+<h1 id="用树的概念理解mysql数据库"><a href="#用树的概念理解mysql数据库" class="headerlink" title="用树的概念理解mysql数据库"></a>用树的概念理解mysql数据库</h1><h2 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a>二叉查找树</h2><p>树的基础：<a href="https://www.cnblogs.com/bjlhx/p/10870875.html" target="_blank" rel="noopener">006-数据结构-树形结构-二叉树、二叉查找树、平衡二叉查找树-AVL树</a></p>
 <p>数据库表 对应 二叉查找树</p>
 <p><img src="/images/post/db-mysql/002/erchachazhao.jpg" alt=""></p>
 <p>从图中可以看到，为 user 表（用户信息表）建立了一个二叉查找树的索引。</p>
