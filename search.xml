@@ -1,6 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>004-mysql底层分析-02-Server服务层</title>
+    <url>/articles/20200201/9e7c0f0e.html</url>
+    <content><![CDATA[<p>聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。</p>
+<a id="more"></a>
+
+<h1 id="表对象缓存"><a href="#表对象缓存" class="headerlink" title="表对象缓存"></a>表对象缓存</h1><p><img src="/images/post/db-mysql/004/zhixing.png" alt=""></p>
+<p>创建一个表，设置列、列属性，索引等，并且指定好了存储引擎（默认innodb）。</p>
+<h2 id="表结构缓存、表对象缓存"><a href="#表结构缓存、表对象缓存" class="headerlink" title="表结构缓存、表对象缓存"></a>表结构缓存、表对象缓存</h2><p>客户端发过来一个sql，如</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tableA <span class="keyword">where</span> <span class="keyword">id</span> =<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>此时mysql获取到此请求，会先到查询缓存中查看，是不是执行过这个语句。缓存里key就是这个查询语句，如果查询缓存有，那么就直接返回value给客户端。这个查询缓存比较没有意义，新版8.0已经把它删掉了。</p>
+<p>mysql收到请求后，会进行sql语句解析，会分析出，你是查询（插入、删除），哪个表（tableA、tableB），条件。然后先判断sql语句是否合法，假如你写了个selector * 那么就会报错。</p>
+<p>解析出了表之后，要得到这个表的各种信息。</p>
+<h3 id="一级表结构缓存"><a href="#一级表结构缓存" class="headerlink" title="一级表结构缓存"></a>一级表结构缓存</h3><p>要操作这个表，首先要找到这个表。先从缓存中（源码里的table_def_cache，是一个Hash结构）找，根据表名做为Key去找，由于是第一次访问这个表，缓存里没有。</p>
+<p>那么会从System表里去找，mysql元数据里有每个表的定义，列信息等。找到这个表，就会构建出这个表的结构体TABLE_SHARE。</p>
+<p>这个TABLE_SHARE是一个静态的、不允许修改的（在内存中）结构体TABLE_SHARE，并将其放入缓存中（一个Hash结构里，key就是表名+模式名）。</p>
+<p>可以理解为一个java里的类，每个字段已经被赋了初始值。这个缓存是属于mysql server层的，与后面的存储引擎无关。里面保存了表名、库名、所有列信息、列默认值、表的字符集、对应的frm文件路径、对应的存储引擎、主键等。</p>
+<p>注意，这个结构体就是一级缓存，它被所有用户共享，并且不可修改，从系统表被读入直到该表被修改或删除，这个缓存都会一直存在。</p>
+<h3 id="二级表对象缓存"><a href="#二级表对象缓存" class="headerlink" title="二级表对象缓存"></a>二级表对象缓存</h3><p>表已经找到了，结构也已经被缓存了，此时还不能操作这个表。因为缺少一个表对象。</p>
+<p>上面的TABLE_SHARE可以理解为一个模板类，包含了表的基本信息，能被所有用户共享。</p>
+<p>但是里面还缺少一些信息，譬如不同用户对该表的权限、譬如存储引擎信息。那么要想操作这个表，就需要创建一个表对象来供当前用户（线程）使用。</p>
+<p>创建表对象就是实例化的过程，每个用户独享一个实例，我们称之为table实例，不会影响其他用户。</p>
+<p>创建的这个实例，里面有一个指向TABLE_SHARE的引用，用以获取基本信息，还有一些其他属性，譬如存储引擎层的信息也会被初始化（引擎的handler）。</p>
+<p>表对象创建完毕后，就具备了和存储引擎交互的能力（通过handler）。创建后，也会放入缓存，供下次使用时避免反复创建实例。</p>
+<p>mysql层与存储引擎层，就是从这里开始区分，table对象就是沟通的桥梁。对于各个存储引擎，需要提供公共的接口来供上层（mysql server）层来调用，并由各自的table实例来完成各自的操作。<br>譬如插入一条记录，就可以调用table实例中被初始化过的存储引擎的句柄接口函数ha_write_row，进行写入。</p>
+<p>这个table实例在一次操作完成之后就不需要了，系统此时并没有将其释放掉，而是保存下来，用一个状态标志位标记一下，并且会调用handler.reset()来重置引擎表状态，目的是handler会被复用，如果不reset，可能导致信息错误。缓存后，当下次用户再访问时，就不需要重新实例化了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>可以看到，当你想操作一个表时，系统对于这个表，会有两层缓存。第一层是SHARE缓存，第二层就是实例化后的对象缓存Table。</p>
+<ul>
+<li>缓存淘汰策略，<ul>
+<li>SHARE缓存只有在表结构定义改变时，才会被删除，但是倘若表巨多，SHARE缓存超出限制，也会淘汰那些不经常使用的SHARE。</li>
+<li>第二层的实例缓存，也是有最大值的，超出后则开始淘汰。</li>
+</ul>
+</li>
+</ul>
+<p>涉及的参数变量有两个，table_open_cache和table_definition_cache，一些淘汰策略数值就是靠这两个参数来计算得到的。</p>
+<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p>不同于某些数据库，一启动就加载了所有表信息。mysql是按需加载，由于mysql的插件式存储引擎，mysql做了两层的缓存模型，第二层才加载引擎的handler。</p>
+<ul>
+<li>优点：<br>按需加载，提高内存利用率，避免启动时加载所有表信息带来的内存占用。</li>
+</ul>
+<ul>
+<li>缺点：<br>两层缓存带来了效率的损失，每个用户（线程）都要实例化table对象。<br>在并发情况下，有可能会实例化多个table对象，导致table_open_cache增长过快，导致淘汰掉其他的table对象。同时倘若table比较大，譬如有N多的列，那么会占用非常多的内存。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>db-mysql</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-mysql底层分析-01-网络连接层</title>
+    <url>/articles/20200201/c1937f20.html</url>
+    <content><![CDATA[<p>索引是一种数据结构，用于帮助我们在大量数据中快速定位到我们想要查找的数据。</p>
+<p>索引在 MySQL 数据库中分三类：</p>
+<ul>
+<li>B+ 树索引</li>
+<li>Hash 索引</li>
+<li>全文索引</li>
+</ul>
+<p>B+ 树索引，由二叉查找树，平衡二叉树和 B 树这三种数据结构 演化来的。</p>
+<a id="more"></a>
+
+<h1 id="分层架构"><a href="#分层架构" class="headerlink" title="分层架构"></a>分层架构</h1><p>数据库三层架构</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">网络层</span><br><span class="line">  ↓</span><br><span class="line">server层</span><br><span class="line">  ↓</span><br><span class="line">存储层</span><br></pre></td></tr></table></figure>
+<p>存储层：mysql作为一个插件式的数据库，在存储层支持多种引擎，譬如默认的innodb，和之前版本默认的MyIsam。由不同的引擎提供相同的接口给server层调用，来完成数据的增删改查。</p>
+<p>server层：是mysql比较复杂的地方，里面包含了大量的逻辑，譬如语义分析、查询优化、日志、缓存等等。</p>
+<p>网络层：主要是提供socket连接。</p>
+<h2 id="网络层"><a href="#网络层" class="headerlink" title="网络层"></a>网络层</h2><p>在mysql的网络层，主要关注3点</p>
+<ol>
+<li>Poll、Select模型</li>
+<li>Max-connections</li>
+<li>connection复用</li>
+</ol>
+<p>mysql在启动后，创建了socket server，绑定了3306端口，并对其进行监听。和java里的写法类似，用一个while循环来监听新来的connection，如果有了新连接，就创建一个新的连接线程去处理（不能超过max-connections）。</p>
+<p>这种就是典型的BIO的模式，为每一个连接创建一个线程。并且，mysql在这里采用了IO多路复用，会有一个if语句来判断当前系统是否支持Poll模式，否则就走Select模型（各个系统默认都有实现）。</p>
+<p>Poll模型和Select非常类似，只是少了1024个fd的限制，都是采用遍历数组轮询有没有新IO事件的方式，在连接数较少的情况下，性能优异，要好于epoll。</p>
+<p>mysql基于BIO，本质上是不接受大量的socket连接的，所以设置了max-connections这个限制，超过设置的max，那么新来的连接会被拒绝。</p>
+<p>那么，第一个问题，为什么是BIO，而不是可以承受更大连接数的NIO和AIO呢？是否用NIO就会更好呢？</p>
+<h3 id="mysql的BIO"><a href="#mysql的BIO" class="headerlink" title="mysql的BIO"></a>mysql的BIO</h3><h4 id="bio和nio的区别"><a href="#bio和nio的区别" class="headerlink" title="bio和nio的区别"></a>bio和nio的区别</h4><p>在BIO模式下，调用read，如果发现没数据，就会Block住。</p>
+<p>在NIO模式下，调用read，如果发现没数据，就会立刻返回-1, 并且errno被设为EAGAIN。</p>
+<h5 id="基于NIO-IO多路复用的模式"><a href="#基于NIO-IO多路复用的模式" class="headerlink" title="基于NIO+IO多路复用的模式"></a>基于NIO+IO多路复用的模式</h5><p>server开发使用的web容器：tomcat、netty等，都是基于NIO+IO多路复用的模式，来大幅提升性能，承载高并发访问的。但是到了DB层，则使用hakiri、druid之类的线程池，开启10个线程去连接mysql，反复复用这个线程池。</p>
+<p>NIO+IO多路复用，并不是指多个用户socket共享一个IO，从而使得服务端的socket数量大减。而是把多个socket连接，归并到一个进程进行管理，如用一个大数组来聚合起来，然后循环遍历这个数组，来一次性把多个连接的事件通知业务代码进行处理。<br>这样就大幅减少了server的压力，高效利用资源。</p>
+<p>对mysql来说，一般都会有多个连接，毕竟并发肯定是要有的。不可能做个查询，也要大家一起排队等上一个人查询完。所以线程池和并发是一定的。</p>
+<h5 id="mysql和web-Server区别"><a href="#mysql和web-Server区别" class="headerlink" title="mysql和web Server区别"></a>mysql和web Server区别</h5><p>Web请求，往往是无状态的，一问一答的时候居多，请求也往往比较短促，对于顺序性也不是十分严格，哪怕是后请求的响应比先请求的提前到，也是有可能的。</p>
+<p>DB请求，DB采用session作为一个连接会话，这一个session里，SQL的执行必须是串行、同步、有序的，而不能是异步乱序的。原因是，一个session内可能有多个操作，增删改查、事务隔离，必须保证顺序不能乱。<br>DB维护这样一个session，是要花费远大于web Server处理一个请求的资源才能完成的。</p>
+<p>对于DB来说，连接是非常耗资源的事情，限制连接数是非常有必要的。</p>
+<p>注意，当连接mysql出问题时，随便加大应用服务的连接池和增大mysql的max-connection。不能改善mysql的性能。当进行非常密集的数据库操作时，连接池的数量对性能产生的巨大影响。</p>
+<h4 id="为什么用BIO，而不是NIO。"><a href="#为什么用BIO，而不是NIO。" class="headerlink" title="为什么用BIO，而不是NIO。"></a>为什么用BIO，而不是NIO。</h4><p>原因是JDBC不支持，JDBC出现了20年，它是一个标准，在它被提出时，只有BIO模型，导致数据库驱动对JDBC的实现都是BIO的形式，mysql驱动connector早早地实现了JDBC标准，就是采用阻塞的方式。</p>
+<p>当进行一个select查询，在查询没有完成之前，整个调用线程会被卡住，等到天荒地老也要等下去，绝不是一请求立马收到返回，然后等mysql回调你结果。</p>
+<p>其实，也有人修改了mysql的协议，增加了NIO+多路复用的功能，最后失败，主要原因是mysql和web server功能意义都不一样，确切地说，90%的场景下，不需要一个NIO的数据库。</p>
+<p>BIO+连接池，已经发展了很多年，大部分问题都已经解决，在目前的java环境中，是非常靠谱的方案。已经出现了很多优秀的连接池框架，你只需要配置好账号密码和连接池数量，就能很开心的使用mysql了。</p>
+<p>从mysql的角度来说，客户端多是一些IO密集型的应用，应该在一个线程里频繁做大量IO操作，而不是说有大量的客户端来反复连接我。毕竟，mysql的用户是你写的几个程序应用，而web server的用户是海量的。</p>
+<h3 id="连接池"><a href="#连接池" class="headerlink" title="连接池"></a>连接池</h3><p>mysql能支撑的连接数是有限的，那么就需要应用程序来利用好连接池。对于连接池来说，就是做好这10个连接的管理就好。</p>
+<p>对于mysql来说，管理好自己的所有连接也是很重要，哪些空闲的该休息就休息，让出资源，该复用就复用，避免创建太多线程。</p>
+<h4 id="IO密集的时候，要减少连接数。"><a href="#IO密集的时候，要减少连接数。" class="headerlink" title="IO密集的时候，要减少连接数。"></a>IO密集的时候，要减少连接数。</h4><p>譬如要读写几千万数据，非常密集的IO操作，那么你可以尝试一下开启少量的mysql连接（和cpu的核数相同）和开启大量的连接（成百上千），来做同样的事。你会发现，更少的连接数，会给你带来几百倍的性能提升。</p>
+<p>譬如，你有4辆车（4核），要从仓库里拉一大堆货物到另一个地方。如果只有4条路，简单操作，一个车走一路，反复折返跑。现在有了100条路，还是4个车，车要频繁的在100条路上来回切换，每条路都必须要走到。</p>
+<p>线程间的轮转会耗费大量的资源，尤其在密集操作时。但是当不密集时，情况就变了，大量的线程处于休息状态，那么你即便多开了几个连接，CPU还是能很快的照顾到你，并没有什么大的影响。</p>
+<h3 id="网络协议"><a href="#网络协议" class="headerlink" title="网络协议"></a>网络协议</h3><p>作为RPC的连接，内部rpc数据协议</p>
+]]></content>
+      <categories>
+        <category>db-mysql</category>
+      </categories>
+  </entry>
+  <entry>
     <title>002-mysql索引-从树到B+树，聚集索引与非聚集索引</title>
     <url>/articles/20200131/e01cc3be.html</url>
     <content><![CDATA[<p>索引是一种数据结构，用于帮助我们在大量数据中快速定位到我们想要查找的数据。</p>

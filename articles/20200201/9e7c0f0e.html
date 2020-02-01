@@ -46,29 +46,33 @@
   };
 </script>
 
-  <meta name="description" content="学习 总结 分享">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Blog">
-<meta property="og:url" content="https://blog.bjlhx.top/page/3/index.html">
+  <meta name="description" content="聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="004-mysql底层分析-02-Server服务层">
+<meta property="og:url" content="https://blog.bjlhx.top/articles/20200201/9e7c0f0e.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="学习 总结 分享">
+<meta property="og:description" content="聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/004/zhixing.png">
+<meta property="article:published_time" content="2020-02-01T09:19:47.000Z">
+<meta property="article:modified_time" content="2020-02-01T10:56:55.303Z">
 <meta property="article:author" content="李宏旭">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.bjlhx.top/images/post/db-mysql/004/zhixing.png">
 
-<link rel="canonical" href="https://blog.bjlhx.top/page/3/">
+<link rel="canonical" href="https://blog.bjlhx.top/articles/20200201/9e7c0f0e.html">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome: true,
-    isPost: false
+    isHome: false,
+    isPost: true
   };
 </script>
 
-  <title>Blog</title>
+  <title>004-mysql底层分析-02-Server服务层 | Blog</title>
   
 
 
@@ -216,11 +220,11 @@
             
 
   <div class="posts-expand">
-        
+      
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200129/8ecccc4b.html">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200201/9e7c0f0e.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -233,8 +237,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20200129/8ecccc4b.html" class="post-title-link" itemprop="url">004-模板-NexT-菜单、侧栏、头像、阅读量</a>
+          004-mysql底层分析-02-Server服务层
         </h1>
 
         <div class="post-meta">
@@ -243,29 +246,30 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-01-29 20:55:26" itemprop="dateCreated datePublished" datetime="2020-01-29T20:55:26+08:00">2020-01-29</time>
+              <time title="创建时间：2020-02-01 17:19:47 / 修改时间：18:56:55" itemprop="dateCreated datePublished" datetime="2020-02-01T17:19:47+08:00">2020-02-01</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-31 00:04:19" itemprop="dateModified" datetime="2020-01-31T00:04:19+08:00">2020-01-31</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
+                  <a href="/categories/db-mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql</span>
                   </a>
                 </span>
             </span>
 
           
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
 
         </div>
       </header>
@@ -276,350 +280,104 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>Hexo 框架允许我们更换合适的主题，以便于构建不同风格的网站，这里介绍目前最常使用的一款主题之NexT</p>
-<p>设置Scheme、设置动态背景、设置侧栏行为、设置菜单、设置头像、添加社交链接、添加文字统计功能、添加阅读量统计功能</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/articles/20200129/8ecccc4b.html#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
+        <p>聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。</p>
+<a id="more"></a>
+
+<h1 id="表对象缓存"><a href="#表对象缓存" class="headerlink" title="表对象缓存"></a>表对象缓存</h1><p><img src="/images/post/db-mysql/004/zhixing.png" alt=""></p>
+<p>创建一个表，设置列、列属性，索引等，并且指定好了存储引擎（默认innodb）。</p>
+<h2 id="表结构缓存、表对象缓存"><a href="#表结构缓存、表对象缓存" class="headerlink" title="表结构缓存、表对象缓存"></a>表结构缓存、表对象缓存</h2><p>客户端发过来一个sql，如</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tableA <span class="keyword">where</span> <span class="keyword">id</span> =<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>此时mysql获取到此请求，会先到查询缓存中查看，是不是执行过这个语句。缓存里key就是这个查询语句，如果查询缓存有，那么就直接返回value给客户端。这个查询缓存比较没有意义，新版8.0已经把它删掉了。</p>
+<p>mysql收到请求后，会进行sql语句解析，会分析出，你是查询（插入、删除），哪个表（tableA、tableB），条件。然后先判断sql语句是否合法，假如你写了个selector * 那么就会报错。</p>
+<p>解析出了表之后，要得到这个表的各种信息。</p>
+<h3 id="一级表结构缓存"><a href="#一级表结构缓存" class="headerlink" title="一级表结构缓存"></a>一级表结构缓存</h3><p>要操作这个表，首先要找到这个表。先从缓存中（源码里的table_def_cache，是一个Hash结构）找，根据表名做为Key去找，由于是第一次访问这个表，缓存里没有。</p>
+<p>那么会从System表里去找，mysql元数据里有每个表的定义，列信息等。找到这个表，就会构建出这个表的结构体TABLE_SHARE。</p>
+<p>这个TABLE_SHARE是一个静态的、不允许修改的（在内存中）结构体TABLE_SHARE，并将其放入缓存中（一个Hash结构里，key就是表名+模式名）。</p>
+<p>可以理解为一个java里的类，每个字段已经被赋了初始值。这个缓存是属于mysql server层的，与后面的存储引擎无关。里面保存了表名、库名、所有列信息、列默认值、表的字符集、对应的frm文件路径、对应的存储引擎、主键等。</p>
+<p>注意，这个结构体就是一级缓存，它被所有用户共享，并且不可修改，从系统表被读入直到该表被修改或删除，这个缓存都会一直存在。</p>
+<h3 id="二级表对象缓存"><a href="#二级表对象缓存" class="headerlink" title="二级表对象缓存"></a>二级表对象缓存</h3><p>表已经找到了，结构也已经被缓存了，此时还不能操作这个表。因为缺少一个表对象。</p>
+<p>上面的TABLE_SHARE可以理解为一个模板类，包含了表的基本信息，能被所有用户共享。</p>
+<p>但是里面还缺少一些信息，譬如不同用户对该表的权限、譬如存储引擎信息。那么要想操作这个表，就需要创建一个表对象来供当前用户（线程）使用。</p>
+<p>创建表对象就是实例化的过程，每个用户独享一个实例，我们称之为table实例，不会影响其他用户。</p>
+<p>创建的这个实例，里面有一个指向TABLE_SHARE的引用，用以获取基本信息，还有一些其他属性，譬如存储引擎层的信息也会被初始化（引擎的handler）。</p>
+<p>表对象创建完毕后，就具备了和存储引擎交互的能力（通过handler）。创建后，也会放入缓存，供下次使用时避免反复创建实例。</p>
+<p>mysql层与存储引擎层，就是从这里开始区分，table对象就是沟通的桥梁。对于各个存储引擎，需要提供公共的接口来供上层（mysql server）层来调用，并由各自的table实例来完成各自的操作。<br>譬如插入一条记录，就可以调用table实例中被初始化过的存储引擎的句柄接口函数ha_write_row，进行写入。</p>
+<p>这个table实例在一次操作完成之后就不需要了，系统此时并没有将其释放掉，而是保存下来，用一个状态标志位标记一下，并且会调用handler.reset()来重置引擎表状态，目的是handler会被复用，如果不reset，可能导致信息错误。缓存后，当下次用户再访问时，就不需要重新实例化了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>可以看到，当你想操作一个表时，系统对于这个表，会有两层缓存。第一层是SHARE缓存，第二层就是实例化后的对象缓存Table。</p>
+<ul>
+<li>缓存淘汰策略，<ul>
+<li>SHARE缓存只有在表结构定义改变时，才会被删除，但是倘若表巨多，SHARE缓存超出限制，也会淘汰那些不经常使用的SHARE。</li>
+<li>第二层的实例缓存，也是有最大值的，超出后则开始淘汰。</li>
+</ul>
+</li>
+</ul>
+<p>涉及的参数变量有两个，table_open_cache和table_definition_cache，一些淘汰策略数值就是靠这两个参数来计算得到的。</p>
+<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p>不同于某些数据库，一启动就加载了所有表信息。mysql是按需加载，由于mysql的插件式存储引擎，mysql做了两层的缓存模型，第二层才加载引擎的handler。</p>
+<ul>
+<li>优点：<br>按需加载，提高内存利用率，避免启动时加载所有表信息带来的内存占用。</li>
+</ul>
+<ul>
+<li>缺点：<br>两层缓存带来了效率的损失，每个用户（线程）都要实例化table对象。<br>在并发情况下，有可能会实例化多个table对象，导致table_open_cache增长过快，导致淘汰掉其他的table对象。同时倘若table比较大，譬如有N多的列，那么会占用非常多的内存。</li>
+</ul>
+
     </div>
 
     
     
     
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.bjlhx.top/articles/20200201/9e7c0f0e.html" title="004-mysql底层分析-02-Server服务层">https://blog.bjlhx.top/articles/20200201/9e7c0f0e.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
 
         
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200129/5c36d9d6.html">
 
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
 
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20200129/5c36d9d6.html" class="post-title-link" itemprop="url">003-模板-scaffolds、permalink永久链接</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-01-29 17:50:49" itemprop="dateCreated datePublished" datetime="2020-01-29T17:50:49+08:00">2020-01-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:51:28" itemprop="dateModified" datetime="2020-01-30T23:51:28+08:00">2020-01-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>模板以scaffolds/post.md为例，对updated、permalink等参数进行说明</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/articles/20200129/5c36d9d6.html#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20200201/c1937f20.html" rel="prev" title="003-mysql底层分析-01-网络连接层">
+      <i class="fa fa-chevron-left"></i> 003-mysql底层分析-01-网络连接层
+    </a></div>
+      <div class="post-nav-item"></div>
     </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
       </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200129/1a1ce396.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20200129/1a1ce396.html" class="post-title-link" itemprop="url">002-命令new-页面分类标签</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-01-29 17:50:48" itemprop="dateCreated datePublished" datetime="2020-01-29T17:50:48+08:00">2020-01-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
     
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>hexo new 命令使用：创建普通页面、创建”分类”选项、创建“标签”选项</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/articles/20200129/1a1ce396.html#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200129/82195907.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20200129/82195907.html" class="post-title-link" itemprop="url">001-命令-服务、生成、部署、清理</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-01-29 17:45:36" itemprop="dateCreated datePublished" datetime="2020-01-29T17:45:36+08:00">2020-01-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>初始化代码库：<code>hexo init</code>；<br>本地服务运行 ：<code>hexo s</code>；生成静态文件：<code>hexo g</code>；部署远程站点：<code>hexo d</code>；清理缓存：<code>hexo clean</code></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/articles/20200129/82195907.html#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20190526/26856f5b.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20190526/26856f5b.html" class="post-title-link" itemprop="url">java 基础</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-05-26 12:12:57" itemprop="dateCreated datePublished" datetime="2019-05-26T12:12:57+08:00">2019-05-26</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/java/" itemprop="url" rel="index">
-                    <span itemprop="name">java</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>第一个测试程序</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
   </article>
   
   
@@ -627,15 +385,33 @@
 
   </div>
 
-  
-  <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
-  </nav>
-
-
 
           </div>
           
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -682,6 +458,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#表对象缓存"><span class="nav-number">1.</span> <span class="nav-text">表对象缓存</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#表结构缓存、表对象缓存"><span class="nav-number">1.1.</span> <span class="nav-text">表结构缓存、表对象缓存</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一级表结构缓存"><span class="nav-number">1.1.1.</span> <span class="nav-text">一级表结构缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二级表对象缓存"><span class="nav-number">1.1.2.</span> <span class="nav-text">二级表对象缓存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.2.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#优缺点"><span class="nav-number">1.2.1.</span> <span class="nav-text">优缺点</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -828,6 +605,21 @@
 
   
 
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
 
 </body>
 </html>
