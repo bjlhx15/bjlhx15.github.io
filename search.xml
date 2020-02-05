@@ -1,102 +1,431 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>004-mysql底层分析-02-Server服务层</title>
-    <url>/articles/20200201/9e7c0f0e.html</url>
-    <content><![CDATA[<p>聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。</p>
+    <title>001-mysql-主键设计</title>
+    <url>/articles/20200205/dd81f687.html</url>
+    <content><![CDATA[<p>摘要：MySQL InnoDB数据存储是以B+树索引方式存储<br>存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
 <a id="more"></a>
 
-<h1 id="表对象缓存"><a href="#表对象缓存" class="headerlink" title="表对象缓存"></a>表对象缓存</h1><p><img src="/images/post/db-mysql/004/zhixing.png" alt=""></p>
-<p>创建一个表，设置列、列属性，索引等，并且指定好了存储引擎（默认innodb）。</p>
-<h2 id="表结构缓存、表对象缓存"><a href="#表结构缓存、表对象缓存" class="headerlink" title="表结构缓存、表对象缓存"></a>表结构缓存、表对象缓存</h2><p>客户端发过来一个sql，如</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tableA <span class="keyword">where</span> <span class="keyword">id</span> =<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
-<p>此时mysql获取到此请求，会先到查询缓存中查看，是不是执行过这个语句。缓存里key就是这个查询语句，如果查询缓存有，那么就直接返回value给客户端。这个查询缓存比较没有意义，新版8.0已经把它删掉了。</p>
-<p>mysql收到请求后，会进行sql语句解析，会分析出，你是查询（插入、删除），哪个表（tableA、tableB），条件。然后先判断sql语句是否合法，假如你写了个selector * 那么就会报错。</p>
-<p>解析出了表之后，要得到这个表的各种信息。</p>
-<h3 id="一级表结构缓存"><a href="#一级表结构缓存" class="headerlink" title="一级表结构缓存"></a>一级表结构缓存</h3><p>要操作这个表，首先要找到这个表。先从缓存中（源码里的table_def_cache，是一个Hash结构）找，根据表名做为Key去找，由于是第一次访问这个表，缓存里没有。</p>
-<p>那么会从System表里去找，mysql元数据里有每个表的定义，列信息等。找到这个表，就会构建出这个表的结构体TABLE_SHARE。</p>
-<p>这个TABLE_SHARE是一个静态的、不允许修改的（在内存中）结构体TABLE_SHARE，并将其放入缓存中（一个Hash结构里，key就是表名+模式名）。</p>
-<p>可以理解为一个java里的类，每个字段已经被赋了初始值。这个缓存是属于mysql server层的，与后面的存储引擎无关。里面保存了表名、库名、所有列信息、列默认值、表的字符集、对应的frm文件路径、对应的存储引擎、主键等。</p>
-<p>注意，这个结构体就是一级缓存，它被所有用户共享，并且不可修改，从系统表被读入直到该表被修改或删除，这个缓存都会一直存在。</p>
-<h3 id="二级表对象缓存"><a href="#二级表对象缓存" class="headerlink" title="二级表对象缓存"></a>二级表对象缓存</h3><p>表已经找到了，结构也已经被缓存了，此时还不能操作这个表。因为缺少一个表对象。</p>
-<p>上面的TABLE_SHARE可以理解为一个模板类，包含了表的基本信息，能被所有用户共享。</p>
-<p>但是里面还缺少一些信息，譬如不同用户对该表的权限、譬如存储引擎信息。那么要想操作这个表，就需要创建一个表对象来供当前用户（线程）使用。</p>
-<p>创建表对象就是实例化的过程，每个用户独享一个实例，我们称之为table实例，不会影响其他用户。</p>
-<p>创建的这个实例，里面有一个指向TABLE_SHARE的引用，用以获取基本信息，还有一些其他属性，譬如存储引擎层的信息也会被初始化（引擎的handler）。</p>
-<p>表对象创建完毕后，就具备了和存储引擎交互的能力（通过handler）。创建后，也会放入缓存，供下次使用时避免反复创建实例。</p>
-<p>mysql层与存储引擎层，就是从这里开始区分，table对象就是沟通的桥梁。对于各个存储引擎，需要提供公共的接口来供上层（mysql server）层来调用，并由各自的table实例来完成各自的操作。<br>譬如插入一条记录，就可以调用table实例中被初始化过的存储引擎的句柄接口函数ha_write_row，进行写入。</p>
-<p>这个table实例在一次操作完成之后就不需要了，系统此时并没有将其释放掉，而是保存下来，用一个状态标志位标记一下，并且会调用handler.reset()来重置引擎表状态，目的是handler会被复用，如果不reset，可能导致信息错误。缓存后，当下次用户再访问时，就不需要重新实例化了。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>可以看到，当你想操作一个表时，系统对于这个表，会有两层缓存。第一层是SHARE缓存，第二层就是实例化后的对象缓存Table。</p>
-<ul>
-<li>缓存淘汰策略，<ul>
-<li>SHARE缓存只有在表结构定义改变时，才会被删除，但是倘若表巨多，SHARE缓存超出限制，也会淘汰那些不经常使用的SHARE。</li>
-<li>第二层的实例缓存，也是有最大值的，超出后则开始淘汰。</li>
-</ul>
+<h1 id="mysql知识储备"><a href="#mysql知识储备" class="headerlink" title="mysql知识储备"></a>mysql知识储备</h1><ol>
+<li>InnoDB为聚集主键类型的引擎，数据会按照主键进行排序</li>
+<li>mysql 的索引是B+tree，聚集索引使用主键，没有主键默认生成一个隐式主键rowId，辅助索引保存的是主键</li>
+<li>innodb 存储单元是页，每页 16k，数据类型过大，会跨页，溢出等</li>
+<li>每张表都会有主键，如没有显式设置主键，则<br>（1）、表中的非空唯一索引作为主键<br>（2）、自动创建一个6字节大小的指针</li>
+</ol>
+<h1 id="主键设计原则"><a href="#主键设计原则" class="headerlink" title="主键设计原则"></a>主键设计原则</h1><ol>
+<li>尽量单列，提高连接和筛选效率</li>
+<li>不包含动态变化的数据（时间戳，创建、修改时间列）</li>
+<li>由计算机自动生成（选取合适的生成策略）</li>
+<li>非必要情况不要更新MySQL主键</li>
+</ol>
+<h1 id="主键设计的常用方案"><a href="#主键设计的常用方案" class="headerlink" title="主键设计的常用方案"></a>主键设计的常用方案</h1><h2 id="自增ID"><a href="#自增ID" class="headerlink" title="自增ID"></a>自增ID</h2><ul>
+<li><p>方案：数据库设置：AUTO_INCREMENT</p>
+</li>
+<li><p>使用场景：不拆分库的情况下，推荐使用</p>
+</li>
+<li><p>优点：</p>
 </li>
 </ul>
-<p>涉及的参数变量有两个，table_open_cache和table_definition_cache，一些淘汰策略数值就是靠这两个参数来计算得到的。</p>
-<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p>不同于某些数据库，一启动就加载了所有表信息。mysql是按需加载，由于mysql的插件式存储引擎，mysql做了两层的缓存模型，第二层才加载引擎的handler。</p>
+<ol>
+<li>数据库自动编号，速度快，而且是增量增长，聚集型主键按顺序存放，对于检索非常有利。</li>
+<li>数字型，占用空间小，易排序，在程序中传递方便。</li>
+</ol>
 <ul>
-<li>优点：<br>按需加载，提高内存利用率，避免启动时加载所有表信息带来的内存占用。</li>
+<li>缺点：</li>
 </ul>
+<ol>
+<li>不支持水平分片架构，水平分片的设计当中，这种方法显然不能保证全局唯一。</li>
+<li>表锁<br>在MySQL5.1.22之前，InnoDB自增值是通过其本身的自增长计数器来获取值，该实现方式是通过表锁机制来完成的（AUTO-INC LOCKING）。<br>锁不是在每次事务完成后释放，而是在完成对自增长值插入的SQL语句后释放，要等待其释放才能进行后续操作。<br>比如说当表里有一个auto_increment字段的时候，innoDB会在内存里保存一个计数器用来记录auto_increment的值，当插入一个新行数据时，<br>就会用一个表锁来锁住这个计数器，直到插入结束。如果大量的并发插入，表锁会引起SQL堵塞。<br>在5.1.22之后，InnoDB为了解决自增主键锁表的问题，引入了参数innodb_autoinc_lock_mode：<br>0：通过表锁的方式进行，也就是所有类型的insert都用AUTO-inc locking（表锁机制）。<br>1：默认值，对于simple insert 自增长值的产生使用互斥量对内存中的计数器进行累加操作，对于bulk insert 则还是使用表锁的方式进行。<br>2：对所有的insert-like 自增长值的产生使用互斥量机制完成，性能最高，并发插入可能导致自增值不连续，可能会导致Statement 的 Replication 出现不一致，使用该模式，需要用 Row Replication的模式。</li>
+<li>可能不连续</li>
+</ol>
+<h2 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h2><ul>
+<li><p>方案：应用程序UUID</p>
+</li>
+<li><p>使用场景：不推荐使用，针对mysql缺点过于严重</p>
+</li>
+<li><p>优点：</p>
+</li>
+</ul>
+<ol>
+<li>全局唯一性、安全性、可移植性。</li>
+<li>能够保证独立性，程序可以在不同的数据库间迁移，效果不受影响。</li>
+<li>保证生成的ID不仅是表独立的，而且是库独立的，在你切分数据库的时候尤为重要</li>
+</ol>
 <ul>
-<li>缺点：<br>两层缓存带来了效率的损失，每个用户（线程）都要实例化table对象。<br>在并发情况下，有可能会实例化多个table对象，导致table_open_cache增长过快，导致淘汰掉其他的table对象。同时倘若table比较大，譬如有N多的列，那么会占用非常多的内存。</li>
+<li>缺点：</li>
 </ul>
-]]></content>
+<ol>
+<li>针对InnoDB引擎会徒增IO压力，InnoDB为聚集主键类型的引擎，数据会按照主键进行排序，由于UUID的无序性，InnoDB会产生巨大的IO压力。InnoDB主键索引和数据存储位置相关（簇类索引），uuid 主键可能会引起数据位置频繁变动，严重影响性能。</li>
+<li>UUID长度过长，一个UUID占用128个比特（16个字节）。主键索引KeyLength长度过大，而影响能够基于内存的索引记录数量，进而影响基于内存的索引命中率，而基于硬盘进行索引查询性能很差。严重影响数据库服务器整体的性能表现。</li>
+</ol>
+<h2 id="分布式方案"><a href="#分布式方案" class="headerlink" title="分布式方案"></a>分布式方案</h2><pre><code>待续</code></pre>]]></content>
       <categories>
         <category>db-mysql</category>
       </categories>
   </entry>
   <entry>
-    <title>003-mysql底层分析-01-网络连接层</title>
-    <url>/articles/20200201/c1937f20.html</url>
-    <content><![CDATA[<p>数据库三层架构</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">网络层</span><br><span class="line">  ↓</span><br><span class="line">server层</span><br><span class="line">  ↓</span><br><span class="line">存储层</span><br></pre></td></tr></table></figure>
-<p>存储层：mysql作为一个插件式的数据库，在存储层支持多种引擎，譬如默认的innodb，和之前版本默认的MyIsam。由不同的引擎提供相同的接口给server层调用，来完成数据的增删改查。</p>
-<p>server层：是mysql比较复杂的地方，里面包含了大量的逻辑，譬如语义分析、查询优化、日志、缓存等等。</p>
-<p>网络层：主要是提供socket连接。</p>
+    <title>11-InnoDB-事务隔离级别、ACID模型</title>
+    <url>/articles/20200205/3890ccea.html</url>
+    <content><![CDATA[<p>摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
+<a id="more"></a>
+<h1 id="MVCC"><a href="#MVCC" class="headerlink" title="MVCC"></a>MVCC</h1><p>MVCC (MultiVersion Concurrency Control) 叫做多版本并发控制。<br>理解为：事务对数据库的任何修改的提交都不会直接覆盖之前的数据，而是产生一个新的版本与老版本共存，使得读取时可以完全不加锁。</p>
+<p>同一行数据会有多个版本，某事务对该数据的修改并不会直接覆盖老版本，而是产生一个新版本和老版共存。<br>然后在该行追加两个虚拟的列，列就是进行数据操作的事务的ID（created_by_txn_id），是一个单调递增的ID；还有一个deleted_by_txn_id，将来用来做删除的。</p>
+<p>那么在另一个事务在读取该行数据时，由具体的隔离级别来控制到底读取该行的哪个版本。同时，在读取过程中完全不加锁，除非用select * xxx for update强行加锁。</p>
+<p>譬如read committed级别，每次读取，总是取事务ID最大的那个就好了。</p>
+<p>对于Repeatable read，每次读取时，总是取事务ID小于等于当前事务的ID的那些数据记录。在这个范围内，如果某一数据有多个版本，则取最新的。</p>
+<p>MVCC在mysql中的实现依赖的是undo log与read view</p>
+<p>undo log记录某行数据的多个版本的数据；read view用来判断当前版本数据的可见性。</p>
+<p>mysql就是用MVCC来实现读写分离不加锁的。</p>
+<p>那么MVCC里多出来的那些版本的数据最终是要删除的，支持MVCC的数据库套路一般差不多，都会有一个后台线程来定时清理那些肯定没用的数据。只要一个数据的deleted_by_txn_id不为空，并且比当前还没结束的事务ID最小的一个还小，该数据就可以被清理掉了。在PostgreSQL中，该清理任务叫“vacuum”，在Innodb中，叫做“purge”。</p>
+<h1 id="InnoDB-事务隔离级别"><a href="#InnoDB-事务隔离级别" class="headerlink" title="InnoDB 事务隔离级别"></a>InnoDB 事务隔离级别</h1><p>InnoDB的多版本并发控制是基于事务隔离级别实现的，而事务隔离级别则是依托前面提到的 Undo Log 实现的。<br>当读取一个数据记录时，每个事务会使用一个读视图(Read View)，读视图用于控制事务能读取到的记录的版本。</p>
+<p>InnoDB的事务隔离级别分为：Read UnCommitted，Read Committed，Repeatable Read以及Serializable。<br>其中Serializable是基于锁实现的串行化方式，严格来说不是事务可见性范畴。</p>
+<ul>
+<li>Read Uncommitted：未提交读也称为脏读，它读取的是当前最新修改的记录，即便这个修改最后并未生效。</li>
+<li>Read Committed：提交读。它基于的是当前事务内的语句开始执行时的最大的事务ID。如果其他事务修改同一个记录，在没有提交前，则该语句读取的记录还是不会变。<br>但是这种情况会产生不可重复读，即一个事务内多次读取同一条记录可能得到不同的结果(该记录被其他事务修改并提交了)。</li>
+<li>Repeatable Read：可重复读。它基于的是事务开始时的读视图，直到事务结束。不读取其他新的事务对该记录的修改，保证同一个事务内的可重复读取。<br>InnoDB提供了 next-key lock来解决幻读问题，不过在一些特殊场景下，可重复读还是可能出现幻读的情况。在实际开发中影响不大。</li>
+</ul>
+<h1 id="ACID-模型"><a href="#ACID-模型" class="headerlink" title="ACID 模型"></a>ACID 模型</h1><p>事务有 ACID 四个属性， InnoDB 是支持事务的，它实现 ACID 的机制如下：</p>
+<h2 id="Atomicity"><a href="#Atomicity" class="headerlink" title="Atomicity"></a>Atomicity</h2><p>innodb的原子性主要是通过提供的事务机制实现，与原子性相关的特性有：</p>
+<ul>
+<li>Autocommit 设置。</li>
+<li>COMMIT 和 ROLLBACK 语句(通过 Undo Log实现)。</li>
+</ul>
+<h2 id="Consistency"><a href="#Consistency" class="headerlink" title="Consistency"></a>Consistency</h2><p>innodb的一致性主要是指保护数据不受系统崩溃影响，相关特性包括：</p>
+<ul>
+<li>InnoDB 的双写缓冲区(doublewrite buffer)。</li>
+<li>InnoDB 的故障恢复机制(crash recovery)。</li>
+</ul>
+<h2 id="Isolation"><a href="#Isolation" class="headerlink" title="Isolation"></a>Isolation</h2><p>innodb的隔离性也是主要通过事务机制实现，特别是为事务提供的多种隔离级别，相关特性包括：</p>
+<ul>
+<li>Autocommit设置。</li>
+<li>SET ISOLATION LEVEL 语句。</li>
+<li>InnoDB 锁机制。</li>
+</ul>
+<h2 id="Durability"><a href="#Durability" class="headerlink" title="Durability"></a>Durability</h2><p>innodb的持久性相关特性：</p>
+<ul>
+<li>Redo log。</li>
+<li>双写缓冲功能。可以通过配置项 innodb_doublewrite 开启或者关闭。</li>
+<li>配置 innodb_flush_log_at_trx_commit。用于配置innodb如何写入和刷新 redo 日志缓存到磁盘。默认为1，表示每次事务提交都会将日志缓存写入并刷到磁盘。innodb_flush_log_at_timeout 可以配置刷新日志缓存到磁盘的频率，默认是1秒。</li>
+<li>配置 sync_binlog。用于设置同步 binlog 到磁盘的频率，为0表示禁止MySQL同步binlog到磁盘，binlog刷到磁盘的频率由操作系统决定，性能最好但是最不安全。为1表示每次事务提交前同步到磁盘，性能最差但是最安全。MySQL文档推荐是 sync_binlog 和 innodb_flush_log_at_trx_commit 都设置为 1。</li>
+<li>操作系统的 fsync 系统调用。</li>
+<li>UPS设备和备份策略等。</li>
+</ul>
+<p>参考资料<br><a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-storage-engine.html" target="_blank" rel="noopener">https://dev.mysql.com/doc/refman/5.7/en/innodb-storage-engine.html</a><br><a href="http://ourmysql.com/archives/1228" target="_blank" rel="noopener">http://ourmysql.com/archives/1228</a><br><a href="https://www.jianshu.com/p/d4cc0ea9d097" target="_blank" rel="noopener">https://www.jianshu.com/p/d4cc0ea9d097</a><br><a href="https://zhuanlan.zhihu.com/p/103487968?utm_source=wechat_session" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/103487968?utm_source=wechat_session</a></p>
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>10-存储引擎层-innodb框架-内存架构</title>
+    <url>/articles/20200205/ddb6eda9.html</url>
+    <content><![CDATA[<p>摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
 <a id="more"></a>
 
-<h2 id="网络层"><a href="#网络层" class="headerlink" title="网络层"></a>网络层</h2><p>在mysql的网络层，主要关注3点</p>
+
+<h1 id="InnoDB-内存中的结构"><a href="#InnoDB-内存中的结构" class="headerlink" title="InnoDB 内存中的结构"></a>InnoDB 内存中的结构</h1><p>参看原理图 03-存储引擎层、InnoDB 架构</p>
+<p><img src="/images/post/db-mysql/innodb-struct.webp" alt=""></p>
+<p>内存中的结构主要包括 Buffer Pool，Change Buffer、Adaptive Hash Index以及 Log Buffer 四部分。</p>
+<p>如果从内存上来看，Change Buffer 和 Adaptive Hash Index 占用的内存都属于 Buffer Pool，Log Buffer占用的内存与 Buffer Pool独立。</p>
+<p>缓冲池缓存的数据包括Page Cache、Change Buffer、Data Dictionary Cache等，通常 MySQL 服务器的 80% 的物理内存会分配给 Buffer Pool。</p>
+<p>基于效率考虑，InnoDB中数据管理的最小单位为页，默认每页大小为16KB，每页包含若干行数据。为了提高缓存管理效率，InnoDB的缓存池通过一个页链表实现，很少访问的页会通过缓存池的 LRU 算法淘汰出去。</p>
+<p>InnoDB 的缓冲池页链表分为两部分：New sublist(默认占5/8缓存池) 和 Old sublist(默认占3/8缓存池，可以通过 innodb_old_blocks_pct修改，默认值为 37)，</p>
+<p>其中新读取的页会加入到 Old sublist的头部，而 Old sublist中的页如果被访问，则会移到 New sublist的头部。</p>
+<p>缓冲池的使用情况可以通过 <code>show engine innodb status</code> 命令查看。其中一些主要信息如下：</p>
+<p>由于MySQL不同版本采用InnoDB引擎版本不同，5.6后对show engine innodb status信息进行了优化</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">MySQL版本	InnoDB引擎版本</span><br><span class="line">5.1.x	1.0.x版本（官方称为InnoDB Plugin）</span><br><span class="line">5.5.x	5.5（1.1.x版本），InnoDB被Oracle收购后</span><br><span class="line">5.6.x	5.6（1.2.x版本）</span><br><span class="line">5.7.x	5.7</span><br><span class="line">8.0.x	8.0</span><br></pre></td></tr></table></figure>
+<p>show engine innodb status显示的不是当前状态，而是过去某个时间范围内InnoDB存储引擎的状态。</p>
+<p>向右拉</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Per second averages calculated from the last 59 seconds</span><br></pre></td></tr></table></figure>
+<p>在显示前端可看到以上信息，代表查询的信息为过去59秒内每2秒的平均值。</p>
+<p>show engine innodb status主要包括以下几个部分：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">BACKGROUND THREAD	后台Master线程</span><br><span class="line">SEMAPHORES	信号量信息</span><br><span class="line">LATEST DETECTED DEADLOCK	最近一次死锁信息，只有产生过死锁才会有</span><br><span class="line">TRANSACTIONS	事物信息</span><br><span class="line">FILE I&#x2F;O	IO Thread信息</span><br><span class="line">INSERT BUFFER AND ADAPTIVE HASH INDEX	INSERT BUFFER和自适应HASH索引</span><br><span class="line">LOG	日志</span><br><span class="line">BUFFER POOL AND MEMORY	BUFFER POOL和内存</span><br><span class="line">INDIVIDUAL BUFFER POOL INFO	如果设置了多个BUFFER POOL实例，这里显示每个BUFFER POOL信息。可通过innodb_buffer_pool_instances参数设置</span><br><span class="line">ROW OPERATIONS	行操作统计信息</span><br><span class="line">END OF INNODB MONITOR OUTPU	输出结束语</span><br></pre></td></tr></table></figure>
+
+<h2 id="Buffer-pool"><a href="#Buffer-pool" class="headerlink" title="Buffer pool"></a>Buffer pool</h2><p>查看：BUFFER POOL AND MEMORY</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">----------------------</span><br><span class="line">BUFFER POOL AND MEMORY</span><br><span class="line">----------------------</span><br><span class="line">Total large memory allocated 137428992 # 分配给InnoDB缓存池的内存(字节)</span><br><span class="line">Dictionary memory allocated 102398  # 分配给InnoDB数据字典的内存(字节)</span><br><span class="line">Buffer pool size   8191 # 缓存池的页数目</span><br><span class="line">Free buffers       7893 # 缓存池空闲链表的页数目</span><br><span class="line">Database pages     298  # 缓存池LRU链表的页数目</span><br><span class="line">Modified db pages  0    # 修改过的页数目</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+
+<p>Innodb的这个缓存区就是Innodb_buffer_pool，当读取数据时，就会先从缓存中查看是否数据的页（page）存在，不存在的话才去磁盘上检索，查到后缓存到这个pool里。<br>同理，插入、修改、删除也是先操作缓存里数据，之后再以一定频率更新到磁盘上。控制刷盘的机制，叫做Checkpoint。</p>
+<p><img src="/images/post/db-mysql/innodb_buffer_pool.png" alt=""></p>
+<p>注意，左边那两个不在Innodb_buffer_pool里，是另外一块内存。只不过大部分的内存都属于Innodb_buffer_pool的。</p>
+<p>mysql安装后，默认pool的大小是128M，可以通过show variables like ‘innodb_buffer_pool%’;命令查看。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'innodb_buffer_pool%'</span>;</span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_at_shutdown	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_filename	ib_buffer_pool</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_instances	8</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_abort	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_at_startup	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_size	134217728</span></span><br></pre></td></tr></table></figure>
+<p>可以通过show global status like ‘%innodb_buffer_pool_pages%’;  查看已经被占用的和空闲的。共计8000多个page。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">global</span> <span class="keyword">status</span> <span class="keyword">like</span> <span class="string">'%innodb_buffer_pool_pages%'</span>;</span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_data	7167</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_dirty	0</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_flushed	120861</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_free	1024</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_misc	1</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_total	8192</span></span><br></pre></td></tr></table></figure>
+
+<p>所以如果数据很多，而pool很小，那么性能就好不了。</p>
+<p>理论上来说，如果你给pool的内存足够大，够装下所有数据，要访问的所有数据都在pool里，那么你的所有请求都是走内存，性能将是最好的，和redis类似。</p>
+<p>官方建议pool的空间设置为物理内存的50%-75%。</p>
+<p>在mysql5.7.5之后，可以在mysql不重启的情况下动态修改pool的size，如果你设置的pool的size超过了1G的话，应该再修改一下Innodb_buffer_pool_instances=N，将pool分成N个pool实例，将来操作的数据会按照page的hash来映射到不同的pool实例。</p>
+<p>这样可以大幅优化多线程情况下，并发读取同一个pool造成的锁的竞争。</p>
+<h3 id="缓冲区LRU淘汰算法"><a href="#缓冲区LRU淘汰算法" class="headerlink" title="缓冲区LRU淘汰算法"></a>缓冲区LRU淘汰算法</h3><p>当pool的大小不够用了，满了，就会根据LRU算法（最近最少使用）来淘汰老的页面。最频繁使用的页在LRU列表的前端，最少使用的页在LRU列表的尾端。淘汰的话，就首先释放尾端的页。</p>
+<p>InnoDB的LRU和普通的不太一样，Innodb的加入了midpoint位置的概念。最新读取到的页，并不是直接放到LRU列表的头部的，而是放到midpoint位置。<br>这个位置大概是LRU列表的5/8处，该参数由innodb_old_blocks_pct控制。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">show variables like &#39;innodb_old_blocks_pct%&#39;;</span><br><span class="line">innodb_old_blocks_pct	37</span><br></pre></td></tr></table></figure>
+<p>如37是默认值，表示新读取的页插入到LRU尾端37%的位置。在midpoint之后的列表都是old列表，之前的是new列表，可以简单理解为new列表的页都是最活跃的数据。</p>
+<p>为什么不直接放头部？因为某些数据扫描操作需要访问的页很多，有时候这些页仅仅在本次查询有效，以后就不怎么用了，并不算是活跃的热点数据。那么真正活跃的还是希望放到头部去，这些新的暂不确定是否真正未来要活跃。所以，这可以理解为预热。还引入了一个参数innodb_old_blocks_time用来表示页读取到mid位置后需要等待多久才会被加入到LRU列表的热端。</p>
+<p>重要的查询命令可以看到这些信息，show engine innodb status;<br>Database pages表示LRU列表中页的数量，pages made young显示了LRU列表中页移动到前端的次数，Buffer pool hit rate表示缓冲池的命中率，100%表示良好，该值小于95%时，需要考虑是否因为全表扫描引起了LRU列表被污染。里面还有其他的参数，可以自行查阅一下代表什么意思。</p>
+<h3 id="Pool的主要空间"><a href="#Pool的主要空间" class="headerlink" title="Pool的主要空间"></a>Pool的主要空间</h3><p>其实更多的、对性能影响更大的是读缓存。毕竟多数数据库是读多写少。</p>
+<p>读缓存主要数据是索引页和数据页，如果要读取的数据在pool里没有，那就去磁盘读，读到后的新页放到pool的3/8位置，后续根据情况再决定是否放到LRU列表的头部。</p>
+<p>注意，最小单位是页，哪怕只读一条数据，也会加载整个页进去。如果是顺序读的话，刚好又在同一个页里，譬如读了id=1的，那么再读id=2的时，大概率直接从缓存里读。 </p>
+<h2 id="BACKGROUND-THREAD"><a href="#BACKGROUND-THREAD" class="headerlink" title="BACKGROUND THREAD"></a>BACKGROUND THREAD</h2><p>InnoDB存储引擎的核心操作大部分都集中在Mater Thread后台线程中。</p>
+<p>MySQL5.5版本之前：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-----------------</span><br><span class="line">BACKGROUND THREAD</span><br><span class="line">-----------------</span><br><span class="line">srv_master_thread loops: 846676 1_second, 846675 sleeps, 84665 10_second, 17 background, 17 flush</span><br><span class="line">srv_master_thread log flush and writes: 854189</span><br></pre></td></tr></table></figure>
+<p>MySQL 5.6之后对Master Thread进行了优化，去除了sleeps的信息，srv_active为之前的每秒的循环，srv_idle为每10秒的的循环，srv_shutdown为停止的循环，通常为0，只在MySQL关闭时才会增加。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">BACKGROUND THREAD</span><br><span class="line">-----------------</span><br><span class="line">srv_master_thread loops: 3911776 srv_active, 0 srv_shutdown, 309625 srv_idle</span><br><span class="line">srv_master_thread log flush and writes: 4221384</span><br></pre></td></tr></table></figure>
+<p>上面可以看出主循环每10秒进行了309625次，每秒进行了3911776次，每10秒的操作符合1：10。</p>
+<p>负载低的情况下日志缓冲刷盘次数，4221384 ≈ 3911776+309625。</p>
+<p>根据循环次数可大概判断当前数据库负载情况。如果每秒循环次数少，每10秒次数多，证明当前负载很低；如果每秒循环次数多，每10秒次数少，远大于10：1，证明当前负载很高。</p>
+<h2 id="SEMAPHORES"><a href="#SEMAPHORES" class="headerlink" title="SEMAPHORES"></a>SEMAPHORES</h2><p>当前等待线程的列表及事件计数器，可以评估当前负载情况。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">----------</span><br><span class="line">SEMAPHORES</span><br><span class="line">----------</span><br><span class="line">OS WAIT ARRAY INFO: reservation count 58961200</span><br><span class="line">OS WAIT ARRAY INFO: signal count 125268732</span><br><span class="line">Mutex spin waits 770371493, rounds 6482840874, OS waits 20699077</span><br><span class="line">RW-shared spins 0, rounds 115276716, OS waits 14655922</span><br><span class="line">RW-excl spins 0, rounds 987115172, OS waits 12384598</span><br><span class="line">RW-sx spins 40484350, rounds 419545112, OS waits 4476477</span><br><span class="line">Spin rounds per wait: 115276716.00 RW-shared, 987115172.00 RW-excl, 10.36 RW-sx</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">OS WAIT ARRAY INFO	reservation count：表示InnoDB产生了多少次OS WAIT；</span><br><span class="line">                    signal count：表示进入OS WAIT的线程被唤醒次数</span><br><span class="line">Mutex(5.7后去除)	spins：空转次数，通过innodb_sync_spin_loops控制，超过则转到OS waits；</span><br><span class="line">                spin waits：spin线程无法获取锁而进入Spin wait；</span><br><span class="line">                rounds：spin wait进行轮询检查mutexes的次数；</span><br><span class="line">                OS waits：线程放弃spin wait进入挂起状态。</span><br><span class="line">RW-shared	RW-shared 共享锁</span><br><span class="line">RW-excl	RW-excl 排他锁</span><br><span class="line">RW-sx	5.7后新增；RW-sx 共享排他锁</span><br><span class="line">Spin rounds per wait	rounds &#x2F; spins &#x3D; 值</span><br></pre></td></tr></table></figure>
+
+<p>要明白InnoDB如何处理互斥量(Mutexes)，以及什么是两步获得锁(two-step approach)。</p>
 <ol>
-<li>Poll、Select模型</li>
-<li>Max-connections</li>
-<li>connection复用</li>
+<li>首先进程试图获得一个锁，如果此锁被它人占用。它就会执行所谓的spin wait，即所谓循环的查询“锁被释放了吗？”。</li>
+<li>如果在循环过程中，一直未得到锁释放的信息，则其转入OS WAIT，即所谓线程进入挂起(suspended)状态。</li>
+<li>直到锁被释放后，通过信号(singal)唤醒线程。</li>
 </ol>
-<p>mysql在启动后，创建了socket server，绑定了3306端口，并对其进行监听。和java里的写法类似，用一个while循环来监听新来的connection，如果有了新连接，就创建一个新的连接线程去处理（不能超过max-connections）。</p>
-<p>这种就是典型的BIO的模式，为每一个连接创建一个线程。并且，mysql在这里采用了IO多路复用，会有一个if语句来判断当前系统是否支持Poll模式，否则就走Select模型（各个系统默认都有实现）。</p>
-<p>Poll模型和Select非常类似，只是少了1024个fd的限制，都是采用遍历数组轮询有没有新IO事件的方式，在连接数较少的情况下，性能优异，要好于epoll。</p>
-<p>mysql基于BIO，本质上是不接受大量的socket连接的，所以设置了max-connections这个限制，超过设置的max，那么新来的连接会被拒绝。</p>
-<p>那么，第一个问题，为什么是BIO，而不是可以承受更大连接数的NIO和AIO呢？是否用NIO就会更好呢？</p>
-<h3 id="mysql的BIO"><a href="#mysql的BIO" class="headerlink" title="mysql的BIO"></a>mysql的BIO</h3><h4 id="bio和nio的区别"><a href="#bio和nio的区别" class="headerlink" title="bio和nio的区别"></a>bio和nio的区别</h4><p>在BIO模式下，调用read，如果发现没数据，就会Block住。</p>
-<p>在NIO模式下，调用read，如果发现没数据，就会立刻返回-1, 并且errno被设为EAGAIN。</p>
-<h5 id="基于NIO-IO多路复用的模式"><a href="#基于NIO-IO多路复用的模式" class="headerlink" title="基于NIO+IO多路复用的模式"></a>基于NIO+IO多路复用的模式</h5><p>server开发使用的web容器：tomcat、netty等，都是基于NIO+IO多路复用的模式，来大幅提升性能，承载高并发访问的。但是到了DB层，则使用hakiri、druid之类的线程池，开启10个线程去连接mysql，反复复用这个线程池。</p>
-<p>NIO+IO多路复用，并不是指多个用户socket共享一个IO，从而使得服务端的socket数量大减。而是把多个socket连接，归并到一个进程进行管理，如用一个大数组来聚合起来，然后循环遍历这个数组，来一次性把多个连接的事件通知业务代码进行处理。<br>这样就大幅减少了server的压力，高效利用资源。</p>
-<p>对mysql来说，一般都会有多个连接，毕竟并发肯定是要有的。不可能做个查询，也要大家一起排队等上一个人查询完。所以线程池和并发是一定的。</p>
-<h5 id="mysql和web-Server区别"><a href="#mysql和web-Server区别" class="headerlink" title="mysql和web Server区别"></a>mysql和web Server区别</h5><p>Web请求，往往是无状态的，一问一答的时候居多，请求也往往比较短促，对于顺序性也不是十分严格，哪怕是后请求的响应比先请求的提前到，也是有可能的。</p>
-<p>DB请求，DB采用session作为一个连接会话，这一个session里，SQL的执行必须是串行、同步、有序的，而不能是异步乱序的。原因是，一个session内可能有多个操作，增删改查、事务隔离，必须保证顺序不能乱。<br>DB维护这样一个session，是要花费远大于web Server处理一个请求的资源才能完成的。</p>
-<p>对于DB来说，连接是非常耗资源的事情，限制连接数是非常有必要的。</p>
-<p>注意，当连接mysql出问题时，随便加大应用服务的连接池和增大mysql的max-connection。不能改善mysql的性能。当进行非常密集的数据库操作时，连接池的数量对性能产生的巨大影响。</p>
-<h4 id="为什么用BIO，而不是NIO。"><a href="#为什么用BIO，而不是NIO。" class="headerlink" title="为什么用BIO，而不是NIO。"></a>为什么用BIO，而不是NIO。</h4><p>原因是JDBC不支持，JDBC出现了20年，它是一个标准，在它被提出时，只有BIO模型，导致数据库驱动对JDBC的实现都是BIO的形式，mysql驱动connector早早地实现了JDBC标准，就是采用阻塞的方式。</p>
-<p>当进行一个select查询，在查询没有完成之前，整个调用线程会被卡住，等到天荒地老也要等下去，绝不是一请求立马收到返回，然后等mysql回调你结果。</p>
-<p>其实，也有人修改了mysql的协议，增加了NIO+多路复用的功能，最后失败，主要原因是mysql和web server功能意义都不一样，确切地说，90%的场景下，不需要一个NIO的数据库。</p>
-<p>BIO+连接池，已经发展了很多年，大部分问题都已经解决，在目前的java环境中，是非常靠谱的方案。已经出现了很多优秀的连接池框架，你只需要配置好账号密码和连接池数量，就能很开心的使用mysql了。</p>
-<p>从mysql的角度来说，客户端多是一些IO密集型的应用，应该在一个线程里频繁做大量IO操作，而不是说有大量的客户端来反复连接我。毕竟，mysql的用户是你写的几个程序应用，而web server的用户是海量的。</p>
-<h3 id="连接池"><a href="#连接池" class="headerlink" title="连接池"></a>连接池</h3><p>mysql能支撑的连接数是有限的，那么就需要应用程序来利用好连接池。对于连接池来说，就是做好这10个连接的管理就好。</p>
-<p>对于mysql来说，管理好自己的所有连接也是很重要，哪些空闲的该休息就休息，让出资源，该复用就复用，避免创建太多线程。</p>
-<h4 id="IO密集的时候，要减少连接数。"><a href="#IO密集的时候，要减少连接数。" class="headerlink" title="IO密集的时候，要减少连接数。"></a>IO密集的时候，要减少连接数。</h4><p>譬如要读写几千万数据，非常密集的IO操作，那么你可以尝试一下开启少量的mysql连接（和cpu的核数相同）和开启大量的连接（成百上千），来做同样的事。你会发现，更少的连接数，会给你带来几百倍的性能提升。</p>
-<p>譬如，你有4辆车（4核），要从仓库里拉一大堆货物到另一个地方。如果只有4条路，简单操作，一个车走一路，反复折返跑。现在有了100条路，还是4个车，车要频繁的在100条路上来回切换，每条路都必须要走到。</p>
-<p>线程间的轮转会耗费大量的资源，尤其在密集操作时。但是当不密集时，情况就变了，大量的线程处于休息状态，那么你即便多开了几个连接，CPU还是能很快的照顾到你，并没有什么大的影响。</p>
-<h3 id="网络协议"><a href="#网络协议" class="headerlink" title="网络协议"></a>网络协议</h3><p>作为RPC的连接，内部rpc数据协议</p>
+<p>Spin wait的消耗远小于OSwaits。Spin wait利用cpu的空闲时间，检查锁的状态，OS Wait会有所谓content switch，从CPU内核中换出当前执行线程以供其它线程使用。</p>
+<p>所以应尽量减少OS waits，可以通过innodb_sync_spin_loops参数来平衡spin wait和os wait。Mutex信息可通过show engine innodb mutex查看。</p>
+<h2 id="LATEST-DETECTED-DEADLOCK"><a href="#LATEST-DETECTED-DEADLOCK" class="headerlink" title="LATEST DETECTED DEADLOCK"></a>LATEST DETECTED DEADLOCK</h2><p>记录最近一次死锁信息，只有产生过死锁才会有记录。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">------------------------</span><br><span class="line">LATEST DETECTED DEADLOCK</span><br><span class="line">------------------------</span><br><span class="line">190425 18:00:13</span><br><span class="line">*** (1) TRANSACTION:</span><br><span class="line">TRANSACTION 231E7C5DF, ACTIVE 0 sec starting index read</span><br><span class="line">mysql tables in use 1, locked 1</span><br><span class="line">LOCK WAIT 4 lock struct(s), heap size 1248, 3 row lock(s)</span><br><span class="line">MySQL thread id 1346996, OS thread handle 0x7fd968454700, query id 760545285 10.10.x.x app_user updating</span><br><span class="line">DELETE </span><br><span class="line">    FROM db_0.table_0</span><br><span class="line">    WHERE ORDER_ID IN (  456787464 , 456787465 )</span><br><span class="line">*** (1) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 5 page no 6064 n bits 824 index &#96;orderId_index&#96; of table &#96;db_0&#96;.&#96;table_0&#96; trx id 231E7C5DF lock_mode X waiting</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Record lock, heap no 180 PHYSICAL RECORD: n_fields 2; compact format; info bits 32</span><br><span class="line"> 0: len 8; hex 80000015eb6a1041; asc      j A;;</span><br><span class="line"> 1: len 8; hex 800000002018fce2; asc         ;</span><br><span class="line">*** (2) TRANSACTION:</span><br><span class="line">TRANSACTION 231E7C5DD, ACTIVE 0 sec starting index read, thread declared inside InnoDB 1</span><br><span class="line">mysql tables in use 1, locked 1</span><br><span class="line">5 lock struct(s), heap size 1248, 4 row lock(s)</span><br><span class="line">MySQL thread id 1348165, OS thread handle 0x7fd96669f700, query id 760545283 10.10.x.x app_user updating</span><br><span class="line">DELETE </span><br><span class="line">    FROM db_0.table_0</span><br><span class="line">    WHERE ORDER_ID IN (  456787464 , 456787465 )</span><br><span class="line">*** (2) HOLDS THE LOCK(S):</span><br><span class="line">RECORD LOCKS space id 5 page no 6064 n bits 824 index &#96;orderId_index&#96; of table &#96;db_0&#96;.&#96;table_0&#96; trx id 231E7C5DD lock_mode X locks rec but not gap</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Record lock, heap no 180 PHYSICAL RECORD: n_fields 2; compact format; info bits 32</span><br><span class="line"> 0: len 8; hex 80000015eb6a1041; asc      j A;;</span><br><span class="line"> 1: len 8; hex 800000002018fce2; asc         ;;</span><br><span class="line">*** (2) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 5 page no 6064 n bits 824 index &#96;orderId_index&#96; of table &#96;db_0&#96;.&#96;table_0&#96; trx id 231E7C5DD lock_mode X waiting</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Record lock, heap no 180 PHYSICAL RECORD: n_fields 2; compact format; info bits 32</span><br><span class="line"> 0: len 8; hex 80000015eb6a1041; asc      j A;;</span><br><span class="line"> 1: len 8; hex 800000002018fce2; asc         ;;</span><br><span class="line">*** WE ROLL BACK TRANSACTION （1）</span><br></pre></td></tr></table></figure>
+
+<p>死锁是指两个或两个以上的进程在执行过程中，因争夺资源而造成的一种互相等待的现象。正常死锁会自动释放，innodb有一个内在的死锁检测工具，</p>
+<p>当死锁超过一定时间后，会回滚其中一个事务，innodb_lock_wait_timeout可配置死锁等待超时时间。</p>
+<ul>
+<li><p>死锁在两情况下最容易产生：</p>
+</li>
+<li><p>高并发同时操作同一条数据</p>
+</li>
+</ul>
+<p>存在主键和辅助索引，加锁顺序相反</p>
+<p>避免死锁方法即降低并发，操作数据时使加锁顺序相同。  </p>
+<h2 id="TRANSACTIONS"><a href="#TRANSACTIONS" class="headerlink" title="TRANSACTIONS"></a>TRANSACTIONS</h2><p>包含了InnoDB事务(transaction)的统计信息。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">------------</span><br><span class="line">TRANSACTIONS</span><br><span class="line">------------</span><br><span class="line">Trx id counter 2409176</span><br><span class="line">Purge done for trx&#39;s n:o &lt; 2409171 undo n:o &lt; 0 state: running but idle</span><br><span class="line">History list length 31</span><br><span class="line">LIST OF TRANSACTIONS FOR EACH SESSION:</span><br><span class="line">---TRANSACTION 421224214038352, not started</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">---TRANSACTION 421224214044736, not started</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">---TRANSACTION 421224214039264, not started</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">---TRANSACTION 2409171, ACTIVE 1549 sec fetching rows, thread declared inside InnoDB 3871</span><br><span class="line">mysql tables in use 1, locked 0</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">MySQL thread id 653597, OS thread handle 140289889908480, query id 2528936 127.0.0.1 root Sending data</span><br><span class="line">SELECT &#x2F;*!40001 SQL_NO_CACHE *&#x2F; * FROM &#96;table&#96;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Trx id counter	当前事物ID</span><br><span class="line">Purge done for trx&#39;s	正在清理掉的transaction ID</span><br><span class="line">History list length	记录了undo spaces内未清掉的事务个数，Purge的原则是记录没有被其它事务继续使用。</span><br><span class="line">LIST OF TRANSACTIONS FOR EACH SESSION	每个session的事物状态</span><br></pre></td></tr></table></figure>
+<p>当前活跃的事物状态为ACTIVE，事物的详细信息，包括线程ID、执行时间、用户、SQL等。正在使用1个表，涉及锁的表0个。</p>
+<h2 id="FILE-I-O"><a href="#FILE-I-O" class="headerlink" title="FILE I/O"></a>FILE I/O</h2><p>在InnoDB中大量使用了AIO（Async IO）来处理IO 请求，IO Thread主要是负责这些IO请求的回调处理，通过调用fsync()函数协调内存与磁盘之间的数据。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">--------</span><br><span class="line">FILE I&#x2F;O</span><br><span class="line">--------</span><br><span class="line">I&#x2F;O thread 0 state: waiting for completed aio requests (insert buffer thread)</span><br><span class="line">I&#x2F;O thread 1 state: waiting for completed aio requests (log thread)</span><br><span class="line">I&#x2F;O thread 2 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 3 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 4 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 5 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 6 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 7 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 8 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 9 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 10 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 11 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 12 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 13 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 14 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 15 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 16 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 17 state: waiting for completed aio requests (write thread)</span><br><span class="line">Pending normal aio reads: [0, 0, 0, 0, 0, 0, 0, 0] , aio writes: [0, 0, 0, 0, 0, 0, 0, 0] ,</span><br><span class="line">ibuf aio reads:, log i&#x2F;o&#39;s:, sync i&#x2F;o&#39;s:</span><br><span class="line">Pending flushes (fsync) log: 0; buffer pool: 0</span><br><span class="line">15234061 OS file reads, 304461183 OS file writes, 73899457 OS fsyncs</span><br><span class="line">0.00 reads&#x2F;s, 0 avg bytes&#x2F;read, 0.24 writes&#x2F;s, 0.17 fsyncs&#x2F;s</span><br></pre></td></tr></table></figure>
+<p>InnoDB1.0版本之前有4个IO线程，1.1后做了优化，Purge Thread从Master Thread独立出来，Purge Cleaner Thread从InnoDB1.2版本引入，都是为了减轻Master Thread的工作，提高CPU利用率。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">insert buffer thread	合并插入缓冲，insert buffer维护非唯一辅助索引</span><br><span class="line">log thread	负责异步刷新事物日志</span><br><span class="line">read thread	预读，innodb_read_io_threads 默认4</span><br><span class="line">write thread	刷新脏页缓冲，innodb_write_io_threads 默认4</span><br><span class="line">purge thread	回收已经使用并分配的undo页，可设置多个</span><br><span class="line">purge cleaner Thread	刷新脏页</span><br></pre></td></tr></table></figure>
+<p>显示各个I/O thread的pending operations,pending的log和buffer pool thread的fsync()调用；</p>
+<ul>
+<li>aio：代表的是异步IO(asynchronous I/O)；</li>
+<li>OS file：显示了reads writes fsync() 调用次数。</li>
+</ul>
+<h2 id="Change-Buffer-INSERT-BUFFER-AND-ADAPTIVE-HASH-INDEX"><a href="#Change-Buffer-INSERT-BUFFER-AND-ADAPTIVE-HASH-INDEX" class="headerlink" title="(Change Buffer)INSERT BUFFER AND ADAPTIVE HASH INDEX"></a>(Change Buffer)INSERT BUFFER AND ADAPTIVE HASH INDEX</h2><h3 id="插入缓冲insert-buffer"><a href="#插入缓冲insert-buffer" class="headerlink" title="插入缓冲insert buffer"></a>插入缓冲insert buffer</h3><p>它是buffer_pool的一部分，用来做insert操作时的缓存的。</p>
+<p>如b+tree，以及数据的存放格式，那么当新插入数据时，倘若直接就插入到b+ tree里，那么可能会比较缓慢，需要读取、找到要插入的地方，还要做树的扩容、校验、寻址、落盘等等一大堆操作。</p>
+<p>在Innodb中，主键是行唯一标识，如果你的插入顺序是按照主键递增进行插入的，那么还好，它不需要磁盘的随机读取，找到了页，就能插，这样速度还是可以的。</p>
+<p>然而，如果你的表上有多个别的索引（二级索引），那么当插入时，对于那个二级索引树，就不是顺序的了，它需要根据自己的索引列进行排序，这就需要随机读取了。<br>二级索引越多，那么插入就会越慢，因为要寻找的树更多了。还有，如果你频繁地更新同一条数据，倘若也频繁地读写磁盘，那就不合适了，最好是将多个对同一page的操作，合并起来，统一操作。</p>
+<p>所以，Innodb设计了Insert Buffer，对于非聚簇索引的插入、更新操作，不是每次都插入到索引页中，而是先判断该二级索引页是否在缓冲池中，<br>若在，就直接插入，若不在，则先插入一个insert buffer里，再以一定的频率进行真正的插入到二级索引的操作，这时就可以聚合多个操作，一起去插入，就能提高性能。</p>
+<p>然而，insert buffer需要同时满足两个条件时，才会被使用：</p>
+<ul>
+<li>索引是二级索引</li>
+<li>索引不是unique</li>
+</ul>
+<p>注意，索引不能是unique，因为在插入缓冲时，数据库并不去查询索引页来判断插入的记录的唯一性，如果查找了，就又会产生随机读取。</p>
+<p>insert buffer的问题是，在写密集的情况下，内存会占有很大，默认最大可以占用1/2的Innodb_buffer_pool的空间。<br>很明显，如果占用过大，就会对其他的操作有影响，譬如能缓存的查询页就变少了。可以通过IBUF_POOL_SIZE_PER_MAX_SIZE来进行控制。</p>
+<h3 id="变更缓冲change-buffer"><a href="#变更缓冲change-buffer" class="headerlink" title="变更缓冲change buffer"></a>变更缓冲change buffer</h3><p>INSERT BUFFER即合并插入缓存，从innodb 1.0.x(MySQL5.5 之前)版本开始引入Change Buffer，是INSERT BUFFER升级版，即MySQL 5.1.x以上版本都支持，<br>不仅包括INSERT BUFFER，还包括UPDATE BUFFER、DELETE BUFFER、PURGE BUFFER。</p>
+<p>也就是所有DML操作，都会先进缓冲区，进行逻辑操作，后面才会真正落地。</p>
+<p>通过参数Innodb_change_buffering开始查看修改各种buffer的选项。可选值有inserts\deletes\purges\changes\all\none。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'Innodb_change_buffering%'</span>;</span><br><span class="line"><span class="comment">-- innodb_change_buffering	all</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'Innodb_change_buffer_max_size'</span>;</span><br><span class="line"><span class="comment">-- innodb_change_buffer_max_size	25</span></span><br></pre></td></tr></table></figure>
+<p>默认是所有操作都入buffer，参数是控制内存大小的，25代表最多使用1/4的缓冲池空间。</p>
+<p>通常来说，InnoDB辅助索引不同于聚集索引的顺序插入，如果每次修改二级索引都直接写入磁盘，则会有大量频繁的随机IO。<br>Change buffer 的主要目的是将对 非唯一 辅助索引页的操作缓存下来，以此减少辅助索引的随机IO，并达到操作合并的效果。它会占用部分Buffer Pool 的内存空间。<br>在 MySQL5.5 之前 Change Buffer其实叫 Insert Buffer，最初只支持 insert 操作的缓存，随着支持操作类型的增加，改名为 Change Buffer。<br>如果辅助索引页已经在缓冲区了，则直接修改即可；如果不在，则先将修改保存到 Change Buffer。<br>Change Buffer的数据在对应辅助索引页读取到缓冲区时合并到真正的辅助索引页中。Change Buffer 内部实现也是使用的 B+ 树。</p>
+<p>查看Change Buffer信息也可以通过 show engine innodb status 命令。更多信息见 <a href="https://mysqlserverteam.com/the-innodb-change-buffer/" target="_blank" rel="noopener">mysqlserverteam: the-innodb-change-buffer</a>。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-------------------------------------</span><br><span class="line">INSERT BUFFER AND ADAPTIVE HASH INDEX</span><br><span class="line">-------------------------------------</span><br><span class="line">Ibuf: size 1356, free list len 149402, seg size 149404, 2004231 merges</span><br><span class="line">merged operations:</span><br><span class="line"> insert 1373793, delete mark 316276978, delete 5341003</span><br><span class="line">discarded operations:</span><br><span class="line"> insert 0, delete mark 0, delete 0</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 2 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">193.03 hash searches&#x2F;s, 713.40 non-hash searches&#x2F;s</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Ibuf：size	已经合并页的数量</span><br><span class="line">free list len	空闲列表长度</span><br><span class="line">seg size	Insert Buffer大小</span><br><span class="line">merges	合并次数</span><br><span class="line">merged operations 	</span><br><span class="line">                    Change Buffer中每个操作次数；</span><br><span class="line">                    insert代表Insert Buffer;</span><br><span class="line">                    delete mark代表Delete Buffer；</span><br><span class="line">                    delete代表Purge Buffer;</span><br><span class="line">discarded operations	Change Buffer中无需合并的次数</span><br><span class="line">hash searches&#x2F;s	通过hash索引查询</span><br><span class="line">non-hash searches&#x2F;s	不能通过hash索引查询</span><br></pre></td></tr></table></figure>
+
+<p>可以通过 innodb_change_buffering 配置是否缓存辅助索引页的修改，默认为 all，即缓存 insert/delete-mark/purge 操作<br>(注：MySQL 删除数据通常分为两步，第一步是delete-mark，即只标记，而purge才是真正的删除数据)。</p>
+<p><img src="/images/post/db-mysql/changebuffer.webp" alt=""></p>
+<h3 id="ADAPTIVE-HASH-INDEX"><a href="#ADAPTIVE-HASH-INDEX" class="headerlink" title="ADAPTIVE HASH INDEX"></a>ADAPTIVE HASH INDEX</h3><p>自适应哈希索引(AHI)查询非常快，一般时间复杂度为 O(1)，相比 B+ 树通常要查询 3~4次，效率会有很大提升。</p>
+<p>innodb 通过观察索引页上的查询次数，如果发现建立哈希索引可以提升查询效率，则会自动建立哈希索引，称之为自适应哈希索引，不需要人工干预，可以通过 innodb_adaptive_hash_index 开启，MySQL5.7 默认开启。</p>
+<p>考虑到不同系统的差异，有些系统开启自适应哈希索引可能会导致性能提升不明显，而且为监控索引页查询次数增加了多余的性能损耗，</p>
+<p> MySQL5.7 更改了 AHI 实现机制，每个 AHI 都分配了专门分区，通过 innodb_adaptive_hash_index_parts配置分区数目，默认是8个，如前一节命令列出所示。</p>
+<p>通过(Change Buffer)INSERT BUFFER 可以看到自适应哈希索引大小、使用情况、每秒使用自适应哈希索引搜索情况。<br>自适应HASH索引，由INNODB存储引擎控制，只适合等值查询，不适合范围查询。</p>
+<h2 id="LOG"><a href="#LOG" class="headerlink" title="LOG"></a>LOG</h2><p>事物日志的信息。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">LOG</span><br><span class="line">---</span><br><span class="line">Log sequence number 33859450169594</span><br><span class="line">Log flushed up to   33859450169564</span><br><span class="line">Pages flushed up to 33859450169210</span><br><span class="line">Last checkpoint at  33859450169201</span><br><span class="line">0 pending log flushes, 0 pending chkp writes</span><br><span class="line">15044267 log i&#x2F;o&#39;s done, 0.10 log i&#x2F;o&#39;s&#x2F;second</span><br></pre></td></tr></table></figure>
+<p>InnoDB事物采用Write-Ahead log策略，即事物在提交时，先写重做日志，在修改页。</p>
+<p>Write-Ahead Log：如果一个页在写入磁盘时，必须先将内存中小于该页LSN的日志先写入到磁盘中。</p>
+<p>重做日志有LSN、每个页有LSN、Checkpoint也有LSN。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Log sequence number	最新产生的日志序列号</span><br><span class="line">Log flushed up to	已刷到磁盘的重做日志的日志号</span><br><span class="line">Pages flushed up to	已刷到磁盘的页的日志号</span><br><span class="line">Last checkpoint at	最后一次检查点位置，数据和日志一致的状态</span><br><span class="line">pending	当前挂起的日志读写操作</span><br></pre></td></tr></table></figure>
+<p>LSN记录的是重做日志的总量，单位是字节。以下三种情况会将重做日志缓存刷到重做日志文件：</p>
+<ul>
+<li><p>Master Thread 每秒刷重做日志缓存到重做日志文件</p>
+</li>
+<li><p>innodb_flush_log_at_trx_commit=1时，控制Log Buffer如何写入和刷到磁盘，每次事务提交刷重做日志缓存到重做日志文件</p>
+</li>
+<li><p>重做日志缓冲池剩余空间小于1/2时，刷重做日志缓存到重做日志文件</p>
+</li>
+</ul>
+<p>innodb_flush_log_at_trx_commit 说明：</p>
+<ul>
+<li>默认为1，表示每次事务提交都会将 Log Buffer 写入操作系统缓存，并调用配置的 “flush” 方法将数据写到磁盘。设置为 1 因为频繁刷磁盘效率会偏低，但是安全性高，最多丢失 1个 事务数据。而设置为 0 和 2 则可能丢失 1秒以上 的事务数据。</li>
+<li>为 0 则表示每秒才将 Log Buffer 写入内核缓冲区并调用 “flush” 方法将数据写到磁盘。</li>
+<li>为 2 则是每次事务提交都将 Log Buffer写入内核缓冲区，但是每秒才调用 “flush” 将内核缓冲区的数据刷到磁盘。</li>
+</ul>
+<p>注意，除了 MySQL 的缓冲区，操作系统本身也有内核缓冲区。</p>
+<p>Log Buffer是 重做日志在内存中的缓冲区，大小由 innodb_log_buffer_size 定义，默认是 16M。</p>
+<p>一个大的 Log Buffer可以让大事务在提交前不必将日志中途刷到磁盘，可以提高效率。如果你的系统有很多修改很多行记录的大事务，可以增大该值。</p>
+<p><img src="/images/post/db-mysql/innodb_flush_log_at_trx_commit.png" alt=""></p>
+<p>innodb_flush_log_at_timeout 可以配置刷新日志缓存到磁盘的频率，默认是1秒。注意刷磁盘的频率并不保证就正好是这个时间，可能因为MySQL的一些操作导致推迟或提前。<br>而这个 “flush” 方法并不是C标准库的 fflush 方法(fflush是将C标准库的缓冲写到内核缓冲区，并不保证刷到磁盘)，它通过 innodb_flush_method 配置的，默认是 fsync，即日志和数据都通过 fsync 系统调用刷到磁盘。</p>
+<p>可以发现，InnoDB 基本每秒都会将 Log buffer落盘。而InnoDB中使用的 redo log 和 undo log，它们是分开存储的。<br>redo log在内存中有log buffer，在磁盘对应ib_logfile文件。而undo log是记录在表空间ibd文件中的，InnoDB为undo log会生成undo页，对undo log本身的操作（比如向undo log插入一条记录），也会记录redo log，因此undo log并不需要马上落盘。<br>而 redo log则通常会分配一块连续的磁盘空间，然后先写到log buffer，并每秒刷一次磁盘。redo log必须在数据落盘前先落盘(Write Ahead Log)，从而保证数据持久性和一致性。而数据本身的修改可以先驻留在内存缓冲池中，再根据特定的策略定期刷到磁盘。</p>
+<h2 id="BUFFER-POOL-AND-MEMORY"><a href="#BUFFER-POOL-AND-MEMORY" class="headerlink" title="BUFFER POOL AND MEMORY"></a>BUFFER POOL AND MEMORY</h2><p>innodb_buffer_pool包含数据页、索引页、undo页、insert buffer、数据字典、自适应哈希索引、锁信息等。数据库缓冲池是通过LRU列表管理的。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">----------------------</span><br><span class="line">BUFFER POOL AND MEMORY</span><br><span class="line">----------------------</span><br><span class="line">Total large memory allocated 19789774848</span><br><span class="line">Dictionary memory allocated 3944999</span><br><span class="line">Buffer pool size   1179504</span><br><span class="line">Free buffers       8192</span><br><span class="line">Database pages     1116347</span><br><span class="line">Old database pages 411925</span><br><span class="line">Modified db pages  3</span><br><span class="line">Pending reads      0</span><br><span class="line">Pending writes: LRU 0, flush list 0, single page 0</span><br><span class="line">Pages made young 74514305, not young 649973267</span><br><span class="line">0.21 youngs&#x2F;s, 0.17 non-youngs&#x2F;s</span><br><span class="line">Pages read 15233915, created 7356668, written 264739684</span><br><span class="line">0.00 reads&#x2F;s, 0.00 creates&#x2F;s, 0.10 writes&#x2F;s</span><br><span class="line">Buffer pool hit rate 1000 &#x2F; 1000, young-making rate 0 &#x2F; 1000 not 0 &#x2F; 1000</span><br><span class="line">Pages read ahead 0.00&#x2F;s, evicted without access 0.00&#x2F;s, Random read ahead 0.00&#x2F;s</span><br><span class="line">LRU len: 1116347, unzip_LRU len: 0</span><br><span class="line">I&#x2F;O sum[48]:cur[0], unzip sum[0]:cur[0]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Total large memory allocated	为innodb 分配的总内存数(byte)</span><br><span class="line">Dictionary memory allocated	为innodb数据字典分配的内存数(byte)</span><br><span class="line">Buffer pool size	innodb_buffer_pool的页数量</span><br><span class="line">Free buffers	lru列表中的空闲页数量</span><br><span class="line">Database pages	lru列表中的非空闲页数量</span><br><span class="line">Old database pages	old子列表的页数量</span><br><span class="line">Modified db pages	脏页的数量</span><br><span class="line">Pending reads	挂起读的数量</span><br></pre></td></tr></table></figure>
+<p>可以看到当前Buffer Pool Size共有1179504页，即1179504*16K。新读取到的页默认插入LRU列表的5/8的位置。</p>
+<p>此值由innodb_old_blocks_pct控制，即前5/8称为new list，后面3/8的称为old list。</p>
+<p>Pages made young 显示LRU列表中old list移到new list的次数，not young显示仍在old list的次数。</p>
+<p>这两个值受innodb_old_blocks_time影响，此值为微秒。如果old list中超过30微秒不再读取，则记录not young，反之记录为Pages made young。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&gt; show global variables like &#39;%blocks%&#39;;</span><br><span class="line">+------------------------+-------+</span><br><span class="line">| Variable_name          | Value |</span><br><span class="line">+------------------------+-------+</span><br><span class="line">| innodb_old_blocks_pct  | 37    |</span><br><span class="line">| innodb_old_blocks_time | 30    |</span><br><span class="line">+------------------------+-------+</span><br></pre></td></tr></table></figure>
+<p>youngs/s,non-youngs/s，表示每秒这两类操作的次数。</p>
+<p>Pages read,created,written，表示innodb被读取，创建，写入了多少页及每秒的次数。</p>
+<p>Buffer pool hit rate，表示缓冲池命中率，如果低于95%需要具体排查。</p>
+<p>Pages read ahead，表示页面预读，随机预读的每秒页数。</p>
+<p>LRU中包含unzip_LRU，unzip_LRU是管理非16KB的压缩表。</p>
+<h2 id="INDIVIDUAL-BUFFER-POOL-INFO"><a href="#INDIVIDUAL-BUFFER-POOL-INFO" class="headerlink" title="INDIVIDUAL BUFFER POOL INFO"></a>INDIVIDUAL BUFFER POOL INFO</h2><p>可通过innodb_buffer_pool_instances 来配置多个缓冲池实例，默认为1。可减少数据库内部资源竞争，增加并发处理能力。如果分配多个缓冲池实例，每个缓冲池大小为 innodb_buffer_pool_size / innodb_buffer_pool_instances 。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">----------------------</span><br><span class="line">INDIVIDUAL BUFFER POOL INFO</span><br><span class="line">----------------------</span><br><span class="line">---BUFFER POOL 0</span><br><span class="line">Buffer pool size   147438</span><br><span class="line">Free buffers       1024</span><br><span class="line">Database pages     139530</span><br><span class="line">Old database pages 51486</span><br><span class="line">Modified db pages  0</span><br><span class="line">Pending reads      0</span><br><span class="line">Pending writes: LRU 0, flush list 0, single page 0</span><br><span class="line">Pages made young 8790743, not young 77467460</span><br><span class="line">0.00 youngs&#x2F;s, 0.00 non-youngs&#x2F;s</span><br><span class="line">Pages read 1856892, created 916430, written 30727167</span><br><span class="line">0.00 reads&#x2F;s, 0.00 creates&#x2F;s, 0.00 writes&#x2F;s</span><br><span class="line">No buffer pool page gets since the last printout</span><br><span class="line">Pages read ahead 0.00&#x2F;s, evicted without access 0.00&#x2F;s, Random read ahead 0.00&#x2F;s</span><br><span class="line">LRU len: 139530, unzip_LRU len: 0</span><br><span class="line">I&#x2F;O sum[6]:cur[0], unzip sum[0]:cur[0]</span><br><span class="line">---BUFFER POOL 1</span><br><span class="line">---BUFFER POOL 2</span><br><span class="line">---BUFFER POOL 3</span><br></pre></td></tr></table></figure>
+<p>可以通过information_schema.INNODB_BUFFER_POOL_STATS视图查看每个buffer_pool实例的信息，MySQL默认一个page大小为16K，</p>
+<p>可以得出POOL_SIZE * innodb_buffer_pool_instances * 16K = innodb_buffer_pool_size。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">(root@localhost) [information_schema] &gt;select POOL_ID,POOL_SIZE,FREE_BUFFERS,DATABASE_PAGES,OLD_DATABASE_PAGES,MODIFIED_DATABASE_PAGES,PAGES_MADE_YOUNG,PAGES_NOT_MADE_YOUNG from information_schema.INNODB_BUFFER_POOL_STATS;</span><br><span class="line">+---------+-----------+--------------+----------------+--------------------+-------------------------+------------------+----------------------+</span><br><span class="line">| POOL_ID | POOL_SIZE | FREE_BUFFERS | DATABASE_PAGES | OLD_DATABASE_PAGES | MODIFIED_DATABASE_PAGES | PAGES_MADE_YOUNG | PAGES_NOT_MADE_YOUNG |</span><br><span class="line">+---------+-----------+--------------+----------------+--------------------+-------------------------+------------------+----------------------+</span><br><span class="line">|       0 |     90112 |            0 |          90109 |              33279 |                       0 |            18064 |            132278807 |</span><br><span class="line">|       1 |     90112 |            0 |          90109 |              33282 |                       0 |            18342 |            132086061 |</span><br><span class="line">|       2 |     90112 |            0 |          90110 |              33282 |                       0 |            17631 |            132149779 |</span><br><span class="line">+---------+-----------+--------------+----------------+--------------------+-------------------------+------------------+----------------------+</span><br></pre></td></tr></table></figure>
+<p>详细说明同上。</p>
+<h2 id="ROW-OPERATIONS"><a href="#ROW-OPERATIONS" class="headerlink" title="ROW OPERATIONS"></a>ROW OPERATIONS</h2><p>显示了row 操作及其他一些统计信息。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">--------------</span><br><span class="line">ROW OPERATIONS</span><br><span class="line">--------------</span><br><span class="line">0 queries inside InnoDB, 0 queries in queue</span><br><span class="line">0 read views open inside InnoDB</span><br><span class="line">Process ID&#x3D;444943, Main thread ID&#x3D;139899621590784, state: sleeping</span><br><span class="line">Number of rows inserted 172887566, updated 227534242, deleted 56676133, read 709667077</span><br><span class="line">8.77 inserts&#x2F;s, 8.04 updates&#x2F;s, 0.00 deletes&#x2F;s, 10.92 reads&#x2F;s</span><br></pre></td></tr></table></figure>
+<p>queries，表示innodb内核中有多少个线程，队列中有多少个线程。</p>
+<p>read views open inside InnoDB，表示有多少个read view 被打开，一个read view 包含事物开始点数据库内容的MVCC快照。</p>
+<p>Process ID=444943，表示内核的主线程状态。</p>
+<p>Number of rows inserted、updated、deleted、read，表示多少行被插入，更新和删除，读取及每秒信息，可用于监控。</p>
+<p>可通过以下命令查看：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">(root@localhost) [(none)] &gt;show global status like &#39;Innodb_rows_%&#39;;</span><br><span class="line">+----------------------+-----------+</span><br><span class="line">| Variable_name        | Value     |</span><br><span class="line">+----------------------+-----------+</span><br><span class="line">| Innodb_rows_deleted  | 56676133  |</span><br><span class="line">| Innodb_rows_inserted | 172887566 |</span><br><span class="line">| Innodb_rows_read     | 709667077 |</span><br><span class="line">| Innodb_rows_updated  | 227534242 |</span><br><span class="line">+----------------------+-----------+</span><br><span class="line"></span><br><span class="line">(root@localhost) [(none)] &gt;show global status like &#39;Uptime&#39;;</span><br><span class="line">+---------------+---------+</span><br><span class="line">| Variable_name | Value   |</span><br><span class="line">+---------------+---------+</span><br><span class="line">| Uptime        | 1757270 |</span><br><span class="line">+---------------+---------+</span><br><span class="line">END OF INNODB MONITOR OUTPUT</span><br></pre></td></tr></table></figure>
+
+<h2 id="InnoDB信息结束语。"><a href="#InnoDB信息结束语。" class="headerlink" title="InnoDB信息结束语。"></a>InnoDB信息结束语。</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">----------------------------</span><br><span class="line">END OF INNODB MONITOR OUTPUT</span><br><span class="line">&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;</span><br><span class="line">如果看不到这行输出，可能是有大量事务或者有一个大的死锁截断了输出信息。</span><br></pre></td></tr></table></figure>
 ]]></content>
       <categories>
-        <category>db-mysql</category>
+        <category>db-mysql-core</category>
       </categories>
   </entry>
   <entry>
-    <title>002-mysql索引-从树到B+树，聚集索引与非聚集索引</title>
-    <url>/articles/20200131/e01cc3be.html</url>
-    <content><![CDATA[<p>索引是一种数据结构，用于帮助我们在大量数据中快速定位到我们想要查找的数据。</p>
+    <title>09-存储引擎层-innodb框架-索引-使用B+树组织数据、实例查看数据</title>
+    <url>/articles/20200205/190e6be3.html</url>
+    <content><![CDATA[<p>摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
+<a id="more"></a>
+
+
+<h2 id="mysql-InnoDB-B-树组织数据、查询数据"><a href="#mysql-InnoDB-B-树组织数据、查询数据" class="headerlink" title="mysql InnoDB-B+树组织数据、查询数据"></a>mysql InnoDB-B+树组织数据、查询数据</h2><p>在MySQL中，InnoDB页的大小默认是16k，当然也可以通过参数设置：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">show variables like &#39;innodb_page_size&#39;;</span><br><span class="line">-- innodb_page_size	16384</span><br></pre></td></tr></table></figure>
+<h3 id="方式一、直接按页存储【假想】"><a href="#方式一、直接按页存储【假想】" class="headerlink" title="方式一、直接按页存储【假想】"></a>方式一、直接按页存储【假想】</h3><p>数据表中的数据都是存储在页中的，所以一个页中能存储多少行数据呢？假设一行数据的大小是 1K，那么一个页可以存放 16 行这样的数据。</p>
+<p>如果数据库按这样的方式存储，那么查找数据就成为一个问题。不知道要查找的数据存在哪个页中，每次查询都需要把所有的页遍历一遍，时间复杂度为 n。</p>
+<h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例一、2层b+ tree</p>
+<p><img src="source/images/post/db-mysql/ecengbtree.png" alt=""></p>
+<p>这个树只有2层，首先每个page都有自己的唯一编号，将来就要通过编号来找对应的page。根页做为一个第一层的索引页，里面是不存在叶子数据（行数据）的，只存放Key，同时还包含了pageNo信息，用来将来去找对应的页。</p>
+<p>所有的记录节点都是按键值的大小顺序存放在同一层的叶子节点上，由各叶子节点指针进行连接（双向指针）。所以查询时，无论正序倒序，其实是一样的扫描速度。</p>
+<p>每一层的最左边节点页面的最左边位置，会有一个Min记录，该记录由2部分组成，第一部分就是一个Min标记，代表这就是 最小值；第二部分是一个pageNo指针，指向下一层中最左边的记录。注意看根页的Min记录，就是这样的。而33号page的Min记录由于没有下一层了，所以没有pageNo指针。</p>
+<p>可以看到，上一层的Key，在下一层对应的page中，也会重复存在，譬如Key=10的记录。但是，每个page，只有第一条数据会和上层有重复，其他的不会有重复。</p>
+<p>每一个page还会有一个最大记录和最小记录，用来标记该page的边界，便于查询。</p>
+<p>由此结构可以看到，做一次查询的耗时，每一层只需要一次内存级的二分查找，定位后就进入下一层，再一次二分查找。</p>
+<p>譬如查询Key=11，那么可以定位到56号page，因为11小于78号page的最小值，之后找到56号page，在做一次二分查询。就能找到11。2层只需要2次IO，就能找到一条数据。3层3次，之前已经说过，3层和4层分别能存多少数据，这个查询效率其实是非常高的。</p>
+<p>通过这样的方式，我们就知道了一颗树是怎么构成的了。</p>
+<p>示例解说：</p>
+<ol>
+<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt=""></li>
+</ol>
+<p>先将数据记录按主键进行排序，分别存放在不同的页中（为了便于理解这里一个页中只存放 3 条记录，实际情况可以存放很多）。</p>
+<p>除了存放数据的页以外，还有存放键值+指针的页，如图中 page number=3 的页，该页存放键值和指向数据页的指针，这样的页由 N 个键值+指针组成。</p>
+<p>当然它也是排好序的。这样的数据组织形式，我们称为索引组织表。  </p>
+<ol start="2">
+<li>B+树-查询数据<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">5</span>;</span><br></pre></td></tr></table></figure>
+id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么知道 user 表的根页在哪呢？</li>
+</ol>
+<p>其实每张表的根页位置在表空间文件中是固定的，即 page number=3 的页（后续说明）。</p>
+<p>找到根页后通过二分查找法，定位到 id=5 的数据应该在指针 P5 指向的页中，那么进一步去 page number=5 的页中查找，同样通过二分查询法即可找到 id=5 的记录：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">5    zhao2   27</span><br></pre></td></tr></table></figure>
+<p>小结：  InnoDB 中主键索引 B+ 树是如何组织数据、查询数据</p>
+<p>InnoDB 存储引擎的最小存储单元是页，页可以用于存放数据也可以用于存放键值+指针，在 B+ 树中叶子节点存放数据，非叶子节点存放键值+指针。</p>
+<p>索引组织表通过非叶子节点的二分查找法以及指针确定数据在哪个页中，进而在去数据页中查找到需要的数据。</p>
+<h3 id="Page内详细结构"><a href="#Page内详细结构" class="headerlink" title="Page内详细结构"></a>Page内详细结构</h3><p><img src="/images/post/db-mysql/page.png" alt=""></p>
+<p>page内的存储，共16K的空间,分为几个部分，文件管理头信息、页面头信息、页面尾信息、最小记录最大记录、用户记录、可重用空间、未使用空间、页面槽信息。</p>
+<p>用户记录就是行数据，可重用就是曾经被分配过数据后来被删了，未使用就是没分配过的空间。</p>
+<h4 id="文件管理头信息"><a href="#文件管理头信息" class="headerlink" title="文件管理头信息"></a>文件管理头信息</h4><p>它占用38个字节，里面存储的东西主要有:</p>
+<ul>
+<li>该页面的checkSum信息，校验文件是否被损坏的；</li>
+<li>该页面在当前表空间的页面号（pageNo）；</li>
+<li>当前页面的上一个页面的pageNo；</li>
+<li>下一个页面的pageNo；</li>
+<li>当前页面最后一次被修改时，对应日志的LSN值，与后面的日志系统有关；</li>
+<li>当前页面的类型；</li>
+<li>只有第0号页面会存一个LSN值，用来存储当前Innodb引擎最大的被flush的LSN值，将来做checkPoint时用；</li>
+<li>标记属于哪个表空间的（避免多个表空间，有相同的pageNo的页）</li>
+</ul>
+<h4 id="页面头信息"><a href="#页面头信息" class="headerlink" title="页面头信息"></a>页面头信息</h4><ul>
+<li>槽的个数；</li>
+<li>未使用空间的指针；</li>
+<li>存储的记录数，包括最大最小记录的管理；</li>
+<li>已被删除的记录的链表的首指针；</li>
+<li>已被标记删除的记录数；</li>
+<li>最后被插入的记录的位置；</li>
+<li>当前节点在b+ tree处于第几层，叶子就是0，往上就加1；</li>
+</ul>
+<h4 id="页面尾部："><a href="#页面尾部：" class="headerlink" title="页面尾部："></a>页面尾部：</h4><ul>
+<li>这8个字节还是用来做完整性校验的。</li>
+</ul>
+<h4 id="页面重组"><a href="#页面重组" class="headerlink" title="页面重组"></a>页面重组</h4><p>一个页面会频繁的插入删除，在插入过程中，都会去已经删除的可重用链表去找合适的空间，如果放得下，就会放进去，放不下，另寻空间。<br>时间一长，就会有空间碎片产出，譬如累计的空闲空间还有很多呢，但就是找不到能放下一条新数据的合适空间。</p>
+<p>那么带来的问题很明显，page增加，每个page存储数据量下降，磁盘占用很大，但存的数据并不多，IO数增加，性能下降。</p>
+<p>如果是一张表的话，如果大量数据被删，就需要及时处理回收空间，可以通过一个空的alter命令，如alter table tablename engine innodb，就可以将表的空间给回收重组了。</p>
+<p>对于页面也一样，在数据库向某一个页面插入时，如果找不到大小合适的空间，就会做一次页面重组操作。</p>
+<p>重组的方式是，新建一个buffer pool页面，然后将老页面的数据一条一条插入到新页面，插入完成后，将老页面空间释放掉，再修改指针位置，指向新页面。</p>
+<h2 id="mysql-InnoDB-B-树存储数据量"><a href="#mysql-InnoDB-B-树存储数据量" class="headerlink" title="mysql InnoDB-B+树存储数据量"></a>mysql InnoDB-B+树存储数据量</h2><h3 id="数据量估算"><a href="#数据量估算" class="headerlink" title="数据量估算"></a>数据量估算</h3><p><strong>以B+ 树高为 2为例计算</strong></p>
+<p>假设 B+ 树高为 2，即存在一个根节点和若干个叶子节点，那么这棵 B+ 树的存放总记录数为：根节点指针数*单个叶子节点记录行数。</p>
+<p>上文已经说明单个叶子节点（页）中的记录数=16K/1K=16。（这里假设一行记录的数据大小为 1K，实际上现在很多互联网业务数据记录大小通常就是 1K 左右）。</p>
+<p>那么现在需要计算出非叶子节点能存放多少指针？假设主键 ID 为 bigint 类型，长度为 8 字节，而指针大小在 InnoDB 源码中设置为 6 字节，这样一共 14 字节。</p>
+<p>一个页中能存放多少这样的单元，其实就代表有多少指针，即 16384/14=1170。</p>
+<p>可以算出一棵高度为 2 的 B+ 树，能存放 1170*16=18720 条这样的数据记录。</p>
+<p>根据同样的原理可以算出一个高度为 3 的 B+ 树可以存放：1170<em>1170</em>16=21902400 条这样的记录。</p>
+<p>所以在 InnoDB 中 B+ 树高度一般为 1-3 层，它就能满足千万级的数据存储。</p>
+<p>在查找数据时一次页的查找代表一次 IO，所以通过主键索引查询通常只需要 1-3 次 IO 操作即可查找到数据。</p>
+<h3 id="InnoDB-主键索引-B-树的高度"><a href="#InnoDB-主键索引-B-树的高度" class="headerlink" title="InnoDB 主键索引 B+ 树的高度"></a>InnoDB 主键索引 B+ 树的高度</h3><p>上面通过推断得出 B+ 树的高度通常是 1-3，下面我们从另外一个侧面证明这个结论。</p>
+<p>在 InnoDB 的表空间文件中，约定 page number 为 3 的代表主键索引的根页，而在根页偏移量为 64 的地方存放了该 B+ 树的 page level。</p>
+<p>如果 page level 为 1，树高为 2，page level 为 2，则树高为 3。即 B+ 树的高度=page level+1；</p>
+<p>查询系统表：page level。</p>
+<p>在实际操作之前，可以通过 InnoDB 元数据表确认主键索引根页的 page number 为 3，也可以从《InnoDB 存储引擎》这本书中得到确认：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO</span><br><span class="line">FROM</span><br><span class="line">    information_schema.INNODB_SYS_INDEXES a,</span><br><span class="line">    information_schema.INNODB_SYS_TABLES b</span><br><span class="line">WHERE a.table_id &#x3D; b.table_id AND a.space &lt;&gt; 0;</span><br></pre></td></tr></table></figure>
+<p>输出</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">blockchain_manager&#x2F;member	    PRIMARY	    22	3	6	3</span><br><span class="line">blockchain_manager&#x2F;member_group	PRIMARY	    23	3	7	3</span><br><span class="line">blockchain_manager&#x2F;permission	PRIMARY	    24	3	8	3</span><br><span class="line">blockchain_manager&#x2F;permission	idx_group	56	0	8	4</span><br></pre></td></tr></table></figure>
+<p>可以看出数据库 blockchain_manager 下的 member 表、member 表、permission表主键索引根页的 page number 均为 3，而其他的二级索引 page number 为 4。</p>
+<p>关于二级索引与主键索引的区别请参考 MySQL 相关书籍，</p>
+<h2 id="实际操作查看"><a href="#实际操作查看" class="headerlink" title="实际操作查看"></a>实际操作查看</h2><h3 id="创建测试数据"><a href="#创建测试数据" class="headerlink" title="创建测试数据"></a>创建测试数据</h3><h4 id="测试表"><a href="#测试表" class="headerlink" title="测试表"></a>测试表</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE &#96;table5hang&#96; (</span><br><span class="line">  &#96;id&#96; bigint(20) NOT NULL AUTO_INCREMENT,</span><br><span class="line">  &#96;username&#96; varchar(255) DEFAULT NULL,</span><br><span class="line">  &#96;age&#96; int(11) DEFAULT NULL,</span><br><span class="line">  PRIMARY KEY (&#96;id&#96;)</span><br><span class="line">) ENGINE&#x3D;InnoDB DEFAULT CHARSET&#x3D;utf8;</span><br></pre></td></tr></table></figure>
+<p>修改表名，依次创建 table15w、table500w、table1000w</p>
+<h4 id="测试数据-添加"><a href="#测试数据-添加" class="headerlink" title="测试数据 添加"></a>测试数据 添加</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">delimiter //  <span class="comment">#定义标识符为双斜杠</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">PROCEDURE</span> my_procedure () <span class="comment">#创建无参存储过程</span></span><br><span class="line"><span class="keyword">BEGIN</span></span><br><span class="line">    <span class="keyword">DECLARE</span> n <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span> ; <span class="comment"># 申明变量</span></span><br><span class="line">    <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang(username,age)  values '</span>;</span><br><span class="line">    <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">    WHILE n &lt; 6 DO</span><br><span class="line">        <span class="keyword">set</span> @execdata=<span class="keyword">concat</span>(@execdata,<span class="string">"("</span>,<span class="string">"'name-"</span>,n,<span class="string">"',"</span>,n%<span class="number">100</span>,<span class="string">")"</span>);</span><br><span class="line"></span><br><span class="line">        if n%5=0</span><br><span class="line">        then</span><br><span class="line">            <span class="keyword">set</span> @execSql = <span class="keyword">concat</span>(@execSql,@execdata,<span class="string">";"</span>);</span><br><span class="line">            <span class="comment">#select @execSql;</span></span><br><span class="line">            <span class="keyword">prepare</span> stmt <span class="keyword">from</span> @execSql;</span><br><span class="line">            <span class="keyword">execute</span> stmt;</span><br><span class="line">            <span class="keyword">DEALLOCATE</span> <span class="keyword">prepare</span> stmt;</span><br><span class="line">            <span class="keyword">commit</span>;  </span><br><span class="line"></span><br><span class="line">            <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang (username,age)  values '</span>;</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line">        ELSE</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="keyword">concat</span>(@execdata,<span class="string">','</span>);</span><br><span class="line">        <span class="keyword">end</span> <span class="keyword">if</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">SET</span> n = n + <span class="number">1</span> ; <span class="comment">#循环一次,i加一</span></span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span> ; <span class="comment">#结束while循环</span></span><br><span class="line">    <span class="comment">#select count(*) from test_table;</span></span><br><span class="line"><span class="keyword">END</span></span><br><span class="line">//</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> my_procedure(); <span class="comment">#调用存储过程</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br></pre></td></tr></table></figure>
+<p>插入数据，依次修改表名：table15w、table500w、table1000w 以及插入条数</p>
+<p>根据性能 500w、1000w 数据量的需要分批插入。</p>
+<p>查看文件结构，mysql每次建库，会在data下创建以库名为名的文件夹，内部文件是表名，如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-rw-rw----  1    54B  1 31 11:36 db.opt</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table1000w.frm</span><br><span class="line">-rw-rw----  1   460M  1 31 12:41 table1000w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table15w.frm</span><br><span class="line">-rw-rw----  1    15M  1 31 11:54 table15w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table500w.frm</span><br><span class="line">-rw-rw----  1   236M  1 31 12:19 table500w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:40 table5hang.frm</span><br><span class="line">-rw-rw----  1    96K  1 31 11:51 table5hang.ibd</span><br></pre></td></tr></table></figure>
+
+<p>因为主键索引 B+ 树的根页在整个表空间文件中的第 3 个页开始，所以可以算出它在文件中的偏移量：16384*3=49152（16384 为页大小）。</p>
+<p>另外根据《InnoDB 存储引擎》中描述在根页的 64 偏移量位置前 2 个字节，保存了 page level 的值。</p>
+<p>因此想要的 page level 的值在整个文件中的偏移量为：16384*3+64=49152+64=49216，前 2 个字节中。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -s 49216 -n 10 table5hang.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 00 00 00 00 00 00 00 00 3c                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table15w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 01 00 00 00 00 00 00 00 3b                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table500w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 3a                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table1000w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 39                  </span><br><span class="line">000c04a</span><br></pre></td></tr></table></figure>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>table5hang 表数据行数为 5 条，B+ 树高度为 1，<br>table15w   表数据行数为 15 万，B+ 树高度为 2，<br>table500w  表数据行数为 500 万，B+ 树高度为 3，<br>table1000w 表数据行数为 1000 万，B+ 树高度为 3。</p>
+<p>500w、1000w 两个表树的高度都是 3。换句话说这两个表通过索引查询效率并没有太大差异，因为都只需要做 3 次 IO。<br>那么如果有一张表行数是一千万，那么他的 B+ 树高度依旧是 3，查询效率仍然不会相差太大。region 表只有 5 行数据，当然他的 B+ 树高度为 1。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table500w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table1000w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>08-存储引擎层-innodb框架-索引-树到B+树演变、聚集索引与非聚集索引</title>
+    <url>/articles/20200205/4e769343.html</url>
+    <content><![CDATA[<p>摘要：从树到B+树解释索引演变过程，聚集索引与非聚集索引</p>
+<p>索引是一种数据结构，用于帮助我们在大量数据中快速定位到我们想要查找的数据。</p>
 <p>索引在 MySQL 数据库中分三类：</p>
 <ul>
 <li>B+ 树索引</li>
@@ -168,7 +497,15 @@
 <p>也就是说上图中的 B+ 树索引就是 InnoDB 中 B+ 树索引真正的实现方式，准确的说应该是聚集索引。</p>
 <p>通过上图可以看到，在 InnoDB 中，通过数据页之间通过双向链表连接以及叶子节点中数据之间通过单向链表连接的方式可以找到表中所有的数据。</p>
 <p>MyISAM 中的 B+ 树索引实现与 InnoDB 中的略有不同。在 MyISAM 中，B+ 树索引的叶子节点并不存储数据，而是存储数据的文件地址。</p>
-<h1 id="mysql聚集索引-VS-非聚集索引"><a href="#mysql聚集索引-VS-非聚集索引" class="headerlink" title="mysql聚集索引 VS 非聚集索引"></a>mysql聚集索引 VS 非聚集索引</h1><h2 id="聚集索引-VS-非聚集索引-概念"><a href="#聚集索引-VS-非聚集索引-概念" class="headerlink" title="聚集索引 VS 非聚集索引 概念"></a>聚集索引 VS 非聚集索引 概念</h2><p>在上面介绍 B+ 树索引的时候，提到了图中的索引其实是聚集索引的实现方式。</p>
+<h1 id="mysql聚集索引-VS-非聚集索引"><a href="#mysql聚集索引-VS-非聚集索引" class="headerlink" title="mysql聚集索引 VS 非聚集索引"></a>mysql聚集索引 VS 非聚集索引</h1><p>InnoDB数据文件本身就是索引文件，其索引分聚集索引和辅助索引，聚集索引的叶节点包含了完整的数据记录，辅助索引叶节点数据部分是主键的值，</p>
+<p>除了空间索引外，InnoDB的索引实现基本都是 B+ 树，如图所示。</p>
+<p>其中非叶子结点存储的是子页的最小的键值和子页的页号，叶子结点存储的是数据，数据按照索引键排序。</p>
+<p>同一层的页之间用双向链表连接(前面提到的FIL Header中PREV PAGE 和 NEXT PAGE)，同一页内的记录用单向链表连接(Record Header中记录了下一条记录的偏移)。</p>
+<p>每一页设置了两个虚拟记录Infimum和Supremum用于标识页的开始和结束。</p>
+<p><img src="/images/post/db-mysql/bptreestruct.webp" alt=""></p>
+<p>在InnoDB中根据辅助索引查询，如果除了主键外还有其他字段，则需要查询两遍，先根据辅助索引查询主键的值，然后再到主索引中查询得到记录。</p>
+<p>此外，因为辅助索引的数据部分是主键值，主键不能过大，否则会导致辅助索引占用空间变大，用自增ID做主键是个不错的选择。</p>
+<h2 id="聚集索引-VS-非聚集索引-概念"><a href="#聚集索引-VS-非聚集索引-概念" class="headerlink" title="聚集索引 VS 非聚集索引 概念"></a>聚集索引 VS 非聚集索引 概念</h2><p>在上面介绍 B+ 树索引的时候，提到了图中的索引其实是聚集索引的实现方式。</p>
 <p>那什么是聚集索引呢？在 MySQL 中，B+ 树索引按照存储方式的不同分为聚集索引和非聚集索引。</p>
 <p>主要说明下 InnoDB 中的聚集索引和非聚集索引：</p>
 <p>①聚集索引（聚簇索引）：以 InnoDB 作为存储引擎的表，表中的数据都会有一个主键，即使不创建主键，系统也会帮你创建一个隐式的主键。</p>
@@ -176,7 +513,12 @@
 <p>这种以主键作为 B+ 树索引的键值而构建的 B+ 树索引，称之为聚集索引。</p>
 <p>②非聚集索引（非聚簇索引）：以主键以外的列值作为键值构建的 B+ 树索引，我们称之为非聚集索引。</p>
 <p>非聚集索引与聚集索引的区别在于非聚集索引的叶子节点不存储表中的数据，而是存储该列对应的主键，想要查找数据还需要根据主键再去聚集索引中进行查找，这个再根据聚集索引查找数据的过程，称为回表。</p>
-<h2 id="利用聚集索引-和-非聚集索引-查找数据"><a href="#利用聚集索引-和-非聚集索引-查找数据" class="headerlink" title="利用聚集索引 和 非聚集索引 查找数据"></a>利用聚集索引 和 非聚集索引 查找数据</h2><h3 id="利用聚集索引查找数据"><a href="#利用聚集索引查找数据" class="headerlink" title="利用聚集索引查找数据"></a>利用聚集索引查找数据</h3><p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
+<h2 id="利用聚集索引-和-非聚集索引-查找数据"><a href="#利用聚集索引-和-非聚集索引-查找数据" class="headerlink" title="利用聚集索引 和 非聚集索引 查找数据"></a>利用聚集索引 和 非聚集索引 查找数据</h2><p>聚簇索引和二级索引（非聚簇索引）</p>
+<p>二级索引就是手工创建的非聚集索引，可以建多个，建在一个列或者多个列上。这些索引也会构成B+tree，和聚簇索引的区别就是它不需要存每行的详细数据，它的叶子节点只需要存primary key或（rowId）（当然还有主键索引所在磁盘的位置PageNo）。</p>
+<p>将来能通过这个索引找到数据行的ID。要查数据时，就根据ID去聚簇索引那棵B+tree去查，这就是回表。</p>
+<p>最后，索引是方便查询的，索引列的数据不适合放大的，它占用的空间一多，那么B+tree一层中能放的个数就越少。</p>
+<p>索引列一多，插入就越慢，如果没有索引，插入一行时只需要对主键进行排序即可。如果有很多列都有索引，那么插入时，就要做很多次排序,以及多个B+tree的结构变化。</p>
+<h3 id="利用聚集索引查找数据"><a href="#利用聚集索引查找数据" class="headerlink" title="利用聚集索引查找数据"></a>利用聚集索引查找数据</h3><p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
 <p>聚集索引，表中的数据存储在其中。</p>
 <p>现在假设要查找 id&gt;=18 并且 id&lt;40 的用户数据。对应的 sql 语句为：</p>
 <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>&gt;=<span class="number">18</span> <span class="keyword">and</span> <span class="keyword">id</span> &lt;<span class="number">40</span></span><br></pre></td></tr></table></figure>
@@ -210,91 +552,580 @@
 <p>参看地址：<a href="https://blog.51cto.com/14480698/2451603" target="_blank" rel="noopener">https://blog.51cto.com/14480698/2451603</a></p>
 ]]></content>
       <categories>
-        <category>db-mysql</category>
+        <category>db-mysql-core</category>
       </categories>
   </entry>
   <entry>
-    <title>001-mysql-物理存储、InnoDB数据B+树存储</title>
-    <url>/articles/20200131/83b4374e.html</url>
-    <content><![CDATA[<p>摘要：MySQL InnoDB数据存储是以B+树索引方式存储<br>存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
+    <title>07-存储引擎层-innodb框架-表空间-系统表空间</title>
+    <url>/articles/20200205/da9f4def.html</url>
+    <content><![CDATA[<p>摘要：系统表空间包含内容有：数据字典，双写缓冲，修改缓冲，undo日志，以及在系统表空间创建的表的数据和索引。</p>
 <a id="more"></a>
 
-<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="存储单元"><a href="#存储单元" class="headerlink" title="存储单元"></a>存储单元</h2><p>磁盘扇区、文件系统、InnoDB 存储引擎都有各自的最小存储单元。存储数据的最小单位，类比放菜的盘子。</p>
-<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt=""></p>
-<h3 id="磁盘扇区存储单元-扇区-512字节"><a href="#磁盘扇区存储单元-扇区-512字节" class="headerlink" title="磁盘扇区存储单元-扇区-512字节"></a>磁盘扇区存储单元-扇区-512字节</h3><p>在计算机中磁盘存储数据最小单元是扇区，一个扇区的大小是 512 字节</p>
-<h3 id="文件系统存储单元-块-4k"><a href="#文件系统存储单元-块-4k" class="headerlink" title="文件系统存储单元-块-4k"></a>文件系统存储单元-块-4k</h3><p>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。</p>
-<p>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]</p>
-<p><img src="/images/post/db-mysql/001/file-0k.jpg" alt="">  <img src="/images/post/db-mysql/001/file-1k.jpg" alt=""></p>
-<h3 id="InnoDB存储单元-页-16k"><a href="#InnoDB存储单元-页-16k" class="headerlink" title="InnoDB存储单元-页-16k"></a>InnoDB存储单元-页-16k</h3><p>InnoDB 存储引擎也有自己的最小储存单元——页(Page)，一个页的大小是 16K。</p>
-<p>InnoDB 的所有数据文件(后缀为 ibd 的文件)，他的大小始终都是 16384(16K)的整数倍。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ ll |grep ibd </span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_index_stats.ibd</span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_table_stats.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_master_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_relay_log_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_worker_info.ibd</span><br></pre></td></tr></table></figure>
+<h1 id="表空间物理结构-页、区、段"><a href="#表空间物理结构-页、区、段" class="headerlink" title="表空间物理结构-页、区、段"></a>表空间物理结构-页、区、段</h1><p>可以看到，除了分配未使用的页外， UNDO_LOG，SYS, INDEX 页占据了不少的空间。</p>
+<p>UNDO_LOG 页存储的是Undo log，SYS 页存储的是数据字典、回滚段、修改缓存等信息，INDEX 是索引页，TRX_SYS 页用于InnoDB的事务系统。</p>
+<p>数据字典就是数据表的元信息，修改缓冲前面提到是为了提高IO性能也不再赘述，这里主要分析下 Undo 日志和双写缓冲。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">innodb_space -s /Users/lihongxu6/docker/mymysql56/data/ibdata1 space-page-type-summary</span><br><span class="line"><span class="built_in">type</span>                count       percent     description         </span><br><span class="line">ALLOCATED           4392        90.30       Freshly allocated   </span><br><span class="line">UNDO_LOG            210         4.32        Undo <span class="built_in">log</span>            </span><br><span class="line">SYS                 141         2.90        System internal     </span><br><span class="line">INDEX               110         2.26        B+Tree index        </span><br><span class="line">INODE               7           0.14        File segment inode  </span><br><span class="line">FSP_HDR             2           0.04        File space header   </span><br><span class="line">TRX_SYS             1           0.02        Transaction system header</span><br><span class="line">IBUF_BITMAP         1           0.02        Insert buffer bitmap</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
 
-<h2 id="mysql-InnoDB-B-树组织数据、查询数据"><a href="#mysql-InnoDB-B-树组织数据、查询数据" class="headerlink" title="mysql InnoDB-B+树组织数据、查询数据"></a>mysql InnoDB-B+树组织数据、查询数据</h2><p>在MySQL中，InnoDB页的大小默认是16k，当然也可以通过参数设置：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">show variables like &#39;innodb_page_size&#39;;</span><br><span class="line">-- innodb_page_size	16384</span><br></pre></td></tr></table></figure>
-<h3 id="方式一、直接按页存储【假想】"><a href="#方式一、直接按页存储【假想】" class="headerlink" title="方式一、直接按页存储【假想】"></a>方式一、直接按页存储【假想】</h3><p>数据表中的数据都是存储在页中的，所以一个页中能存储多少行数据呢？假设一行数据的大小是 1K，那么一个页可以存放 16 行这样的数据。</p>
-<p>如果数据库按这样的方式存储，那么查找数据就成为一个问题。不知道要查找的数据存在哪个页中，每次查询都需要把所有的页遍历一遍，时间复杂度为 n。</p>
-<h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例解说：</p>
-<ol>
-<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt=""></li>
+<h2 id="Undo-日志"><a href="#Undo-日志" class="headerlink" title="Undo 日志"></a>Undo 日志</h2><p>MySQL的MVCC(多版本并发控制)依赖Undo Log实现</p>
+<p>MySQL的表空间文件 *.ibd 存储的是记录最新值，每个记录都有一个回滚指针(见前面图中的Roll Ptr)，指向该记录的最近一条Undo记录，</p>
+<p>而每条Undo记录都会指向它的前一条Undo记录，如下图所示。默认情况下 undo log存储在系统表空间 ibdata1 中。</p>
+<p>示例<br>这是最初的 插入后的数据</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">innodb_space -s /Users/lihongxu6/docker/mymysql56/data/ibdata1 -T test_innodb/table5hang -p 3 -R 127 record-history</span><br><span class="line"><span class="comment"># Transaction   Type                Undo record</span></span><br><span class="line"><span class="comment"># (n/a)         insert              (id=1) → ()</span></span><br><span class="line"><span class="comment"># (base)</span></span><br></pre></td></tr></table></figure>
+<p>执行一个更新</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">update</span> table5hang <span class="keyword">set</span> age=<span class="number">12</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">update</span> table5hang <span class="keyword">set</span> age=<span class="number">13</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>再次查看</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">innodb_space -s /Users/lihongxu6/docker/mymysql56/data/ibdata1 -T test_innodb/table5hang -p 3 -R 127 record-history</span><br><span class="line"><span class="comment"># Transaction   Type                Undo record</span></span><br><span class="line"><span class="comment"># 29910         update_existing     (id=1) → (age=12)</span></span><br><span class="line"><span class="comment"># 29904         update_existing     (id=1) → (age=1)</span></span><br><span class="line"><span class="comment"># (n/a)         insert              (id=1) → ()</span></span><br><span class="line"><span class="comment"># (base)</span></span><br></pre></td></tr></table></figure>
+<p>需要注意的是，Undo Log 在事务执行过程中就会产生，事务提交后才会持久化，如果事务回滚了则Undo Log也会删除。</p>
+<p>另外，删除记录并不会立即在表空间中删除该记录，而只是做个标记(delete-mark)，真正的删除则是等由后台运行的 purge 进程处理。</p>
+<p>除了每条记录有Undo Log的列表外，整个数据库也会有一个历史列表，purge 进程会根据该历史列表真正删除已经没有再被其他事务使用的 delete-mark 的记录。</p>
+<p>purge 进程会删除该记录以及该记录的 Undo Log。</p>
+<h2 id="双写缓冲"><a href="#双写缓冲" class="headerlink" title="双写缓冲"></a>双写缓冲</h2><p>InnoDB的记录更新流程：先在Buffer Pool中更新，并将更新记录到 Redo Log 文件中，Buffer Pool中的记录会标记为脏数据并定期刷到磁盘。</p>
+<p>由于InnoDB默认Page大小是16KB，而磁盘通常以扇区为单位写入，每次默认只能写入512个字节，无法保证16K数据可以原子的写入。</p>
+<p>如果写入过程发生故障(比如机器掉电或者操作系统崩溃)，会出现页的部分写入(partial page writes)，导致难以恢复。</p>
+<p>因为 MySQL 的重做日志采用的是物理逻辑日志，即页间是物理信息，而页内是逻辑信息，在发生页部分写入时，无法确认数据页的具体修改而导致难以恢复。</p>
+<p>MySQL 的数据页在真正写入到表空间文件前，会先写到系统表空间文件的一段连续区域双写缓冲(Double-Write Buffer，默认大小为 2MB，128个页)并 fsync 落盘，</p>
+<p>等双写缓冲写入成功后才会将数据页写到实际表空间的位置。</p>
+<p>因为双写缓冲和数据页的写入时机不一致，如果在写入双写缓冲出错，可以直接丢弃该缓冲页，而如果是写入数据页时出错，则可以根据双写缓冲区数据恢复表空间文件。</p>
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-cmd-hexdump进制文件查看工具</title>
+    <url>/articles/20200203/653046b.html</url>
+    <content><![CDATA[<h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>hexdump是Linux下的一个二进制文件查看工具，它可以将二进制文件转换为ASCII、八进制、十进制、十六进制格式进行查看。</p>
+<p>指令所在路径：/usr/bin/hexdump</p>
+<h1 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h1><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump: [-bcCdovx] [-e fmt] [-f fmt_file] [-n length] [-s skip] [file ...]</span><br></pre></td></tr></table></figure>
+<h1 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h1><p>此命令参数是Red Hat Enterprise Linux Server release 5.7下hexdump命令参数，不同版本Linux的hexdump命令参数有可能不同。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-b              one-byte octal display           8进制显示</span><br><span class="line">-c              one-byte character display       ASCII显示</span><br><span class="line">-C              canonical hex+ASCII display       十六进制+ASCII显示</span><br><span class="line">-d              two-byte decimal display        两字节计算，显示为10进制方式</span><br><span class="line">-o              two-byte octal display         两字节计算，显示为8进制方式</span><br><span class="line">-x              two-byte hexadecimal display    两字节计算，显示为16进制方式</span><br><span class="line">-e format       format string to be used for displaying data   格式化输出</span><br><span class="line">-f format_file  file that contains format strings</span><br><span class="line">-n length       interpret only length bytes of input    输出多少个bytes的字符长度的内容</span><br><span class="line">-s offset       skip offset bytes from the beginning    输出文件的开始偏移量  【注意：偏移量从0开始的！】</span><br><span class="line">-v              display without squeezing similar lines    </span><br><span class="line">-V              output version information and exit</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><ol>
+<li>帮助<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump --<span class="built_in">help</span></span><br></pre></td></tr></table></figure></li>
+<li>案例<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cat &gt;test.txt</span><br><span class="line">ABCDEF    </span><br><span class="line">GHIJKM</span><br><span class="line">123456</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexdump -C test.txt</span><br><span class="line">00000000  41 42 43 44 45 46 0a 47  48 49 4a 4b 4d 0a 31 32  |ABCDEF.GHIJKM.12|</span><br><span class="line">00000010  33 34 35 36 0a                                    |3456.|</span><br><span class="line">00000015</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+
+</li>
 </ol>
-<p>先将数据记录按主键进行排序，分别存放在不同的页中（为了便于理解这里一个页中只存放 3 条记录，实际情况可以存放很多）。</p>
-<p>除了存放数据的页以外，还有存放键值+指针的页，如图中 page number=3 的页，该页存放键值和指向数据页的指针，这样的页由 N 个键值+指针组成。</p>
-<p>当然它也是排好序的。这样的数据组织形式，我们称为索引组织表。  </p>
-<ol start="2">
-<li>B+树-查询数据<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">5</span>;</span><br></pre></td></tr></table></figure>
-id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么知道 user 表的根页在哪呢？</li>
-</ol>
-<p>其实每张表的根页位置在表空间文件中是固定的，即 page number=3 的页（后续说明）。</p>
-<p>找到根页后通过二分查找法，定位到 id=5 的数据应该在指针 P5 指向的页中，那么进一步去 page number=5 的页中查找，同样通过二分查询法即可找到 id=5 的记录：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">5    zhao2   27</span><br></pre></td></tr></table></figure>
-<p>小结：  InnoDB 中主键索引 B+ 树是如何组织数据、查询数据</p>
-<p>InnoDB 存储引擎的最小存储单元是页，页可以用于存放数据也可以用于存放键值+指针，在 B+ 树中叶子节点存放数据，非叶子节点存放键值+指针。</p>
-<p>索引组织表通过非叶子节点的二分查找法以及指针确定数据在哪个页中，进而在去数据页中查找到需要的数据。</p>
-<h2 id="mysql-InnoDB-B-树存储数据量"><a href="#mysql-InnoDB-B-树存储数据量" class="headerlink" title="mysql InnoDB-B+树存储数据量"></a>mysql InnoDB-B+树存储数据量</h2><h3 id="数据量估算"><a href="#数据量估算" class="headerlink" title="数据量估算"></a>数据量估算</h3><p><strong>以B+ 树高为 2为例计算</strong></p>
-<p>假设 B+ 树高为 2，即存在一个根节点和若干个叶子节点，那么这棵 B+ 树的存放总记录数为：根节点指针数*单个叶子节点记录行数。</p>
-<p>上文已经说明单个叶子节点（页）中的记录数=16K/1K=16。（这里假设一行记录的数据大小为 1K，实际上现在很多互联网业务数据记录大小通常就是 1K 左右）。</p>
-<p>那么现在需要计算出非叶子节点能存放多少指针？假设主键 ID 为 bigint 类型，长度为 8 字节，而指针大小在 InnoDB 源码中设置为 6 字节，这样一共 14 字节。</p>
-<p>一个页中能存放多少这样的单元，其实就代表有多少指针，即 16384/14=1170。</p>
-<p>可以算出一棵高度为 2 的 B+ 树，能存放 1170*16=18720 条这样的数据记录。</p>
-<p>根据同样的原理可以算出一个高度为 3 的 B+ 树可以存放：1170<em>1170</em>16=21902400 条这样的记录。</p>
-<p>所以在 InnoDB 中 B+ 树高度一般为 1-3 层，它就能满足千万级的数据存储。</p>
-<p>在查找数据时一次页的查找代表一次 IO，所以通过主键索引查询通常只需要 1-3 次 IO 操作即可查找到数据。</p>
-<h3 id="InnoDB-主键索引-B-树的高度"><a href="#InnoDB-主键索引-B-树的高度" class="headerlink" title="InnoDB 主键索引 B+ 树的高度"></a>InnoDB 主键索引 B+ 树的高度</h3><p>上面通过推断得出 B+ 树的高度通常是 1-3，下面我们从另外一个侧面证明这个结论。</p>
-<p>在 InnoDB 的表空间文件中，约定 page number 为 3 的代表主键索引的根页，而在根页偏移量为 64 的地方存放了该 B+ 树的 page level。</p>
-<p>如果 page level 为 1，树高为 2，page level 为 2，则树高为 3。即 B+ 树的高度=page level+1；</p>
-<p>查询系统表：page level。</p>
-<p>在实际操作之前，可以通过 InnoDB 元数据表确认主键索引根页的 page number 为 3，也可以从《InnoDB 存储引擎》这本书中得到确认：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO</span><br><span class="line">FROM</span><br><span class="line">    information_schema.INNODB_SYS_INDEXES a,</span><br><span class="line">    information_schema.INNODB_SYS_TABLES b</span><br><span class="line">WHERE a.table_id &#x3D; b.table_id AND a.space &lt;&gt; 0;</span><br></pre></td></tr></table></figure>
-<p>输出</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">blockchain_manager&#x2F;member	    PRIMARY	    22	3	6	3</span><br><span class="line">blockchain_manager&#x2F;member_group	PRIMARY	    23	3	7	3</span><br><span class="line">blockchain_manager&#x2F;permission	PRIMARY	    24	3	8	3</span><br><span class="line">blockchain_manager&#x2F;permission	idx_group	56	0	8	4</span><br></pre></td></tr></table></figure>
-<p>可以看出数据库 blockchain_manager 下的 member 表、member 表、permission表主键索引根页的 page number 均为 3，而其他的二级索引 page number 为 4。</p>
-<p>关于二级索引与主键索引的区别请参考 MySQL 相关书籍，</p>
-<h2 id="实际操作查看"><a href="#实际操作查看" class="headerlink" title="实际操作查看"></a>实际操作查看</h2><h3 id="创建测试数据"><a href="#创建测试数据" class="headerlink" title="创建测试数据"></a>创建测试数据</h3><h4 id="测试表"><a href="#测试表" class="headerlink" title="测试表"></a>测试表</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CREATE TABLE &#96;table5hang&#96; (</span><br><span class="line">  &#96;id&#96; bigint(20) NOT NULL AUTO_INCREMENT,</span><br><span class="line">  &#96;username&#96; varchar(255) DEFAULT NULL,</span><br><span class="line">  &#96;age&#96; int(11) DEFAULT NULL,</span><br><span class="line">  PRIMARY KEY (&#96;id&#96;)</span><br><span class="line">) ENGINE&#x3D;InnoDB DEFAULT CHARSET&#x3D;utf8;</span><br></pre></td></tr></table></figure>
-<p>修改表名，依次创建 table15w、table500w、table1000w</p>
-<h4 id="测试数据-添加"><a href="#测试数据-添加" class="headerlink" title="测试数据 添加"></a>测试数据 添加</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">delimiter //  <span class="comment">#定义标识符为双斜杠</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">PROCEDURE</span> my_procedure () <span class="comment">#创建无参存储过程</span></span><br><span class="line"><span class="keyword">BEGIN</span></span><br><span class="line">    <span class="keyword">DECLARE</span> n <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">1</span> ; <span class="comment"># 申明变量</span></span><br><span class="line">    <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang(username,age)  values '</span>;</span><br><span class="line">    <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">    WHILE n &lt; 6 DO</span><br><span class="line">        <span class="keyword">set</span> @execdata=<span class="keyword">concat</span>(@execdata,<span class="string">"("</span>,<span class="string">"'name-"</span>,n,<span class="string">"',"</span>,n%<span class="number">100</span>,<span class="string">")"</span>);</span><br><span class="line"></span><br><span class="line">        if n%5=0</span><br><span class="line">        then</span><br><span class="line">            <span class="keyword">set</span> @execSql = <span class="keyword">concat</span>(@execSql,@execdata,<span class="string">";"</span>);</span><br><span class="line">            <span class="comment">#select @execSql;</span></span><br><span class="line">            <span class="keyword">prepare</span> stmt <span class="keyword">from</span> @execSql;</span><br><span class="line">            <span class="keyword">execute</span> stmt;</span><br><span class="line">            <span class="keyword">DEALLOCATE</span> <span class="keyword">prepare</span> stmt;</span><br><span class="line">            <span class="keyword">commit</span>;  </span><br><span class="line"></span><br><span class="line">            <span class="keyword">set</span> @execSql=<span class="string">'insert into table5hang (username,age)  values '</span>;</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="string">''</span>;</span><br><span class="line">        ELSE</span><br><span class="line">            <span class="keyword">set</span> @execdata = <span class="keyword">concat</span>(@execdata,<span class="string">','</span>);</span><br><span class="line">        <span class="keyword">end</span> <span class="keyword">if</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">SET</span> n = n + <span class="number">1</span> ; <span class="comment">#循环一次,i加一</span></span><br><span class="line">    <span class="keyword">END</span> <span class="keyword">WHILE</span> ; <span class="comment">#结束while循环</span></span><br><span class="line">    <span class="comment">#select count(*) from test_table;</span></span><br><span class="line"><span class="keyword">END</span></span><br><span class="line">//</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> my_procedure(); <span class="comment">#调用存储过程</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">PROCEDURE</span> <span class="keyword">IF</span> <span class="keyword">EXISTS</span> my_procedure ; <span class="comment">#如果存在 my_procedure 存储过程则删除</span></span><br></pre></td></tr></table></figure>
-<p>插入数据，依次修改表名：table15w、table500w、table1000w 以及插入条数</p>
-<p>根据性能 500w、1000w 数据量的需要分批插入。</p>
-<p>查看文件结构，mysql每次建库，会在data下创建以库名为名的文件夹，内部文件是表名，如下</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-rw-rw----  1    54B  1 31 11:36 db.opt</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table1000w.frm</span><br><span class="line">-rw-rw----  1   460M  1 31 12:41 table1000w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table15w.frm</span><br><span class="line">-rw-rw----  1    15M  1 31 11:54 table15w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:39 table500w.frm</span><br><span class="line">-rw-rw----  1   236M  1 31 12:19 table500w.ibd</span><br><span class="line">-rw-rw----  1   8.4K  1 31 11:40 table5hang.frm</span><br><span class="line">-rw-rw----  1    96K  1 31 11:51 table5hang.ibd</span><br></pre></td></tr></table></figure>
-
-<p>因为主键索引 B+ 树的根页在整个表空间文件中的第 3 个页开始，所以可以算出它在文件中的偏移量：16384*3=49152（16384 为页大小）。</p>
-<p>另外根据《InnoDB 存储引擎》中描述在根页的 64 偏移量位置前 2 个字节，保存了 page level 的值。</p>
-<p>因此想要的 page level 的值在整个文件中的偏移量为：16384*3+64=49152+64=49216，前 2 个字节中。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -s 49216 -n 10 table5hang.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 00 00 00 00 00 00 00 00 3c                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table15w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 01 00 00 00 00 00 00 00 3b                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table500w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 3a                  </span><br><span class="line">000c04a</span><br><span class="line"></span><br><span class="line">hexdump -s 49216 -n 10 table1000w.ibd</span><br><span class="line"></span><br><span class="line">000c040 00 02 00 00 00 00 00 00 00 39                  </span><br><span class="line">000c04a</span><br></pre></td></tr></table></figure>
-<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>table5hang 表数据行数为 5 条，B+ 树高度为 1，<br>table15w   表数据行数为 15 万，B+ 树高度为 2，<br>table500w  表数据行数为 500 万，B+ 树高度为 3，<br>table1000w 表数据行数为 1000 万，B+ 树高度为 3。</p>
-<p>500w、1000w 两个表树的高度都是 3。换句话说这两个表通过索引查询效率并没有太大差异，因为都只需要做 3 次 IO。<br>那么如果有一张表行数是一千万，那么他的 B+ 树高度依旧是 3，查询效率仍然不会相差太大。region 表只有 5 行数据，当然他的 B+ 树高度为 1。</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table500w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table1000w <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">4230000</span></span><br></pre></td></tr></table></figure>
-
-
-
-
+<p>跳过 7 个取6个</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexdump -C -s 7 -n 6 test.txt</span><br><span class="line">00000007  47 48 49 4a 4b 4d                                 |GHIJKM|</span><br><span class="line">0000000d</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
 
 
 
 
 ]]></content>
       <categories>
-        <category>db-mysql</category>
+        <category>linux-shell</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-shell-概述与命令行区别</title>
+    <url>/articles/20200203/d189e05e.html</url>
+    <content><![CDATA[<h1 id="shell"><a href="#shell" class="headerlink" title="shell"></a>shell</h1><p>shell翻译成壳的意思，它是包裹在linux内核外层的，一个可通过一系列的linux命令对操作系统发出相关指令的人机界面。</p>
+<p>shell可以通过其条件语句和循环语句等，把一系列linux命令结合在一起，形成一个相当于面向过程的程序，shell script，来实现一些较为复杂的功能。</p>
+<p>总括，shell是linux命令集的概称，是属于命令行的人机界面。Shell 是一个用C语言编写的程序，它是用户使用Linux的桥梁。<br>Shell既是一种命令语言，又是一种程序设计语言。Shell 是指一种应用程序，这个应用程序提供了一个界面，用户通过这个界面访问操作系统内核的服务。<br>Ken Thompson的sh是第一种Unix Shell，Windows Explorer是一个典型的图形界面Shell。Shell 和Shell Script不是一回事，通常我们说的都是Shell Script。</p>
+<p>由定义可知， shell相当于经过装饰的命令行，和命令行一样，都能操作linux。但是shell是面向过程的，相当于有了一定的逻辑和过程，而命令行只是单一的操作。</p>
+<h1 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h1><ol>
+<li>直接在命令行执行 就是在当前的shell环境下执行 比如涉及到一些环境变量的时候 必须在当前shell环境里执行</li>
+</ol>
+<p>在脚本里执行的话 脚本执行的时候 会fork一个子进程 所有操作都在子进程进行 如果涉及到一些在脚本里设置环境变量的东西 脚本结束了 环境变量也就消失了。 </p>
+<p>这个修改环境变量的话，需要特别注意下。</p>
+<ol start="2">
+<li>shell可以重复执行一些命令。也可以把自己要重复执行的命令写到脚本里面执行。而命令行的话就需要一个一个的输入命令，相对而言麻烦一些。</li>
+</ol>
+]]></content>
+      <categories>
+        <category>linux-shell</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>06-存储引擎层-innodb框架-表空间-段、区、页与组织结构</title>
+    <url>/articles/20200202/12fe7f8a.html</url>
+    <content><![CDATA[<p>摘要：InnoDB表空间文件.ibd文件内部存储单元是页，初始大小为 96K，而InnoDB默认页大小为 16K。当然页大小也可以通过 innodb_page_size 配置为 4K, 8K…64K 等。</p>
+<p>如果用二进制打开，以16K划分一页。在ibd文件中，0-16KB偏移量即为0号数据页，16KB-32KB的为1号数据页，以此类推。</p>
+<a id="more"></a>
+
+<h1 id="表空间物理结构-页、区、段"><a href="#表空间物理结构-页、区、段" class="headerlink" title="表空间物理结构-页、区、段"></a>表空间物理结构-页、区、段</h1><p>磁盘最小单位是512字节，操作系统是4KB，mysql里最小的是page（页面）有16K。</p>
+<p>ibd就是放索引树的，但总不能一个树就摊在一个txt文档里，所以必须还要有一种文件组织结构。所有的数据都放在page里，用一种规则来把N个page连一起，让它们形成一些关联，才能便于查询，要先找到page，再找到page内的数据。</p>
+<p>B+树是离不开页面page</p>
+<p><img src="/images/post/db-mysql/006/tablespace.webp" alt=""></p>
+<h2 id="段（segment）"><a href="#段（segment）" class="headerlink" title="段（segment）"></a>段（segment）</h2><p>段是表空间文件中的主要组织结构，它是一个逻辑概念，用来管理物理文件，是构成索引、表、回滚段的基本元素。</p>
+<p>表空间是由各个段组成的，常见的段有数据段、索引段、回滚段等。</p>
+<p>InnoDB存储引擎表是索引组织的（index organized），因此数据即索引，索引即数据。那么数据段即为B+树的页节点（上图的leaf node segment），索引段即为B+树的非索引节点（上图的non-leaf node segment）。</p>
+<p>创建一个索引（B+树）时会同时创建两个段，分别是内节点段和叶子段，内节点段用来管理（存储）B+树非叶子（页面）的数据（分裂、增长、删除等），叶子段用来管理（存储）B+树叶子节点的数据，负责行数据的相关动作；</p>
+<p>也就是说，在索引数据量一直增长的过程中，所有新的存储空间的申请，都是从“段”这个概念中申请的。一个段包含256个区(256M大小)。</p>
+<h2 id="区-簇（extents）"><a href="#区-簇（extents）" class="headerlink" title="区/簇（extents）"></a>区/簇（extents）</h2><p>段是个逻辑概念，innodb引入了簇的概念，在代码中被称为extent；</p>
+<p>簇是由64个连续的页组成的，每个页大小为16KB，即每个簇的大小为1MB硬盘空间。即默认大小为 1MB (64*16K)。</p>
+<p>簇是构成段的基本元素，一个段由若干个簇构成。一个簇是物理上连续分配的一个段空间，每一个段至少会有一个簇，在创建一个段时会创建一个默认的簇。</p>
+<p>如果存储数据时，即往段里写入数据，就是往簇里写数据，簇是硬盘空间，当一个簇已经不足以放下更多的数据，此时需要从这个段中分配一个新的簇来存放新的数据，等于又多了一块64*16K的连续硬盘空间。</p>
+<p>一个段所管理的空间大小是无限的，可一直扩展下去，但是扩展的最小单位就是簇。注意，每个簇是一块连续的硬盘空间，但多个簇之间可不是连续的。</p>
+<p>同样，两个段之间，在硬盘上也没有什么关系。</p>
+<h2 id="页（page）"><a href="#页（page）" class="headerlink" title="页（page）"></a>页（page）</h2><h3 id="页存储单元"><a href="#页存储单元" class="headerlink" title="页存储单元"></a>页存储单元</h3><p>磁盘扇区、文件系统、InnoDB 存储引擎都有各自的最小存储单元。存储数据的最小单位。</p>
+<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt=""></p>
+<ul>
+<li><p>磁盘扇区存储单元-扇区-512字节<br>在计算机中磁盘存储数据最小单元是扇区，一个扇区的大小是 512 字节</p>
+</li>
+<li><p>文件系统存储单元-块-4k<br>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。<br>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]<br><img src="/images/post/db-mysql/001/file-0k.jpg" alt="">  <img src="/images/post/db-mysql/001/file-1k.jpg" alt=""></p>
+</li>
+<li><p>InnoDB存储单元-页-16k<br>InnoDB 存储引擎也有自己的最小储存单元——页(Page)，一个页的大小是 16K。<br>InnoDB 的所有数据文件(后缀为 ibd 的文件)，他的大小始终都是 16384(16K)的整数倍。  </p>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ ll |grep ibd </span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_index_stats.ibd</span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_table_stats.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_master_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_relay_log_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_worker_info.ibd</span><br></pre></td></tr></table></figure>
+
+<p>InnoDB有页（page）的概念，可以理解为簇的细化。页是InnoDB磁盘管理的最小单位。</p>
+<h3 id="页结构"><a href="#页结构" class="headerlink" title="页结构"></a>页结构</h3><p>所有页的结构都是一样的，分为文件头(前38字节)，页数据和文件尾(后8字节)。页数据根据页的类型不同而不一样。</p>
+<p>页的头尾除了一些元信息外，还有Checksum校验值，这些校验值在写入磁盘前计算得到，当从磁盘中读取时，重新计算校验值并与数据页中存储的对比，如果发现不同，则会导致 MySQL 崩溃。</p>
+<p><img src="/images/post/db-mysql/page-struct.jpg" alt=""></p>
+<h4 id="File-Header-记录页的一些头信息，共占用38字节，组成部分如"><a href="#File-Header-记录页的一些头信息，共占用38字节，组成部分如" class="headerlink" title="File Header 记录页的一些头信息，共占用38字节，组成部分如:"></a>File Header 记录页的一些头信息，共占用38字节，组成部分如:</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_SPACE_OR_CHKSUM	4	当mysql4.0.14之前，值是0，之后该值代表页的checksum值</span><br><span class="line">FIL_PAGE_OFFSET	        4	表空间中页的偏移量。。如某独立表空间a.ibd的大小为1GB，如果页的大小为16KB，那么总共有65536个页。</span><br><span class="line">                            FILE_PAGE_OFFSET表示该页在所有页中的位置。若此表空间的ID为10，那么搜索页（10，1）就表示查找表a中的第二页</span><br><span class="line">FIL_PAGE_PREV	        4	该页的上一个页，B+tree特性决定了叶子节点必须是双向列表</span><br><span class="line">FIL_PAGE_NEXT	        4	该页的下一个页，B+tree特性决定了叶子节点必须是双向列表</span><br><span class="line">FIL_PAGE_LSN	        8	该页最后被修改的LSN日志序列位置（Log Sequence Number）</span><br><span class="line">FIL_PAGE_TYPE	        2	该页的类型，0x45BF为数据页,实际行记录的存储空间</span><br><span class="line">FIL_PAGE_FILE_FLUSH_LSN	8	独立表空间中为0，如在系统表空间表示一个页的定义，代表文件至少被更新到了该LSN值</span><br><span class="line">FIL_PAGE_ARCH_LOG_NO	4	从4.1开始，该页属于哪一个表空间</span><br></pre></td></tr></table></figure>
+
+<h5 id="页类型【innodb存储引擎中】"><a href="#页类型【innodb存储引擎中】" class="headerlink" title="页类型【innodb存储引擎中】"></a>页类型【innodb存储引擎中】</h5><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_INDEX          0x45BF  数据页，B+树叶节点，索引页的叶子结点的data就是数据，如聚集索引存储的行数据，辅助索引存储的主键值。</span><br><span class="line">FIL_PAGE_UNDO_LOG	    0x0002  Undo页（Undo Log Page）</span><br><span class="line">FIL_PAGE_INODE	        0x0003  索引节点</span><br><span class="line">FIL_PAGE_IBUF_FREE_LIST 0x0004  插入缓冲空闲列表页（Insert Buffer Free List）</span><br><span class="line">FIL_PAGE_TYPE_ALLOCATED 0x0000  最新分配</span><br><span class="line">FIL_PAGE_IBUF_BITMAP	0x0005  插入缓冲位图页（Insert Buffer Bitmap）。用于记录 change buffer的使用情况。</span><br><span class="line">FIL_PAGE_TYPE_SYS       0x0006  系统页（System Page）</span><br><span class="line">FIL_PAGE_TYPE_TRX_SYS   0x0007  事务数据页（Transaction system Page）</span><br><span class="line">FIL_PAGE_TYPE_FSP_HDR   0x0008  File Space Header，主要用于跟踪表空间，空闲链表、碎片页以及区等信息。</span><br><span class="line">FIL_PAGE_TYPE_XDES      0x0009  扩展描述也</span><br><span class="line">FIL_PAGE_TYPE_BLOB      0x000A  BLOB Page</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>FIL_PAGE_INODE：用于记录文件段(FSEG)的信息，每页有85个INODE entry，每个INODE entry占用192字节，用于描述一个文件段。每个INODE entry包括文件段ID、属于该段的区的信息以及碎片页数组。区信息包括 FREE(完全空闲的区), NOT_FULL(至少使用了一个页的区), FULL(没空闲页的区)三种类型的区的List Base Node(包含链表长度和头尾页号和偏移的结构体)。碎片页数组则是不同于分配整个区的单独分配的32个页。</p>
+</li>
+<li><p>FIL_PAGE_TYPE_FSP_HDR 页：用于存储区的元信息。<br>ibd文件的第一页 FSP_HDR 页通常就用于存储区的元信息，里面的256个 XDES(extent descriptors) 项存储了256个区的元信息，包括区的使用情况和区里面页的使用情况。</p>
+<p>更多 参看 附表 </p>
+</li>
+</ul>
+<h4 id="Page-Header：记录数据页的状态信息，共占56个字节，组成部分如图："><a href="#Page-Header：记录数据页的状态信息，共占56个字节，组成部分如图：" class="headerlink" title="Page Header：记录数据页的状态信息，共占56个字节，组成部分如图："></a>Page Header：记录数据页的状态信息，共占56个字节，组成部分如图：</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">PAGE_N_DIR_SLOTS	2	在Page Directory中Slot的数量，初始值为2</span><br><span class="line">PAGE_HEAP_TOP	    2	堆中第一个记录的指针,记录在页中是根据堆的形式存放</span><br><span class="line">PAGE_N_HEAP	        2	堆中的记录数，初始值为2，但是第15位表示行记录格式</span><br><span class="line">PAGE_FREE	        2	指向可重用空间的首指针</span><br><span class="line">PAGE_GARBAGE	    2	已标记为删除（deleted_flag）的记录的字节数</span><br><span class="line">PAGE_LAST_INSERT	2	最后插入记录的位置</span><br><span class="line">PAGE_DIRECTION	    2	最后插入的方向，PAGE_LEFT(0x01)，PAGE_RIGHT(0x02)，PAGE_SAME_REC(0X03),PAGE_SAME_PAGE(0X04),PAGE_NO_DIRECTION(0x05)</span><br><span class="line">PAGE_N_DIRECTION	2	一个方向上连续插入记录的数量</span><br><span class="line">PAGE_N_RECS	        2	该页中记录（User Record）的数量</span><br><span class="line">PAGE_MAX_TRX_ID	    8	修改该页的最大事务ID（仅在辅助索引中定义）</span><br><span class="line">PAGE_LEVEL	        2	该页在索引树中位置，0000代表叶子节点</span><br><span class="line">PAGE_INDEX_ID	    8	索引ID，表示该页属于哪个索引</span><br><span class="line">PAGE_BTR_SEG_LEAF	10	B+Tree叶子节点所在Leaf Node Segment的Segment Header（无关紧要）</span><br><span class="line">PAGE_BTR_SEG_TOP	10	B+Tree非叶子节点所在Non-Leaf Node Segment的Segment Header（无关紧要）</span><br></pre></td></tr></table></figure>
+
+<h4 id="infimum和supermum-record"><a href="#infimum和supermum-record" class="headerlink" title="infimum和supermum record"></a>infimum和supermum record</h4><ul>
+<li>每个数据页中都有两个虚拟的行记录，用来限定记录（User Record）的边界（Infimum为下界，Supremum为上界）</li>
+<li>Infimum和Supremum在页被创建是自动创建，不会被删除</li>
+<li>在Compact和Redundant行记录格式下，Infimum和Supremum占用的字节数是不一样的<br><img src="/images/post/db-mysql/insupermum.jpg" alt=""></li>
+<li>5.1后有Compact（默认）和Redundant两种格式<ul>
+<li>Compact行记录格式<br>设计目标为高效存放数据，行数据越多，性能越高。<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">变长字段长度列表    |   NULL标志位     |   记录头信息   |   列1数据    |   列2数据    |   ……  |</span><br></pre></td></tr></table></figure>
+<ul>
+<li>变长字段长度列表，按照列的顺序逆序放置。列长度小于255字节，用1字节表示，大于255字节，则用2个字节表示</li>
+<li>NULL标志位，一个字节，表示对应列为NULL</li>
+<li>记录头信息，5个字节，含义见下表</li>
+<li>下面即为数据列，NULL不占用存储空间</li>
+<li>每行除了用户定义的列，还有两个隐藏列，事务ID列（6字节）和回滚指针列（7字节），若没有定义主键，每行还会有一个6字节的RowID列<figure class="highlight plain"><figcaption><span>Compact行记录格式</span></figcaption><table><tr><td class="code"><pre><span class="line">名称          大小（bit） 描述</span><br><span class="line">（）          1           未知</span><br><span class="line">（）          1           未知</span><br><span class="line">deleted_flag  1         该行是否被删除</span><br><span class="line">min_rec_flag  1         为1，如果该记录是预先被定义为最小的记录</span><br><span class="line">n_owned       4         该记录拥有的记录数</span><br><span class="line">heap_no       13        索引堆中该条记录的排序记录</span><br><span class="line">record_type   3         记录类型 000&#x3D;普通 001&#x3D;B+树节点指针 010-Infimum 011&#x3D;Supremum 1xx&#x3D;保留</span><br><span class="line">next_recorder 16        页中下一条记录的相对位置</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li>Redundant行记录格式</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">字段长度偏移列表    |   记录头信息   |   列1数据    |   列2数据    |   ……  |</span><br></pre></td></tr></table></figure>
+<ul>
+<li>字段长度偏移列表，按照列的顺序逆序放置。列长度小于255字节，用1字节表示，大于255字节，则用2个字节表示</li>
+<li>记录头信息，固定占用6个字节，含义见下表。n_fields、1byte_offs_flag两个值值得注意</li>
+<li>数据列，varchar的NULL值不占用存储空间，但是char值需要占用空间</li>
+</ul>
+<figure class="highlight plain"><figcaption><span>Compact行记录格式</span></figcaption><table><tr><td class="code"><pre><span class="line">名称          大小（bit） 描述</span><br><span class="line">（）          1           未知</span><br><span class="line">（）          1           未知</span><br><span class="line">deleted_flag  1         该行是否被删除</span><br><span class="line">min_rec_flag  1         为1，如果该记录是预先被定义为最小的记录</span><br><span class="line">n_owned       4         该记录拥有的记录数</span><br><span class="line">heap_no       13        索引堆中该条记录的排序记录</span><br><span class="line">lbyte_offs_flag 1       偏移列表为1字节还是2字节</span><br><span class="line">next_recorder 16        页中下一条记录的相对位置</span><br></pre></td></tr></table></figure>
+
+<h4 id="User-Records"><a href="#User-Records" class="headerlink" title="User Records"></a>User Records</h4><ul>
+<li>存储实际插入的行记录</li>
+<li>在Page Header中PAGE_HEAP_TOP、PAGE_N_HEAP的HEAP，实际上指的是Unordered User Record List<ul>
+<li>InnoDB不想每次都依据B+Tree键的顺序来插入新行，因为这可能需要移动大量的数据</li>
+<li>因此InnoDB插入新行时，通常是插入到当前行的后面（Free Space的顶部）或者是已删除行留下来的空间</li>
+</ul>
+</li>
+<li>为了保证访问B+Tree记录的顺序性，在每个记录中都有一个指向下一条记录的指针，以此构成了一条单向有序链表</li>
+</ul>
+<h4 id="Free-Space"><a href="#Free-Space" class="headerlink" title="Free Space"></a>Free Space</h4><ul>
+<li>空闲空间，数据结构是链表，在一个记录被删除后，该空间会被加入到空闲链表中</li>
+</ul>
+<h4 id="Page-Directory"><a href="#Page-Directory" class="headerlink" title="Page Directory"></a>Page Directory</h4><ul>
+<li>存放着行记录（User Record）的相对位置（不是偏移量）</li>
+<li>这里的行记录指针称为Slot或Directory Slot，每个Slot占用2Byte</li>
+<li>并不是每一个行记录都有一个Slot，一个Slot中可能包含多条行记录，通过行记录中n_owned字段标识</li>
+<li>Infimum的n_owned总是1，Supremum的n_owned为[1,8]，User Record的n_owned为[4,8]</li>
+<li>Slot是按照索引键值的顺序进行逆序存放（Infimum是下界，Supremum是上界），可以利用二分查找快速地定位一个粗略的结果，然后再通过next_record进行精确查找</li>
+<li>B+Tree索引本身并不能直接找到具体的一行记录，只能找到该行记录所在的页<ul>
+<li>数据库把页载入到内存中，然后通过Page Directory再进行二分查找</li>
+<li>二分查找时间复杂度很低，又在内存中进行查找，这部分的时间基本开销可以忽略</li>
+</ul>
+</li>
+</ul>
+<h4 id="File-Trailer"><a href="#File-Trailer" class="headerlink" title="File Trailer"></a>File Trailer</h4><ul>
+<li>总共8 Bytes，为了检测页是否已经完整地写入磁盘</li>
+<li>变量innodb_checksums，InnoDB从磁盘读取一个页时是否会检测页的完整性</li>
+<li>变量innodb_checksum_algorithm，检验和算法<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_END_LSN	8	前4Bytes与File Header中的FIL_PAGE_SPACE一致，后4Bytes与File Header中的FIL_PAGE_LSN的后4Bytes一致</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">mysql&gt; SHOW VARIABLES LIKE 'innodb_checksums';</span><br><span class="line">+<span class="comment">------------------+-------+</span></span><br><span class="line">| Variable_name    | Value |</span><br><span class="line">+<span class="comment">------------------+-------+</span></span><br><span class="line">| innodb_checksums | ON    |</span><br><span class="line">+<span class="comment">------------------+-------+</span></span><br><span class="line">row in <span class="keyword">set</span> (<span class="number">0.01</span> sec)</span><br><span class="line">mysql&gt; <span class="keyword">SHOW</span> <span class="keyword">VARIABLES</span> <span class="keyword">LIKE</span> <span class="string">'innodb_checksum_algorithm'</span>;</span><br><span class="line">+<span class="comment">---------------------------+-------+</span></span><br><span class="line">| Variable_name             | Value |</span><br><span class="line">+<span class="comment">---------------------------+-------+</span></span><br><span class="line">| innodb_checksum_algorithm | crc32 |</span><br><span class="line">+<span class="comment">---------------------------+-------+</span></span><br><span class="line">row in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p><img src="/images/post/db-mysql/index-page-extents1.jpg" alt=""></p>
+<ol>
+<li><p>每个簇里有64个页面，都会进行编号，页面就是最小的存储单元了。在逻辑上（页面号都是从小到大连续的）及物理上都是连续的。</p>
+</li>
+<li><p>在向表中插入数据时，如果一个页面已经被写完，系统会从当前簇中分配一个新的空闲页面处理使用，如果当前簇中的64个页面都被分配完，系统会从当前页面所在段中分配一个新的簇，然后再从这个簇中分配一个新的页面来使用；</p>
+<ul>
+<li>一个页面16K，放主键如int型能放几千，放一行数据，如1K一行，能放十几行。</li>
+<li>这里需要注意，一行数据尽量不要过大，一旦跨page，就会对性能产生影响。本来一个page就能查出来，结果每次要查2个page，那性能就丢了一倍。</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight plain"><figcaption><span>官网</span></figcaption><table><tr><td class="code"><pre><span class="line">Pages, Extents, Segments, and Tablespaces</span><br><span class="line"></span><br><span class="line">Each tablespace consists of database pages. Every tablespace in a MySQL instance has the same page size. By default, all tablespaces have a page size of 16KB; you can reduce the page size to 8KB or 4KB by specifying the innodb_page_size option when you create the MySQL instance. You can also increase the page size to 32KB or 64KB. For more information, refer to the innodb_page_sizedocumentation.</span><br><span class="line"></span><br><span class="line">The pages are grouped into extents of size 1MB for pages up to 16KB in size (64 consecutive 16KB pages, or 128 8KB pages, or 256 4KB pages). For a page size of 32KB, extent size is 2MB. For page size of 64KB, extent size is 4MB. The “files” inside a tablespace are called segments in InnoDB. (These segments are different from the rollback segment, which actually contains many tablespace segments.)</span><br><span class="line"></span><br><span class="line">When a segment grows inside the tablespace, InnoDB allocates the first 32 pages to it one at a time. After that, InnoDB starts to allocate whole extents to the segment. InnoDB can add up to 4 extents at a time to a large segment to ensure good sequentiality of data.</span><br><span class="line"></span><br><span class="line">Two segments are allocated for each index in InnoDB. One is for nonleaf nodes of the B-tree, the other is for the leaf nodes. Keeping the leaf nodes contiguous on disk enables better sequential I&#x2F;O operations, because these leaf nodes contain the actual table data.</span><br><span class="line"></span><br><span class="line">Some pages in the tablespace contain bitmaps of other pages, and therefore a few extents in an InnoDB tablespace cannot be allocated to segments as a whole, but only as individual pages.</span><br></pre></td></tr></table></figure>
+
+<h1 id="表空间ibd与页关系"><a href="#表空间ibd与页关系" class="headerlink" title="表空间ibd与页关系"></a>表空间ibd与页关系</h1><p>一个表，占用一个表空间，创建一个表空间时，至少有一个文件（0号文件），这个文件的第一个页面page，page_no=0，这个page中存储了这个表空间中，所有段、簇、页管理的入口。</p>
+<p>InnoDB表空间文件.ibd文件内部存储单元是页，初始大小为 96K，而InnoDB默认页大小为 16K。当然页大小也可以通过 innodb_page_size 配置为 4K, 8K…64K 等。</p>
+<p>如果用二进制打开，以16K划分一页。在ibd文件中，0-16KB偏移量即为0号数据页，16KB-32KB的为1号数据页，以此类推。</p>
+<h2 id="ibd文件存储结构【页】"><a href="#ibd文件存储结构【页】" class="headerlink" title="ibd文件存储结构【页】"></a>ibd文件存储结构【页】</h2><ol>
+<li>图形<br><img src="/images/post/db-mysql/ibdfile.webp" alt=""><br>更为抽象一点的<br><img src="/images/post/db-mysql/index-page-extents2.png" alt=""></li>
+<li>sql查询<br>可以在 innodb_sys_tables 表中查到表t的表空间ID为 36，然后可以在 innodb_buffer_page查到所有页信息，一共4个页。<br>分别是 FSP_HDR, IBUF_BITMAP, INODE, INDEX。<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> INFORMATION_SCHEMA.INNODB_SYS_TABLES <span class="keyword">WHERE</span> <span class="keyword">NAME</span>=<span class="string">'test_innodb/table15w'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_buffer_page <span class="keyword">where</span> <span class="keyword">SPACE</span>=<span class="number">36</span>;</span><br></pre></td></tr></table></figure></li>
+<li>实际文件结构：</li>
+</ol>
+<ul>
+<li>第0页是 FSP_HDR 页，主要用于跟踪表空间，空闲链表、碎片页以及区等信息。</li>
+<li>第1页是 IBUF_BITMAP 页，保存Change Buffer的位图。</li>
+<li>第2页是 INODE 页，用于存储区和单独分配的碎片页信息，包括FULL、FREE、NOT_FULL 等页列表的基础结点信息(基础结点信息记录了列表的起始和结束页号和偏移等)，这些结点指向的是 FSP_HDR 页中的项，用于记录页的使用情况，它们之间关系如下图所示。</li>
+<li>第3页开始是索引页 INDEX(B-tree node)，从 0xc000(每页16K) 开始，后面还有些分配的未使用的页。</li>
+</ul>
+<h1 id="表空间文件ibd-页类型-实操说明"><a href="#表空间文件ibd-页类型-实操说明" class="headerlink" title="表空间文件ibd-页类型-实操说明"></a>表空间文件ibd-页类型-实操说明</h1><h2 id="FSP-HDR-PAGE【File-Space-Header-Page】"><a href="#FSP-HDR-PAGE【File-Space-Header-Page】" class="headerlink" title="FSP_HDR PAGE【File Space Header Page】"></a>FSP_HDR PAGE【File Space Header Page】</h2><p>数据文件.ibd的第一个Page类型为FIL_PAGE_TYPE_FSP_HDR，在创建一个新的表空间时进行初始化(fsp_header_init)，</p>
+<p>该page同时用于跟踪随后的256个Extent(约256MB文件大小)的空间管理，所以每隔256MB就要创建一个类似的数据页，类型为FIL_PAGE_TYPE_XDES ，XDES Page除了文件头部外，</p>
+<p>其他都和FSP_HDR页具有相同的数据结构，可以称之为Extent描述页，每个Extent占用40个字节，一个XDES Page最多描述256个Extent。</p>
+<p>FSP_HDR页的头部使用FSP_HEADER_SIZE个字节来记录文件的相关信息，具体的包括：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bytes	Desc</span><br><span class="line">FSP_SPACE_ID	4	该文件对应的space id</span><br><span class="line">FSP_NOT_USED	4	如其名，保留字节，当前未使用</span><br><span class="line">FSP_SIZE	4	当前表空间总的PAGE个数，扩展文件时需要更新该值（fsp_try_extend_data_file_with_pages）</span><br><span class="line">FSP_FREE_LIMIT	4	当前尚未初始化的最小Page No。从该Page往后的都尚未加入到表空间的FREE LIST上。</span><br><span class="line">FSP_SPACE_FLAGS	4	当前表空间的FLAG信息，见下文</span><br><span class="line">FSP_FRAG_N_USED	4	FSP_FREE_FRAG链表上已被使用的Page数，用于快速计算该链表上可用空闲Page数</span><br><span class="line">FSP_FREE	16	当一个Extent中所有page都未被使用时，放到该链表上，可以用于随后的分配</span><br><span class="line">FSP_FREE_FRAG	16	FREE_FRAG链表的Base Node，通常这样的Extent中的Page可能归属于不同的segment，用于segment frag array page的分配（见下文）</span><br><span class="line">FSP_FULL_FRAG	16	Extent中所有的page都被使用掉时，会放到该链表上，当有Page从该Extent释放时，则移回FREE_FRAG链表</span><br><span class="line">FSP_SEG_ID	8	当前文件中最大Segment ID + 1，用于段分配时的seg id计数器</span><br><span class="line">FSP_SEG_INODES_FULL	16	已被完全用满的Inode Page链表</span><br><span class="line">FSP_SEG_INODES_FREE	16	至少存在一个空闲Inode Entry的Inode Page被放到该链表上</span><br></pre></td></tr></table></figure>
+<p>第一页的 前38字节</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C  -n 38 table5hang.ibd</span><br><span class="line">00000000  ff 64 a5 b7 00 00 00 00  00 00 00 00 00 00 00 00  |.d..............|</span><br><span class="line">00000010  00 00 00 00 80 eb 9d 23  00 08 00 00 00 00 00 00  |.......<span class="comment">#........|</span></span><br><span class="line">00000020  00 00 00 00 00 2c                                 |.....,|</span><br><span class="line">00000026</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+
+<p>通过 ：File Header 记录页的一些头信息 参看</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_SPACE_OR_CHKSUM	4	ff 64 a5 b7：checksum值</span><br><span class="line">FIL_PAGE_OFFSET	        4	00 00 00 00：表空间中页的偏移量</span><br><span class="line">FIL_PAGE_PREV	        4	00 00 00 00：该页的上一个页</span><br><span class="line">FIL_PAGE_NEXT	        4	00 00 00 00：该页的下一个页，B+tree特性决定了叶子节点必须是双向列表</span><br><span class="line">FIL_PAGE_LSN	        8	00 00 00 00 80 eb 9d 23：该页最后被修改的LSN日志序列位置（Log Sequence Number）</span><br><span class="line">FIL_PAGE_TYPE	        2	00 08：&#x3D; FSP_HDR 该页的类型，</span><br><span class="line">FIL_PAGE_FILE_FLUSH_LSN	8	00 00 00 00 00 00 00 00 ：独立表空间中为0</span><br><span class="line">FIL_PAGE_ARCH_LOG_NO	4	00 00 00 2c：&#x3D;2*16+12&#x3D;44 该页属于哪一个表空间，与上文sql 查询一致</span><br></pre></td></tr></table></figure>
+
+<h2 id="IBUF-BITMAP-Page"><a href="#IBUF-BITMAP-Page" class="headerlink" title="IBUF_BITMAP Page"></a>IBUF_BITMAP Page</h2><p>第2个page类型为FIL_PAGE_IBUF_BITMAP，主要用于跟踪随后的每个page的change buffer信息，使用4个bit来描述每个page的change buffer信息。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bits	Desc</span><br><span class="line">IBUF_BITMAP_FREE	2	使用2个bit来描述page的空闲空间范围：0（0 bytes）、1（512 bytes）、2（1024 bytes）、3（2048 bytes）</span><br><span class="line">IBUF_BITMAP_BUFFERED	1	是否有ibuf操作缓存</span><br><span class="line">IBUF_BITMAP_IBUF	1	该Page本身是否是Ibuf Btree的节点</span><br></pre></td></tr></table></figure>
+<p>由于bitmap page的空间有限，同样每隔256个Extent Page之后，也会在XDES PAGE之后创建一个ibuf bitmap page。</p>
+<p>offsets:16<em>1024</em>1=16384</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 16384 -n 38 table5hang.ibd</span><br><span class="line">00004000  a0 58 07 7e 00 00 00 01  00 00 00 00 00 00 00 00  |.X.~............|</span><br><span class="line">00004010  00 00 00 00 80 eb 93 80  00 05 00 00 00 00 00 00  |................|</span><br><span class="line">00004020  00 00 00 00 00 2c                                 |.....,|</span><br><span class="line">00004026</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<p>前 38也是  File Header<br>00 05 : FIL_PAGE_IBUF_BITMAP    0x0005  插入缓冲位图页（Insert Buffer Bitmap）。用于记录 change buffer的使用情况。 </p>
+<h2 id="FIL-PAGE-INODE"><a href="#FIL-PAGE-INODE" class="headerlink" title="FIL_PAGE_INODE"></a>FIL_PAGE_INODE</h2><p>数据文件的第3个page的类型为FIL_PAGE_INODE，用于管理数据文件中的segement，每个索引占用2个segment，分别用于管理叶子节点和非叶子节点。</p>
+<p>每个inode页可以存储FSP_SEG_INODES_PER_PAGE（默认为85）个记录。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bits	Desc</span><br><span class="line">FSEG_INODE_PAGE_NODE	12	INODE页的链表节点，记录前后Inode Page的位置，BaseNode记录在头Page的FSP_SEG_INODES_FULL或者FSP_SEG_INODES_FREE字段。</span><br><span class="line">Inode Entry 0	192	Inode记录</span><br><span class="line">Inode Entry 1	 	 </span><br><span class="line">……	 	 </span><br><span class="line">Inode Entry 84</span><br></pre></td></tr></table></figure>
+<p>每个Inode Entry的结构如下表所示：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bits	Desc</span><br><span class="line">FSEG_ID	8	该Inode归属的Segment ID，若值为0表示该slot未被使用</span><br><span class="line">FSEG_NOT_FULL_N_USED	8	FSEG_NOT_FULL链表上被使用的Page数量</span><br><span class="line">FSEG_FREE	16	完全没有被使用并分配给该Segment的Extent链表</span><br><span class="line">FSEG_NOT_FULL	16	至少有一个page分配给当前Segment的Extent链表，全部用完时，转移到FSEG_FULL上，全部释放时，则归还给当前表空间FSP_FREE链表</span><br><span class="line">FSEG_FULL	16	分配给当前segment且Page完全使用完的Extent链表</span><br><span class="line">FSEG_MAGIC_N	4	Magic Number</span><br><span class="line">FSEG_FRAG_ARR 0	4	属于该Segment的独立Page。总是先从全局分配独立的Page，当填满32个数组项时，就在每次分配时都分配一个完整的Extent，并在XDES PAGE中将其Segment ID设置为当前值</span><br><span class="line">……	……	 </span><br><span class="line">FSEG_FRAG_ARR 31	4	总共存储32个记录项</span><br></pre></td></tr></table></figure>
+
+<p>offsets:16<em>1024</em>2=32768</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 32768 -n 38 table5hang.ibd</span><br><span class="line">00008000  86 d5 41 60 00 00 00 02  00 00 00 00 00 00 00 00  |..A ............|</span><br><span class="line">00008010  00 00 00 00 80 eb 9d 23  00 03 00 00 00 00 00 00  |.......<span class="comment">#........|</span></span><br><span class="line">00008020  00 00 00 00 00 2c                                 |.....,|</span><br><span class="line">00008026</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<p>前 38也是  File Header<br>00 03 : 索引节点 </p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bits	Desc</span><br><span class="line">FSEG_INODE_PAGE_NODE	12	INODE页的链表节点，记录前后Inode Page的位置，BaseNode记录在头Page的FSP_SEG_INODES_FULL或者FSP_SEG_INODES_FREE字段。</span><br><span class="line">Inode Entry 0	192	Inode记录</span><br><span class="line">Inode Entry 1	 	 </span><br><span class="line">……	 	 </span><br><span class="line">Inode Entry 84</span><br></pre></td></tr></table></figure>
+<p>每个Inode Entry的结构如下表所示：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bits	Desc</span><br><span class="line">FSEG_ID	8	该Inode归属的Segment ID，若值为0表示该slot未被使用</span><br><span class="line">FSEG_NOT_FULL_N_USED	8	FSEG_NOT_FULL链表上被使用的Page数量</span><br><span class="line">FSEG_FREE	16	完全没有被使用并分配给该Segment的Extent链表</span><br><span class="line">FSEG_NOT_FULL	16	至少有一个page分配给当前Segment的Extent链表，全部用完时，转移到FSEG_FULL上，全部释放时，则归还给当前表空间FSP_FREE链表</span><br><span class="line">FSEG_FULL	16	分配给当前segment且Page完全使用完的Extent链表</span><br><span class="line">FSEG_MAGIC_N	4	Magic Number</span><br><span class="line">FSEG_FRAG_ARR 0	4	属于该Segment的独立Page。总是先从全局分配独立的Page，当填满32个数组项时，就在每次分配时都分配一个完整的Extent，并在XDES PAGE中将其Segment ID设置为当前值</span><br><span class="line">……	……	 </span><br><span class="line">FSEG_FRAG_ARR 31	4	总共存储32个记录项</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="Index-索引页"><a href="#Index-索引页" class="headerlink" title="Index 索引页"></a>Index 索引页</h2><p>需要跳过3页面，即 49152，索引页 结构也符合基础页结构。</p>
+<p><img src="/images/post/db-mysql/index-struct.webp" alt=""></p>
+<p>同上述步骤类似</p>
+<h3 id="FIL-Header（38字节-记录文件头信息。"><a href="#FIL-Header（38字节-记录文件头信息。" class="headerlink" title="FIL Header（38字节): 记录文件头信息。"></a>FIL Header（38字节): 记录文件头信息。</h3><p>offsets:16<em>1024</em>3=49152</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 49152 -n 38 table5hang.ibd</span><br><span class="line">0000c000  3b 03 ff eb 00 00 00 03  ff ff ff ff ff ff ff ff  |;...............|</span><br><span class="line">0000c010  00 00 00 00 80 eb af c9  45 bf 00 00 00 00 00 00  |........E.......|</span><br><span class="line">0000c020  00 00 00 00 00 2c                                 |.....,|</span><br><span class="line">0000c026</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<p>前4字节 3b 03 ff eb 是 checksum，接着4个 00 00 00 03 是页偏移值 3，即这是第2+1页。【数组下标方式，这是真实的第四页】</p>
+<p>接着 4 字节是上一页偏移值，ff ff ff ff 第一个数据页 无上一页，接着 4 字节是下一页偏移值 ff ff ff ff 无下一页。</p>
+<p>然后 8 字节 00 00 00 00 80 eb af c9 是日志序列号 LSN。</p>
+<p>随后的 2 字节 45 bf 是页类型，代表是 INDEX 页。</p>
+<p>接着 8 字节 00 00 00 00 00 00 00 00 表示被更新到的LSN，在 File-Per-Table 表空间中都是0。</p>
+<p>然后 4 字节 00 00 00 2c 表示该数据页属于的表t的表空间ID是 0x2c(44)。 与上文sql 查询一致</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> INFORMATION_SCHEMA.INNODB_SYS_TABLES <span class="keyword">WHERE</span> <span class="keyword">NAME</span>=<span class="string">'test_innodb/table5hang'</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="PageHeader-INDEX-Header（56字节-记录的是-INDEX-页的状态信息"><a href="#PageHeader-INDEX-Header（56字节-记录的是-INDEX-页的状态信息" class="headerlink" title="PageHeader-INDEX Header（56字节): 记录的是 INDEX 页的状态信息"></a>PageHeader-INDEX Header（56字节): 记录的是 INDEX 页的状态信息</h3><p>offsets:16<em>1024</em>3+38=49190</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 49190 -n 56 table5hang.ibd</span><br><span class="line">0000c026  00 02 01 36 80 07 00 00  00 00 01 17 00 02 00 04  |...6............|</span><br><span class="line">0000c036  00 05 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|</span><br><span class="line">0000c046  00 00 00 3c 00 00 00 2c  00 00 00 02 00 f2 00 00  |...&lt;...,........|</span><br><span class="line">0000c056  00 2c 00 00 00 02 00 32                           |.,.....2|</span><br><span class="line">0000c05e</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">PAGE_N_DIR_SLOTS	2	00 02：在Page Directory中Slot的数量，初始值为2</span><br><span class="line">PAGE_HEAP_TOP	    2	01 36：堆中第一个记录的指针,记录在页中是根据堆的形式存放</span><br><span class="line">PAGE_N_HEAP	        2	80 07：堆中的记录数，初始值为2，但是第15位表示行记录格式</span><br><span class="line">PAGE_FREE	        2	00 00：指向可重用空间的首指针</span><br><span class="line">PAGE_GARBAGE	    2	00 00：已标记为删除（deleted_flag）的记录的字节数</span><br><span class="line">PAGE_LAST_INSERT	2	01 17：最后插入记录的位置</span><br><span class="line">PAGE_DIRECTION	    2	00 02：最后插入的方向，PAGE_LEFT(0x01)，PAGE_RIGHT(0x02)，PAGE_SAME_REC(0X03),PAGE_SAME_PAGE(0X04),PAGE_NO_DIRECTION(0x05)</span><br><span class="line">PAGE_N_DIRECTION	2	00 04：一个方向上连续插入记录的数量</span><br><span class="line">PAGE_N_RECS	        2	00 05：该页中记录（User Record）的数量</span><br><span class="line">PAGE_MAX_TRX_ID	    8	00 00 00 00 00 00  00 00：修改该页的最大事务ID（仅在辅助索引中定义）</span><br><span class="line">PAGE_LEVEL	        2	00 00：该页在索引树中位置，0000代表叶子节点</span><br><span class="line">PAGE_INDEX_ID	    8	00 00 00 00 00 00 00 3c：索引ID，表示该页属于哪个索引</span><br><span class="line">PAGE_BTR_SEG_LEAF	10	00 00 00 2c 00 00 00 02 00 f2：B+Tree叶子节点所在Leaf Node Segment的Segment Header（无关紧要）</span><br><span class="line">PAGE_BTR_SEG_TOP	10	00 00 00 2c 00 00 00 02 00 32：B+Tree非叶子节点所在Non-Leaf Node Segment的Segment Header（无关紧要）</span><br></pre></td></tr></table></figure>
+<p>PAGE_INDEX_ID = 3c =3*16+12=60  索引ID可以在information_schema.INNODB_SYS_INDEXES 中查询</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.INNODB_SYS_INDEXES </span><br><span class="line"><span class="keyword">where</span> TABLE_ID <span class="keyword">in</span> (<span class="keyword">SELECT</span> TABLE_ID <span class="keyword">FROM</span> INFORMATION_SCHEMA.INNODB_SYS_TABLES <span class="keyword">WHERE</span> <span class="keyword">NAME</span>=<span class="string">'test_innodb/table5hang'</span>)</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">index_id    name    table_id    type    n_fields    page_no space</span><br><span class="line">60          PRIMARY 58          3       1           3       44</span><br></pre></td></tr></table></figure>
+
+<p>PAGE_BTR_SEG_LEAF和PAGE_BTR_SEG_TOP INDEX页中的根结点才有的，非根结点的为0。<br>前10字节 00 00 00 2c 00 00 00 02 00 f2 是叶子结点所在段的segment header，分别记录了叶子结点的表空间ID 0x24，INODE页的页号 2 和 INODE项偏移 0xf2。<br>后10字节 00 00 00 2c 00 00 00 02 00 32 是非叶子结点所在段的segment header，偏移分别是0xf2 和 0x32，即INODE页的前2个Entry，文件段ID分别是1和2。<br>FSEG Header中存储了该 INDEX 页的INODE项，INODE项里面则记录了该页存储所在的文件段以及文件段页的使用情况。对于 File-Per-Table情况下，每个单独的表空间文件的 FSP_HDR 页负责管理页使用情况。</p>
+<p><img src="/images/post/db-mysql/fseg.webp" alt=""></p>
+<h3 id="System-Records-26字节-infimum和supermum-record"><a href="#System-Records-26字节-infimum和supermum-record" class="headerlink" title="System Records(26字节)-infimum和supermum record"></a>System Records(26字节)-infimum和supermum record</h3><p>offset:16<em>1024</em>3+38+56 = 49246</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 49246 -n 60 table5hang.ibd</span><br><span class="line">0000c05e  01 00 02 00 1c 69 6e 66  69 6d 75 6d 00 06 00 0b  |.....infimum....|</span><br><span class="line">0000c06e  00 00 73 75 70 72 65 6d  75 6d 06 00 00 00 10 00  |..supremum......|</span><br><span class="line">0000c07e  26 80 00 00 00 00 00 00  01 00 00 00 00 74 d0 9e  |&amp;............t..|</span><br><span class="line">0000c08e  00 00 01 57 01 10 6e 61  6d 65 2d 31              |...W..name-1|</span><br><span class="line">0000c09a</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">01 00 02 00 1c 69 6e 66 69 6d 75 6d 00 |.....infimum....|</span><br><span class="line">06 00 0b 00 00 73 75 70 72 65 6d 75 6d |..supremum......|</span><br></pre></td></tr></table></figure>
+<p>每个 INDEX 页都有两条虚拟记录 infimum 和 supremum，用于限定记录的边界，各占 13 个字节。<br>其中记录头的5个字节分别标识了拥有记录的数目和类型(拥有记录数目是即后面页目录部分的owned值，当前页目录只有两个槽，infimum拥有记录数只有它自己为1，<br>而supremum拥有我们插入的5条记录和它自己，故为6)、下一条记录的偏移 0x1c=28 向后【当前位置】偏移 28个，即位置是 0xC062+0x1c=0xc07e 的后一个 0xco7f，这就是我们实际数据记录开始位置。<br>后面8个字节为 infimum + 空值，supremum类似，只是它下一条记录偏移为0。</p>
+<h3 id="User-Records-1"><a href="#User-Records-1" class="headerlink" title="User Records"></a>User Records</h3><p>offset:16<em>1024</em>3+38+56 +26 = 49272</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 49272 -n 1000 table5hang.ibd</span><br><span class="line">0000c078  06 00 00 00 10 00 26 80  00 00 00 00 00 00 01 00  |......&amp;.........|</span><br><span class="line">0000c088  00 00 00 74 d0 9e 00 00  01 57 01 10 6e 61 6d 65  |...t.....W..name|</span><br><span class="line">0000c098  2d 31 80 00 00 01 06 00  00 00 18 00 26 80 00 00  |-1..........&amp;...|</span><br><span class="line">0000c0a8  00 00 00 00 02 00 00 00  00 74 d0 9e 00 00 01 57  |.........t.....W|</span><br><span class="line">0000c0b8  01 20 6e 61 6d 65 2d 32  80 00 00 02 06 00 00 00  |. name-2........|</span><br><span class="line">0000c0c8  20 00 26 80 00 00 00 00  00 00 03 00 00 00 00 74  | .&amp;............t|</span><br><span class="line">0000c0d8  d0 9e 00 00 01 57 01 30  6e 61 6d 65 2d 33 80 00  |.....W.0name-3..|</span><br><span class="line">0000c0e8  00 03 06 00 00 00 28 00  26 80 00 00 00 00 00 00  |......(.&amp;.......|</span><br><span class="line">0000c0f8  04 00 00 00 00 74 d0 9e  00 00 01 57 01 40 6e 61  |.....t.....W.@na|</span><br><span class="line">0000c108  6d 65 2d 34 80 00 00 04  06 00 00 00 30 ff 59 80  |me-4........0.Y.|</span><br><span class="line">0000c118  00 00 00 00 00 00 05 00  00 00 00 74 d0 9e 00 00  |...........t....|</span><br><span class="line">0000c128  01 57 01 50 6e 61 6d 65  2d 35 80 00 00 05 00 00  |.W.Pname-5......|</span><br><span class="line">0000c138  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|</span><br><span class="line">*</span><br><span class="line">0000c458  00 00 00 00 00 00 00 00                           |........|</span><br><span class="line">0000c460</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<p>查看 行记录格式 </p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> <span class="keyword">TABLE</span> <span class="keyword">STATUS</span> <span class="keyword">from</span> test_innodb <span class="keyword">like</span> <span class="string">'table5hang'</span></span><br><span class="line"><span class="comment">--- Compact</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">接下来是插入的记录。Compact 【变长字段长度列表 小于255 1字节，大于 255 2】</span><br><span class="line">06  1字节记录的是可变变量的长度06，因为我们记录中c的值是 name-5。</span><br><span class="line">00  1字节记录的是可为NULL的变量是否是NULL，这里不为 NULL，故为0。</span><br><span class="line">记录头：00 00 10 00 26</span><br><span class="line">    Compact行记录格式 头格式</span><br><span class="line">    00  </span><br><span class="line">    00 10 &#x3D; 10110</span><br><span class="line">    00 26 &#x3D; 下一记录相对位置</span><br><span class="line">    后面就是记录内容。第2条记录同理。这里的事务ID可以通过 select * from information_schema.innodb_trx 进行验证。</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">第一行</span><br><span class="line">0000c078  06 00 00 00 10 00 26 80  00 00 00 00 00 00 01 00  |......&amp;.........|</span><br><span class="line">0000c088  00 00 00 74 d0 9e 00 00  01 57 01 10 6e 61 6d 65  |...t.....W..name|</span><br><span class="line">0000c098  2d 31 80 00 00 01 06 00  00 00 18 00 26 80 00 00  |-1..........&amp;...|</span><br><span class="line"></span><br><span class="line"> 06 00 00 00 10 00 26 # 列长+null标记+记录头</span><br><span class="line"> 80 00 00 00 00 00 00 01   # 主键值1  bigint</span><br><span class="line"> 00 00 00 00 74 d0    # 事务ID</span><br><span class="line"> 9e 00 00 01 57 01 10 # 回滚指针</span><br><span class="line"> 6e 61 6d 65 2d 31    # username的值 name-1  6个字节</span><br><span class="line"> 80 00 00 01          # 列 age &#x3D;1  int 4字节</span><br><span class="line"> </span><br><span class="line">第二行</span><br><span class="line">                            06 00  00 00 18 00 26 80 00 00  |-1..........&amp;...|</span><br><span class="line">0000c0a8  00 00 00 00 02 00 00 00  00 74 d0 9e 00 00 01 57  |.........t.....W|</span><br><span class="line">0000c0b8  01 20 6e 61 6d 65 2d 32  80 00 00 02 06 00 00 00  |. name-2........|</span><br><span class="line"></span><br><span class="line"> 06 00 00 00 18 00 26 # 第2条记录头</span><br><span class="line"> 80 00 00 00 00 00 00 02   # 主键值1  bigint</span><br><span class="line"> 00 00 00 00 74 d0    # 事务ID</span><br><span class="line"> 9e 00 00 01 57 01 20 # 回滚指针</span><br><span class="line"> 6e 61 6d 65 2d 32    # username的值 name-1  6个字节</span><br><span class="line"> 80 00 00 01          # 列 age &#x3D;1  int 4字节</span><br><span class="line">&#96;&#96;&#96;    </span><br><span class="line">![](&#x2F;images&#x2F;post&#x2F;db-mysql&#x2F;bptree.webp)</span><br><span class="line"></span><br><span class="line">### Page Directory(4字节)</span><br><span class="line"></span><br><span class="line">因为页目录的slot只有2个，每个slot占2字节，故页目录为 00 70 00 63 这4字节，存储的是相对于最初行的位置。</span><br><span class="line"></span><br><span class="line">其中 0xc063 正好是 infimum 记录的开始位置，而 0xc070 正好是 supremum 记录的开始位置。使用页目录进行二分查找，可以加速查询，详细见后面分析。</span><br><span class="line"></span><br><span class="line">offset:16*1024*4 - 4 - 8 &#x3D; 65524</span><br><span class="line">&#96;&#96;&#96;bash</span><br><span class="line">hexdump -C -s 65524 -n 4 table5hang.ibd</span><br><span class="line">0000fff4  00 70 00 63                                       |.p.c|</span><br><span class="line">0000fff8</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<h3 id="FIL-Tail-8字节"><a href="#FIL-Tail-8字节" class="headerlink" title="FIL Tail (8字节)"></a>FIL Tail (8字节)</h3><p>offset:16<em>1024</em>4 - 8 = 65528</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 65528 -n 8 table5hang.ibd</span><br><span class="line">0000fff8  bd 11 4b e6 80 eb af c9                           |..K.....|</span><br><span class="line">00010000</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<p>其中 bd 11 4b e6 为 checknum，跟 FIL Header的checksum一样。【没有匹配上，需要继续查看资料】</p>
+<p>后4字节80 eb af c9 与 FIL Header的LSN的后4个字节一致。</p>
+<h2 id="通过-innodb-ruby-工具来分析表空间文件"><a href="#通过-innodb-ruby-工具来分析表空间文件" class="headerlink" title="通过 innodb_ruby 工具来分析表空间文件"></a>通过 innodb_ruby 工具来分析表空间文件</h2><p>mac安装</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">brew install ruby</span><br><span class="line">git <span class="built_in">clone</span> https://github.com/rubygems/rubygems.git</span><br><span class="line"><span class="built_in">cd</span> rubygems/bin/</span><br><span class="line">./gem install innodb_ruby</span><br><span class="line">``` </span><br><span class="line">``` bash</span><br><span class="line">innodb_space -s /Users/lihongxu6/docker/mymysql56/data/ibdata1 -T test_innodb/table5hang space-page-type-regions</span><br><span class="line">start       end         count       <span class="built_in">type</span>                </span><br><span class="line">0           0           1           FSP_HDR             </span><br><span class="line">1           1           1           IBUF_BITMAP         </span><br><span class="line">2           2           1           INODE               </span><br><span class="line">3           3           1           INDEX               </span><br><span class="line">4           5           2           FREE (ALLOCATED)    </span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+<p>查看具体数据</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">innodb_space -s /Users/lihongxu6/docker/mymysql56/data/ibdata1 -T test_innodb/table5hang -p 3 page-records</span><br><span class="line"><span class="comment"># Record 127: (id=1) → (username="name-1", age=1)</span></span><br><span class="line"><span class="comment"># Record 165: (id=2) → (username="name-2", age=2)</span></span><br><span class="line"><span class="comment"># Record 203: (id=3) → (username="name-3", age=3)</span></span><br><span class="line"><span class="comment"># Record 241: (id=4) → (username="name-4", age=4)</span></span><br><span class="line"><span class="comment"># Record 279: (id=5) → (username="name-5", age=5)</span></span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+
+<h2 id="其他-XDES页"><a href="#其他-XDES页" class="headerlink" title="其他-XDES页"></a>其他-XDES页</h2><p>簇或者分区（extent）是段的组成元素，在文件头使用FLAG描述了创建表信息，除此之外其他部分的数据结构和XDES PAGE都是相同的，<br>使用连续数组的方式，每个XDES PAGE最多存储256个XDES Entry，每个Entry占用40个字节，描述64个Page（即一个Extent）。格式如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bytes	Desc</span><br><span class="line">XDES_ID	8	如果该Extent归属某个segment的话，则记录其ID</span><br><span class="line">XDES_FLST_NODE	12(FLST_NODE_SIZE)	维持Extent链表的双向指针节点</span><br><span class="line">XDES_STATE	4	该Extent的状态信息，包括：XDES_FREE，XDES_FREE_FRAG，XDES_FULL_FRAG，XDES_FSEG，详解见下文</span><br><span class="line">XDES_BITMAP	16	总共16*8&#x3D; 128个bit，用2个bit表示Extent中的一个page，一个bit表示该page是否是空闲的(XDES_FREE_BIT)，另一个保留位，尚未使用（XDES_CLEAN_BIT）</span><br></pre></td></tr></table></figure>
+<p>XDES_STATE表示该Extent的四种不同状态：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	Desc</span><br><span class="line">XDES_FREE(1)	存在于FREE链表上</span><br><span class="line">XDES_FREE_FRAG(2)	存在于FREE_FRAG链表上</span><br><span class="line">XDES_FULL_FRAG(3)	存在于FULL_FRAG链表上</span><br><span class="line">XDES_FSEG(4)	该Extent归属于ID为XDES_ID记录的值的SEGMENT。</span><br></pre></td></tr></table></figure>
+<p>通过XDES_STATE信息，我们只需要一个FLIST_NODE节点就可以维护每个Extent的信息，是处于全局表空间的链表上，还是某个btree segment的链表上。</p>
+<h2 id="文件维护"><a href="#文件维护" class="headerlink" title="文件维护"></a>文件维护</h2><p>从上文我们可以看到，InnoDB通过Inode Entry来管理每个Segment占用的数据页，每个segment可以看做一个文件页维护单元。Inode Entry所在的inode page有可能存放满，因此又通过头Page维护了Inode Page链表。</p>
+<p>在ibd的第一个Page中还维护了表空间内Extent的FREE、FREE_FRAG、FULL_FRAG三个Extent链表；而每个Inode Entry也维护了对应的FREE、NOT_FULL、FULL三个Extent链表。这些链表之间存在着转换关系，以高效的利用数据文件空间。</p>
+<p>注意区别：表空间中的链表管理的是整个表空间中所有的簇，包括满簇、半满簇及空闲簇，而段的iNode信息中管理的是属于自己段中的满簇、半满簇及空闲簇。</p>
+<p>当创建一个新的索引时，实际上构建一个新的btree(btr_create)，先为非叶子节点Segment分配一个inode entry，再创建root page，并将该segment的位置记录到root page中，然后再分配leaf segment的Inode entry，并记录到root page中。当删除某个索引后，该索引占用的空间需要能被重新利用起来。</p>
+<p>创建一个segment：</p>
+<p>函数入口：fseg_create_general。</p>
+<ol>
+<li><p>根据空间id得到表空间头信息。</p>
+</li>
+<li><p>从得到的表空间头信息分配Inode:具体实现为读取文件头Page并加锁（fsp_get_space_header），然后开始为其分配Inode Entry(fsp_alloc_seg_inode)。</p>
+<p> 为了管理Inode Page，在文件头存储了两个Inode Page链表，一个链接已经用满的inode page，一个链接尚未用满的inode page。如果当前Inode Page的空间使用完了，<br> 就需要再分配一个inode page，并加入到FSP_SEG_INODES_FREE链表上(fsp_alloc_seg_inode_page)。对于独立表空间，通常一个inode page就足够了。</p>
+</li>
+</ol>
+<p>具体查找inode Page过程：首先判断FSP_SEG_INODES_FREE链表是否还有空闲页面，如果有，则从页面的数据存储位置开始扫描，没找一个Inode，先判断是否空闲（空闲表示其不归属任何segment，即FSEG_ID置为0）。<br>找到则返回。找到这个且这个Inode为这个页最后一个Inode.则该inode page中的记录用满了，就从FSP_SEG_INODES_FREE链表上转移到FSP_SEG_INODES_FULL链表。<br>如果FSP_SEG_INODES_FREE没有空闲的Inode页面，则重新分配一个inode页面，分配后把所有描述符里面的FSEG_ID置为0，重复上面过程。</p>
+<ol start="3">
+<li><p>给新分配的Inode设置SEG_ID. 这个ID号要从表空间头信息的FSP_SEG_ID作为当前segment的seg id写入到inode entry中。同时更新FSP_SEG_ID的值为ID+1，作为下一个段的ID号。</p>
+</li>
+<li><p>在完成inode entry的提取后，初始化这个Inode信息。把FSEG_NOT_FULL_N_USED置为0，初始化FSEG_FREE、FSEG_NOT_FULL，FSEG_FULL。</p>
+</li>
+<li><p>从这个段分配出一个页面。（这块逻辑不太懂）</p>
+</li>
+<li><p>分配好页面后，通过缓存找到段的首页面（页面号为page+index）。就将该inode entry所在inode page的位置及页内偏移量存储到段首页，10个字节的inode信息包括：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Macro	bytes	Desc</span><br><span class="line">FSEG_HDR_SPACE	4	描述该segment的inode page所在的space id （目前的实现来看，感觉有点多余…）</span><br><span class="line">FSEG_HDR_PAGE_NO	4	描述该segment的inode page的page no</span><br><span class="line">FSEG_HDR_OFFSET	2	inode page内的页内偏移量</span><br></pre></td></tr></table></figure>
+<p>至此段就分配完成了，以后如果需要在这个段中分配空间，只需要找到其首页，然后根据对应的Inode分配空间。</p>
+</li>
+</ol>
+<p>分配数据页函数 fsp_alloc_free_page</p>
+<p>表空间Extent的分配函数fsp_alloc_free_extent。</p>
+<p>对应的还有释放Segment 当我们删除索引或者表时，需要删除btree（btr_free_if_exists），先删除除了root节点外的其他部分(btr_free_but_not_root)，再删除root节点(btr_free_root)</p>
+<p>由于数据操作都需要记录redo，为了避免产生非常大的redo log，leaf segment通过反复调用函数fseg_free_step来释放其占用的数据页。</p>
+<h2 id="创建B-索引"><a href="#创建B-索引" class="headerlink" title="创建B+索引"></a>创建B+索引</h2><p>innodb的文件管理方式，核心目的是为了管理好B+索引。</p>
+<p>ibd文件中真正构建起用户数据的结构是BTREE，在你创建一个表时，已经基于显式或隐式定义的主键构建了一个btree，其叶子节点上记录了行的全部列数据（加上事务id列及回滚段指针列）；</p>
+<p>如果你在表上创建了二级索引，其叶子节点存储了键值加上聚集索引键值。所以书上贴一段创建B+索引的代码。网上找了5.6.15版本的。</p>
+<p>这个函数就是创建一个B+树，只是概念上的，还没有真正的数据写入。</p>
+<h1 id="页内-页目录"><a href="#页内-页目录" class="headerlink" title="页内-页目录"></a>页内-页目录</h1><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t2(<span class="keyword">id</span> <span class="built_in">int</span> auto_increment primary <span class="keyword">key</span>, ch <span class="built_in">varchar</span>(<span class="number">10</span>), <span class="keyword">key</span>(ch));</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t2(ch) <span class="keyword">values</span>(<span class="string">'ab'</span>);</span><br></pre></td></tr></table></figure>
+<p>创建一个新的测试表 t2，有主索引 id 和 辅助索引 ch，分析 t2.ibd 文件可验证：</p>
+<ul>
+<li>对比没有辅助索引的表，表t2多一个INDEX页，用于存储辅助索引的根结点。</li>
+<li>辅助索引的INDEX页也有两个系统记录 infimum 和 supremum。而用户记录内容格式跟前面分析基本一致，内容为辅助索引 ch 列的值 ab 和 主键值1。</li>
+</ul>
+<p>INDEX页内的记录是通过单向链表连接在一起的，遍历列表性能会比较差，而INDEX页的页目录就是为了加速记录搜索。</p>
+<p>表 t2 中的页目录只有两项，分别是 0x63 和 0x70，即 99 和 112。</p>
+<p>下面的ownedkey为这个页目录槽拥有的小于等于它的记录数目，显然 infimum 的ownedkey为 1，即只有它自己，没有key会比infimum小。</p>
+<p>而 supremum 的owned是3，分别是我们插入的两条记录和它自己。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">slot    offset  type          owned  key</span><br><span class="line">0       99      infimum       1       </span><br><span class="line">1       112     supremum      3</span><br></pre></td></tr></table></figure>
+<p>每个页目录槽最少要包含4个记录，最多包含8个记录(包括它自己)。如果我们在表 t2 中另外插入 7 条记录，则会增加一个新的slot，即 id 为 4 的记录，如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">slot    offset  type          owned   key</span><br><span class="line">0       99      infimum       1       </span><br><span class="line">1       207     conventional  4       (i&#x3D;4)</span><br><span class="line">2       112     supremum      5</span><br></pre></td></tr></table></figure>
+<p>下图是页目录结构图，可以通过页目录的二分查找提高页内数据的查询性能。</p>
+<p><img src="/images/post/db-mysql/bptreepagestruct.webp" alt=""></p>
+<p>参考：</p>
+<p><a href="http://mysql.taobao.org/monthly/2016/02/01/" target="_blank" rel="noopener">http://mysql.taobao.org/monthly/2016/02/01/</a></p>
+<p>《MYSQL运维内参》<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html" target="_blank" rel="noopener">https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html</a></p>
+<p>链接：<a href="https://blog.csdn.net/bohu83/article/details/81086474" target="_blank" rel="noopener">https://blog.csdn.net/bohu83/article/details/81086474</a><br><a href="http://mysql.taobao.org/monthly/2016/02/01/" target="_blank" rel="noopener">http://mysql.taobao.org/monthly/2016/02/01/</a></p>
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>05-存储引擎层-innodb框架-表空间-ibd</title>
+    <url>/articles/20200202/20b74871.html</url>
+    <content><![CDATA[<p>摘要：<br>innodb文件系统是由一些log和每个表的ibd（16K的整数倍）等文件组成的。内部结构如下。</p>
+<a id="more"></a>
+
+<h1 id="表空间-idb简述"><a href="#表空间-idb简述" class="headerlink" title="表空间-idb简述"></a>表空间-idb简述</h1><p>ibd是存表数据的，那么在计算机里，所有的存储都是有最小存储单元的。</p>
+<p>在磁盘上，最小的单元是扇区，一个扇区是512字节，操作系统中最小单元是块（block），最小单位是4K。而innodb也有自己的最小存储单元——页（page），一页是16K。</p>
+<p>这意味着一个文件放到电脑上，哪怕它是空的，也要占用4K，它占用的空间永远是4K的整数倍。</p>
+<p>可以去查看每个ibd文件的大小，它永远是16384（16k）的整数倍。</p>
+<p>后续说明索引加载表数据的前提，mysql的数据最小是16K，也就是哪怕你只取一条，可能还不到1K，那么mysql也会取出16K的数据。</p>
+<p>因为“页”是最小单位。“页”还决定了b+ tree在某个高度下，能存放的数据量，为什么一个表存2万数据，和存1500万数据，查询速度一样。</p>
+<h2 id="单个文件表空间-frm、ibd"><a href="#单个文件表空间-frm、ibd" class="headerlink" title="单个文件表空间-frm、ibd"></a>单个文件表空间-frm、ibd</h2><p>如果想让两个表共用一个数据文件的话,共用一个ibdata，可以通过<strong>innodb_file_per_table</strong>控制。默认每个表一个。</p>
+<p>创建了一个数据库test_innodb，并且创建了几个表，可以在数据目录看一下。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">db.opt</span><br><span class="line">table5hang.frm</span><br><span class="line">table5hang.ibd</span><br><span class="line">table15w.frm</span><br><span class="line">table15w.ibd</span><br><span class="line">table500w.frm</span><br><span class="line">table500w.ibd</span><br><span class="line">table1000w.frm</span><br><span class="line">table1000w.ibd</span><br></pre></td></tr></table></figure>
+<p>当新建一个库时，首先文件系统上会多一个以库名命名的文件夹。里面有ibd、frm文件，每个表对应一个ibd文件。</p>
+<ul>
+<li><p>db.opt 保存了数据库test的默认字符集 utf8mb4 和校验方法utf8mb4_general_ci；<br>存储的是mysql的一些配置信息，如编码、排序的信息，如果在创建数据库时指定了一些非默认参数的话，也会存到该文件。</p>
+</li>
+<li><p>每个表会对应一个frm文件，一个ibd文件。</p>
+<ul>
+<li><p>frm文件是表结构，无论在 MySQL 中选择了哪个存储引擎，所有的 MySQL 表都会在硬盘上创建一个 .frm 文件用来描述表的格式或者说定义； .frm 文件的格式在不同的平台上都是相同的。<br>数据字典信息(InnoDB数据字典信息主要是存储在系统表空间ibdata1文件中，由于历史原因才在 t.frm 多保留了一份)</p>
+</li>
+<li><p>ibd是表的数据和索引，是每一个表独有的表空间，文件存储了当前表的数据和相关的索引数据。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>独立的表空间文件之存储对应表的B+树数据、索引和插入缓冲等信息，其余信息还是存储在默认表空间中。</p>
+<p>这个文件所存储的内容主要就是B+树（索引），一个表可以有多个索引，也就是在一个文件中，可以存储多个索引，而如果一个表没有索引的话，用来存储数据的被称为聚簇索引，也就是说这也是一个索引。</p>
+<h3 id="采用-File-Per-Table-的优缺点"><a href="#采用-File-Per-Table-的优缺点" class="headerlink" title="采用 File-Per-Table 的优缺点"></a>采用 File-Per-Table 的优缺点</h3><ul>
+<li>优点：可以方便回收删除表所占的磁盘空间。如果使用系统表空间的话，删除表后空闲空间只能被 InnoDB 数据使用。TRUNCATE TABLE 操作会更快。<br>可以单独拷贝表空间数据到其他数据库(使用 transportable tablespace 特性)，可以更方便的观测每个表空间数据的大小。</li>
+<li>缺点：fsync 操作需要作用的多个表空间文件，比只对系统表空间这一个文件进行fsync操作会多一些 IO 操作。此外，mysqld需要维护更多的文件描述符。</li>
+</ul>
+<h2 id="当新建库时，innodb内部操作"><a href="#当新建库时，innodb内部操作" class="headerlink" title="当新建库时，innodb内部操作"></a>当新建库时，innodb内部操作</h2><p>innodb存储引擎在存储设计上模仿了Oracle的存储结构，其数据是按照表空间进行管理的。</p>
+<p>新建一个数据库时，innodb存储引擎会初始化一个名为ibdata1 的表空间文件，默认情况下，这个文件会存储所有表的数据，以及我们所熟知但看不到的系统表sys_tables、sys_columns、sys_indexes 、sys_fields等。</p>
+<p>此外，还会存储用来保证数据完整性的回滚段数据，当然这部分数据在新版本的MySQL中，已经可以通过参数来设置回滚段的存储位置了；</p>
+<p>注：不同的表既可以共用一个ibd文件，也可以每个表自己一个ibd文件，默认是一个表一个。</p>
+<p>虽然是一个表一个ibd，但这个ibd里只存储了该表的B+树数据、索引、插入缓存等信息，其余的信息如列、属性等信息还是存储在默认的ibdata1里面的。</p>
+<figure class="highlight plain"><figcaption><span>官网介绍</span></figcaption><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">A data file that can hold data for one or more InnoDB tables and associated indexes.</span><br><span class="line"> </span><br><span class="line">The system tablespace contains the InnoDB data dictionary, and prior to MySQL 5.6 holds all other InnoDB tables by default.</span><br><span class="line"> </span><br><span class="line">The innodb_file_per_table option, enabled by default in MySQL 5.6 and higher, allows tables to be created in their own tablespaces.</span><br><span class="line"> </span><br><span class="line">File-per-table tablespaces support features such as efficient storage of off-page columns, table compression, and transportable tablespaces.</span><br><span class="line">See Section 14.7.4, “InnoDB File-Per-Table Tablespaces” for details.</span><br></pre></td></tr></table></figure>
+
+<h2 id="ibd存储的数据"><a href="#ibd存储的数据" class="headerlink" title="ibd存储的数据"></a>ibd存储的数据</h2><p>该表的所有索引数据【聚集索引】。</p>
+<p>这里使用了B+tree,B+ tree的叶子节点，就会存放所有的数据。整个表，其实就是一棵B+ tree，一个ibd就是1-N个b+ tree。N等于你的索引数量</p>
+<p>当新建一个表时，会给表创建一个主键primary Key，然后这个key就带着整行数据占据着一块空间，作为B+ tree的一个叶子节点里元素。</p>
+<p>可以理解为一个key-value键值对，key就是主键，value就是整行数据。如果你根本就没创建主键（不推荐），那innodb也会给你分配一个RowId来作为将来找它的主键，只是看不到。</p>
+<p>这棵拥有全量数据的b+ tree，就是将来提供数据的树，一般来说，这棵树最大一般4层，3层就能存2千万数据了，4层能达到n个亿，将来通过主键查询时，通过2-4次IO就能找到数据行。这个索引树，即——聚簇索引。</p>
+<h1 id="表空间-ibd内文件结构"><a href="#表空间-ibd内文件结构" class="headerlink" title="表空间-ibd内文件结构"></a>表空间-ibd内文件结构</h1><h2 id=""><a href="#" class="headerlink" title=""></a></h2>]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>04-存储引擎层-innodb框架-磁盘上的结构-表空间</title>
+    <url>/articles/20200202/e9a15921.html</url>
+    <content><![CDATA[<p>摘要：<br>物理存储， InnoDB 里的所有表数据，都以索引（聚簇索引+二级索引）的形式存储起来，索引包含了表数据。</p>
+<a id="more"></a>
+
+<h1 id="磁盘上的结构"><a href="#磁盘上的结构" class="headerlink" title="磁盘上的结构"></a>磁盘上的结构</h1><p>磁盘中的结构分为两大类：表空间和重做日志。</p>
+<ul>
+<li>表空间：分为系统表空间(MySQL 目录的 ibdata1 文件)，临时表空间，常规表空间，Undo 表空间以及 file-per-table 表空间(MySQL5.7默认打开file_per_table 配置）。<br>系统表空间又包括了InnoDB数据字典，双写缓冲区(Doublewrite Buffer)，修改缓存(Change Buffer），Undo日志等。</li>
+<li>Redo日志：存储的就是 Log Buffer 刷到磁盘的数据。</li>
+</ul>
+<h2 id="innodb整体文件结构"><a href="#innodb整体文件结构" class="headerlink" title="innodb整体文件结构"></a>innodb整体文件结构</h2><p>物理存储文件结构中黑框里的就是innodb。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ibdata1</span><br><span class="line">ib_logfile0</span><br><span class="line">ib_logfile1</span><br></pre></td></tr></table></figure>
+<p>有两个默认的日志文件，logfile0和logfile1，大小可以手工设定。</p>
+<p>InnoDB 中用于存储数据的文件总共有两个部分，一是系统表空间文件，包括 ibdata1、 ibdata2 等文件，其中存储了 InnoDB 系统信息和用户数据库表数据和索引，是所有表公用的。另一部分是idb。</p>
+<h3 id="InnoDB-表结构"><a href="#InnoDB-表结构" class="headerlink" title="InnoDB 表结构"></a>InnoDB 表结构</h3><p>InnoDB 与 MyISAM 不同，它在系统表空间存储数据字典信息，因此它的表不能像 MyISAM 那样直接拷贝数据表文件移动。</p>
+<p>MySQL5.7 采用的文件格式是 Barracuda，它支持 COMPACT 和 DYNAMIC 这两种新的行记录格式。</p>
+<p>创建表时可以通过 ROW_FORMAT 指定行记录格式，默认是 DYNAMIC。查看表信息，</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> INFORMATION_SCHEMA.INNODB_SYS_TABLES <span class="keyword">WHERE</span> <span class="keyword">NAME</span>=<span class="string">'test_innodb/table15w'</span></span><br><span class="line">或</span><br><span class="line"><span class="keyword">SHOW</span> <span class="keyword">TABLE</span> <span class="keyword">STATUS</span> <span class="keyword">from</span> test_innodb <span class="keyword">like</span> <span class="string">'table15w'</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">*************************** 1. row ***************************</span><br><span class="line">           Name: table15w</span><br><span class="line">         Engine: InnoDB</span><br><span class="line">        Version: 10</span><br><span class="line">     Row_format: Compact</span><br><span class="line">           Rows: 149641</span><br><span class="line"> Avg_row_length: 52</span><br><span class="line">    Data_length: 7880704</span><br><span class="line">Max_data_length: 0</span><br><span class="line">   Index_length: 0</span><br><span class="line">      Data_free: 4194304</span><br><span class="line"> Auto_increment: 150001</span><br><span class="line">    Create_time: 2020-01-31 03:40:25</span><br><span class="line">    Update_time: NULL</span><br><span class="line">     Check_time: NULL</span><br><span class="line">      Collation: utf8_general_ci</span><br><span class="line">       Checksum: NULL</span><br><span class="line"> Create_options: </span><br><span class="line">        Comment:</span><br></pre></td></tr></table></figure>
+<p>InnoDB表使用上有一些限制，如一个表最多只能有64个辅助索引，一行大小不能超过65535等，组合索引不能超过16个字段等，一般应该不会突破限制，详细见 <a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-restrictions.html" target="_blank" rel="noopener">innodb-restrictions</a>。</p>
+<h3 id="InnoDB-表空间"><a href="#InnoDB-表空间" class="headerlink" title="InnoDB 表空间"></a>InnoDB 表空间</h3><p>表空间根据类型可以分为：系统表空间，File-Per-Table 表空间{即ibd}，常规表空间，Undo表空间，临时表空间等。</p>
+<ul>
+<li><p>系统表空间：包含内容有数据字典，双写缓冲，修改缓冲以及undo日志，以及在系统表空间创建的表的数据和索引。</p>
+</li>
+<li><p>常规表空间：类似系统表空间，也是一种共享的表空间，可以通过 CREATE TABLESPACE 创建常规表空间，多个表可共享一个常规表空间，也可以修改表的表空间。<br>注意：必须删除常规表空间中的表后才能删除常规表空间。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLESPACE</span> <span class="string">`ts1`</span> <span class="keyword">ADD</span> <span class="keyword">DATAFILE</span> <span class="string">'ts1.ibd'</span> <span class="keyword">Engine</span>=<span class="keyword">InnoDB</span>;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t1 (c1 <span class="built_in">INT</span> PRIMARY <span class="keyword">KEY</span>) <span class="keyword">TABLESPACE</span> ts1;</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t2 (c2 <span class="built_in">INT</span> PRIMARY <span class="keyword">KEY</span>) <span class="keyword">TABLESPACE</span> ts1;</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> t2 <span class="keyword">TABLESPACE</span>=innodb_file_per_table;</span><br><span class="line"></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">TABLE</span> t1;</span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">TABLESPACE</span> ts1;</span><br></pre></td></tr></table></figure></li>
+<li><p>File-Per-Table表空间：MySQL InnoDB新版本提供了 innodb_file_per_table 选项，每个表可以有单独的表空间数据文件(.ibd)，而不是全部放到系统表空间数据文件 ibdata1 中。在 MySQL5.7 中该选项默认开启。</p>
+</li>
+<li><p>其他表空间：其他表空间中Undo表空间存储的是Undo日志。除了存储在系统表空间外，Undo日志也可以存储在单独的Undo表空间中。<br>临时表空间则是非压缩的临时表的存储空间，默认是数据目录的 ibtmp1 文件，所有临时表共享，压缩的临时表用的是 File-Per-Table 表空间。</p>
+</li>
+</ul>
+<h1 id="innodb承上启下的结构"><a href="#innodb承上启下的结构" class="headerlink" title="innodb承上启下的结构"></a>innodb承上启下的结构</h1><p><img src="/images/post/db-mysql/005/innodb-jiegou.png" alt=""></p>
+<p>Handler API是供mysql server层调用的，server层定义了一些接口，譬如insert、delete，具体怎么实现，是由每个存储引擎自己实现的。</p>
+<p>以上图中间虚线为分界，上面的是逻辑层，每个访问都会产生事务，事务处理会产生锁（表锁、行锁），操作对象是表、索引、b+ tree。对数据页面的访问需要物理事务，为了读写一致性，需要读写锁（物理锁）。为了高效定位和管理“页”，需要用到文件管理系统。</p>
+<p>这些都是基于逻辑的处理，再往下就是物理层。</p>
+<p>在逻辑处理和磁盘文件之间，都是有一层缓存的，这里主要是日志缓冲区和innodb_buffer_pool。和其他常用的kafka、elasticsearch、rocksDB等等一样，要保持性能，必然都遵循相同或类似的规则，那就是写pageCache、顺序写磁盘，这是决定任何一个带存储功能的性能的关键点。</p>
+<p>innodb_buffer_pool，未来能对性能起决定性作用的一个重要因子。决定读写速度的都是内存，只要要读的数据在内存里，它就比在磁盘上快。redis就是靠内存，mysql的数据缓存，就取决于innodb_buffer_pool。</p>
+<p>缓冲层提供了高效的读写性能，再下面就是物理文件层了，是落到磁盘上的。</p>
+<p>磁盘上重要的地方有REDO日志，和表数据（页）</p>
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>03-存储引擎层、InnoDB 架构</title>
+    <url>/articles/20200201/4ced7854.html</url>
+    <content><![CDATA[<p>摘要：物理存储文件结构</p>
+<a id="more"></a>
+
+<h1 id="物理存储文件结构"><a href="#物理存储文件结构" class="headerlink" title="物理存储文件结构"></a>物理存储文件结构</h1><p><img src="/images/post/db-mysql/005/jiegou.png" alt=""></p>
+<p>my.cnf，配置文件。</p>
+<p>slow.log，记录慢查询日志，当语句执行时间超过参数long_query_time的值时，会被记录到该log，需要开启配置后才有。</p>
+<p>error.log，记录错误和警告信息。</p>
+<p>general.log，记录所有在数据库上执行的语句，可以用来追踪问题，文件增长很快，也很大，一般不会打开，需要要调试时可以打开。</p>
+<p>系统默认库有4个，存储系统信息的，表名、列名、列属性等等。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">information_scherma</span><br><span class="line">mysql</span><br><span class="line">performance_scherma</span><br><span class="line">sys</span><br></pre></td></tr></table></figure>
+
+<h1 id="InnoDB-架构"><a href="#InnoDB-架构" class="headerlink" title="InnoDB 架构"></a>InnoDB 架构</h1><p><img src="/images/post/db-mysql/innodb-struct.webp" alt=""></p>
+<p>从上面第二张图可以看到，InnoDB 主要分为两大块：</p>
+<ul>
+<li>InnoDB In-Memory Structures【内存中的结构】</li>
+<li>InnoDB On-Disk Structures【磁盘上的结构】</li>
+</ul>
+<p>InnoDB 使用日志先行策略，将数据修改先在内存中完成，并且将事务记录成重做日志(Redo Log)，转换为顺序IO高效的提交事务。</p>
+<p>这里日志先行，说的是日志记录到数据库以后，对应的事务就可以返回给用户，表示事务完成。</p>
+<p>但是实际上，这个数据可能还只在内存中修改完，并没有刷到磁盘上去。内存是易失的，如果在数据落地前，机器挂了，那么这部分数据就丢失了。</p>
+<p>InnoDB 通过 redo 日志来保证数据的一致性。如果保存所有的重做日志，显然可以在系统崩溃时根据日志重建数据。</p>
+<p>当然记录所有的重做日志不太现实，所以 InnoDB 引入了检查点机制。即定期检查，保证检查点之前的日志都已经写到磁盘，则下次恢复只需要从检查点开始。</p>
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>02-Server服务层</title>
+    <url>/articles/20200201/73b4253b.html</url>
+    <content><![CDATA[<p>摘要：Server服务层聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。</p>
+<a id="more"></a>
+
+<h1 id="表对象缓存"><a href="#表对象缓存" class="headerlink" title="表对象缓存"></a>表对象缓存</h1><p><img src="/images/post/db-mysql/store.jpg" alt=""><br><img src="/images/post/db-mysql/004/zhixing.png" alt=""></p>
+<p>创建一个表，设置列、列属性，索引等，并且指定好了存储引擎（默认innodb）。</p>
+<h2 id="表结构缓存、表对象缓存"><a href="#表结构缓存、表对象缓存" class="headerlink" title="表结构缓存、表对象缓存"></a>表结构缓存、表对象缓存</h2><p>客户端发过来一个sql，如</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tableA <span class="keyword">where</span> <span class="keyword">id</span> =<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>此时mysql获取到此请求，会先到查询缓存中查看，是不是执行过这个语句。缓存里key就是这个查询语句，如果查询缓存有，那么就直接返回value给客户端。这个查询缓存比较没有意义，新版8.0已经把它删掉了。</p>
+<p>mysql收到请求后，会进行sql语句解析，会分析出，你是查询（插入、删除），哪个表（tableA、tableB），条件。然后先判断sql语句是否合法，假如你写了个selector * 那么就会报错。</p>
+<p>解析出了表之后，要得到这个表的各种信息。</p>
+<h3 id="一级表结构缓存"><a href="#一级表结构缓存" class="headerlink" title="一级表结构缓存"></a>一级表结构缓存</h3><p>要操作这个表，首先要找到这个表。先从缓存中（源码里的table_def_cache，是一个Hash结构）找，根据表名做为Key去找，由于是第一次访问这个表，缓存里没有。</p>
+<p>那么会从System表里去找，mysql元数据里有每个表的定义，列信息等。找到这个表，就会构建出这个表的结构体TABLE_SHARE。</p>
+<p>这个TABLE_SHARE是一个静态的、不允许修改的（在内存中）结构体TABLE_SHARE，并将其放入缓存中（一个Hash结构里，key就是表名+模式名）。</p>
+<p>可以理解为一个java里的类，每个字段已经被赋了初始值。这个缓存是属于mysql server层的，与后面的存储引擎无关。里面保存了表名、库名、所有列信息、列默认值、表的字符集、对应的frm文件路径、对应的存储引擎、主键等。</p>
+<p>注意，这个结构体就是一级缓存，它被所有用户共享，并且不可修改，从系统表被读入直到该表被修改或删除，这个缓存都会一直存在。</p>
+<h3 id="二级表对象缓存"><a href="#二级表对象缓存" class="headerlink" title="二级表对象缓存"></a>二级表对象缓存</h3><p>表已经找到了，结构也已经被缓存了，此时还不能操作这个表。因为缺少一个表对象。</p>
+<p>上面的TABLE_SHARE可以理解为一个模板类，包含了表的基本信息，能被所有用户共享。</p>
+<p>但是里面还缺少一些信息，譬如不同用户对该表的权限、譬如存储引擎信息。那么要想操作这个表，就需要创建一个表对象来供当前用户（线程）使用。</p>
+<p>创建表对象就是实例化的过程，每个用户独享一个实例，我们称之为table实例，不会影响其他用户。</p>
+<p>创建的这个实例，里面有一个指向TABLE_SHARE的引用，用以获取基本信息，还有一些其他属性，譬如存储引擎层的信息也会被初始化（引擎的handler）。</p>
+<p>表对象创建完毕后，就具备了和存储引擎交互的能力（通过handler）。创建后，也会放入缓存，供下次使用时避免反复创建实例。</p>
+<p>mysql层与存储引擎层，就是从这里开始区分，table对象就是沟通的桥梁。对于各个存储引擎，需要提供公共的接口来供上层（mysql server）层来调用，并由各自的table实例来完成各自的操作。<br>譬如插入一条记录，就可以调用table实例中被初始化过的存储引擎的句柄接口函数ha_write_row，进行写入。</p>
+<p>这个table实例在一次操作完成之后就不需要了，系统此时并没有将其释放掉，而是保存下来，用一个状态标志位标记一下，并且会调用handler.reset()来重置引擎表状态，目的是handler会被复用，如果不reset，可能导致信息错误。缓存后，当下次用户再访问时，就不需要重新实例化了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>可以看到，当你想操作一个表时，系统对于这个表，会有两层缓存。第一层是SHARE缓存，第二层就是实例化后的对象缓存Table。</p>
+<ul>
+<li>缓存淘汰策略，<ul>
+<li>SHARE缓存只有在表结构定义改变时，才会被删除，但是倘若表巨多，SHARE缓存超出限制，也会淘汰那些不经常使用的SHARE。</li>
+<li>第二层的实例缓存，也是有最大值的，超出后则开始淘汰。</li>
+</ul>
+</li>
+</ul>
+<p>涉及的参数变量有两个，table_open_cache和table_definition_cache，一些淘汰策略数值就是靠这两个参数来计算得到的。</p>
+<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p>不同于某些数据库，一启动就加载了所有表信息。mysql是按需加载，由于mysql的插件式存储引擎，mysql做了两层的缓存模型，第二层才加载引擎的handler。</p>
+<ul>
+<li>优点：<br>按需加载，提高内存利用率，避免启动时加载所有表信息带来的内存占用。</li>
+</ul>
+<ul>
+<li>缺点：<br>两层缓存带来了效率的损失，每个用户（线程）都要实例化table对象。<br>在并发情况下，有可能会实例化多个table对象，导致table_open_cache增长过快，导致淘汰掉其他的table对象。同时倘若table比较大，譬如有N多的列，那么会占用非常多的内存。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>01-网络连接层</title>
+    <url>/articles/20200201/3a03a839.html</url>
+    <content><![CDATA[<p>摘要：数据库三层架构</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">网络层</span><br><span class="line">  ↓</span><br><span class="line">server层</span><br><span class="line">  ↓</span><br><span class="line">存储层</span><br></pre></td></tr></table></figure>
+<p>存储层：mysql作为一个插件式的数据库，在存储层支持多种引擎，譬如默认的innodb，和之前版本默认的MyIsam。由不同的引擎提供相同的接口给server层调用，来完成数据的增删改查。</p>
+<p>server层：是mysql比较复杂的地方，里面包含了大量的逻辑，譬如语义分析、查询优化、日志、缓存等等。</p>
+<p>网络层：主要是提供socket连接。</p>
+<a id="more"></a>
+
+<h2 id="网络层"><a href="#网络层" class="headerlink" title="网络层"></a>网络层</h2><p>在mysql的网络层，主要关注3点</p>
+<ol>
+<li>Poll、Select模型</li>
+<li>Max-connections</li>
+<li>connection复用</li>
+</ol>
+<p>mysql在启动后，创建了socket server，绑定了3306端口，并对其进行监听。和java里的写法类似，用一个while循环来监听新来的connection，如果有了新连接，就创建一个新的连接线程去处理（不能超过max-connections）。</p>
+<p>这种就是典型的BIO的模式，为每一个连接创建一个线程。并且，mysql在这里采用了IO多路复用，会有一个if语句来判断当前系统是否支持Poll模式，否则就走Select模型（各个系统默认都有实现）。</p>
+<p>Poll模型和Select非常类似，只是少了1024个fd的限制，都是采用遍历数组轮询有没有新IO事件的方式，在连接数较少的情况下，性能优异，要好于epoll。</p>
+<p>mysql基于BIO，本质上是不接受大量的socket连接的，所以设置了max-connections这个限制，超过设置的max，那么新来的连接会被拒绝。</p>
+<p>那么，第一个问题，为什么是BIO，而不是可以承受更大连接数的NIO和AIO呢？是否用NIO就会更好呢？</p>
+<h3 id="mysql的BIO"><a href="#mysql的BIO" class="headerlink" title="mysql的BIO"></a>mysql的BIO</h3><h4 id="bio和nio的区别"><a href="#bio和nio的区别" class="headerlink" title="bio和nio的区别"></a>bio和nio的区别</h4><p>在BIO模式下，调用read，如果发现没数据，就会Block住。</p>
+<p>在NIO模式下，调用read，如果发现没数据，就会立刻返回-1, 并且errno被设为EAGAIN。</p>
+<h5 id="基于NIO-IO多路复用的模式"><a href="#基于NIO-IO多路复用的模式" class="headerlink" title="基于NIO+IO多路复用的模式"></a>基于NIO+IO多路复用的模式</h5><p>server开发使用的web容器：tomcat、netty等，都是基于NIO+IO多路复用的模式，来大幅提升性能，承载高并发访问的。但是到了DB层，则使用hakiri、druid之类的线程池，开启10个线程去连接mysql，反复复用这个线程池。</p>
+<p>NIO+IO多路复用，并不是指多个用户socket共享一个IO，从而使得服务端的socket数量大减。而是把多个socket连接，归并到一个进程进行管理，如用一个大数组来聚合起来，然后循环遍历这个数组，来一次性把多个连接的事件通知业务代码进行处理。<br>这样就大幅减少了server的压力，高效利用资源。</p>
+<p>对mysql来说，一般都会有多个连接，毕竟并发肯定是要有的。不可能做个查询，也要大家一起排队等上一个人查询完。所以线程池和并发是一定的。</p>
+<h5 id="mysql和web-Server区别"><a href="#mysql和web-Server区别" class="headerlink" title="mysql和web Server区别"></a>mysql和web Server区别</h5><p>Web请求，往往是无状态的，一问一答的时候居多，请求也往往比较短促，对于顺序性也不是十分严格，哪怕是后请求的响应比先请求的提前到，也是有可能的。</p>
+<p>DB请求，DB采用session作为一个连接会话，这一个session里，SQL的执行必须是串行、同步、有序的，而不能是异步乱序的。原因是，一个session内可能有多个操作，增删改查、事务隔离，必须保证顺序不能乱。<br>DB维护这样一个session，是要花费远大于web Server处理一个请求的资源才能完成的。</p>
+<p>对于DB来说，连接是非常耗资源的事情，限制连接数是非常有必要的。</p>
+<p>注意，当连接mysql出问题时，随便加大应用服务的连接池和增大mysql的max-connection。不能改善mysql的性能。当进行非常密集的数据库操作时，连接池的数量对性能产生的巨大影响。</p>
+<h4 id="为什么用BIO，而不是NIO。"><a href="#为什么用BIO，而不是NIO。" class="headerlink" title="为什么用BIO，而不是NIO。"></a>为什么用BIO，而不是NIO。</h4><p>原因是JDBC不支持，JDBC出现了20年，它是一个标准，在它被提出时，只有BIO模型，导致数据库驱动对JDBC的实现都是BIO的形式，mysql驱动connector早早地实现了JDBC标准，就是采用阻塞的方式。</p>
+<p>当进行一个select查询，在查询没有完成之前，整个调用线程会被卡住，等到天荒地老也要等下去，绝不是一请求立马收到返回，然后等mysql回调你结果。</p>
+<p>其实，也有人修改了mysql的协议，增加了NIO+多路复用的功能，最后失败，主要原因是mysql和web server功能意义都不一样，确切地说，90%的场景下，不需要一个NIO的数据库。</p>
+<p>BIO+连接池，已经发展了很多年，大部分问题都已经解决，在目前的java环境中，是非常靠谱的方案。已经出现了很多优秀的连接池框架，你只需要配置好账号密码和连接池数量，就能很开心的使用mysql了。</p>
+<p>从mysql的角度来说，客户端多是一些IO密集型的应用，应该在一个线程里频繁做大量IO操作，而不是说有大量的客户端来反复连接我。毕竟，mysql的用户是你写的几个程序应用，而web server的用户是海量的。</p>
+<h3 id="连接池"><a href="#连接池" class="headerlink" title="连接池"></a>连接池</h3><p>mysql能支撑的连接数是有限的，那么就需要应用程序来利用好连接池。对于连接池来说，就是做好这10个连接的管理就好。</p>
+<p>对于mysql来说，管理好自己的所有连接也是很重要，哪些空闲的该休息就休息，让出资源，该复用就复用，避免创建太多线程。</p>
+<h4 id="IO密集的时候，要减少连接数。"><a href="#IO密集的时候，要减少连接数。" class="headerlink" title="IO密集的时候，要减少连接数。"></a>IO密集的时候，要减少连接数。</h4><p>譬如要读写几千万数据，非常密集的IO操作，那么你可以尝试一下开启少量的mysql连接（和cpu的核数相同）和开启大量的连接（成百上千），来做同样的事。你会发现，更少的连接数，会给你带来几百倍的性能提升。</p>
+<p>譬如，你有4辆车（4核），要从仓库里拉一大堆货物到另一个地方。如果只有4条路，简单操作，一个车走一路，反复折返跑。现在有了100条路，还是4个车，车要频繁的在100条路上来回切换，每条路都必须要走到。</p>
+<p>线程间的轮转会耗费大量的资源，尤其在密集操作时。但是当不密集时，情况就变了，大量的线程处于休息状态，那么你即便多开了几个连接，CPU还是能很快的照顾到你，并没有什么大的影响。</p>
+<h3 id="网络协议"><a href="#网络协议" class="headerlink" title="网络协议"></a>网络协议</h3><p>作为RPC的连接，内部rpc数据协议</p>
+]]></content>
+      <categories>
+        <category>db-mysql-core</category>
       </categories>
   </entry>
   <entry>

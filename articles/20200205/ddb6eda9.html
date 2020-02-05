@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.bjlhx.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
+<meta property="og:type" content="article">
+<meta property="og:title" content="10-存储引擎层-innodb框架-内存架构">
+<meta property="og:url" content="https://blog.bjlhx.top/articles/20200205/ddb6eda9.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/innodb-struct.webp">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/innodb_buffer_pool.png">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/changebuffer.webp">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/innodb_flush_log_at_trx_commit.png">
+<meta property="article:published_time" content="2020-02-05T02:53:04.000Z">
+<meta property="article:modified_time" content="2020-02-05T07:23:03.587Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.bjlhx.top/images/post/db-mysql/innodb-struct.webp">
+
+<link rel="canonical" href="https://blog.bjlhx.top/articles/20200205/ddb6eda9.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>10-存储引擎层-innodb框架-内存架构 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">25</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200205/ddb6eda9.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          10-存储引擎层-innodb框架-内存架构
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-02-05 10:53:04 / 修改时间：15:23:03" itemprop="dateCreated datePublished" datetime="2020-02-05T10:53:04+08:00">2020-02-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql-core</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
+<a id="more"></a>
+
+
+<h1 id="InnoDB-内存中的结构"><a href="#InnoDB-内存中的结构" class="headerlink" title="InnoDB 内存中的结构"></a>InnoDB 内存中的结构</h1><p>参看原理图 03-存储引擎层、InnoDB 架构</p>
+<p><img src="/images/post/db-mysql/innodb-struct.webp" alt=""></p>
+<p>内存中的结构主要包括 Buffer Pool，Change Buffer、Adaptive Hash Index以及 Log Buffer 四部分。</p>
+<p>如果从内存上来看，Change Buffer 和 Adaptive Hash Index 占用的内存都属于 Buffer Pool，Log Buffer占用的内存与 Buffer Pool独立。</p>
+<p>缓冲池缓存的数据包括Page Cache、Change Buffer、Data Dictionary Cache等，通常 MySQL 服务器的 80% 的物理内存会分配给 Buffer Pool。</p>
+<p>基于效率考虑，InnoDB中数据管理的最小单位为页，默认每页大小为16KB，每页包含若干行数据。为了提高缓存管理效率，InnoDB的缓存池通过一个页链表实现，很少访问的页会通过缓存池的 LRU 算法淘汰出去。</p>
+<p>InnoDB 的缓冲池页链表分为两部分：New sublist(默认占5/8缓存池) 和 Old sublist(默认占3/8缓存池，可以通过 innodb_old_blocks_pct修改，默认值为 37)，</p>
+<p>其中新读取的页会加入到 Old sublist的头部，而 Old sublist中的页如果被访问，则会移到 New sublist的头部。</p>
+<p>缓冲池的使用情况可以通过 <code>show engine innodb status</code> 命令查看。其中一些主要信息如下：</p>
+<p>由于MySQL不同版本采用InnoDB引擎版本不同，5.6后对show engine innodb status信息进行了优化</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">MySQL版本	InnoDB引擎版本</span><br><span class="line">5.1.x	1.0.x版本（官方称为InnoDB Plugin）</span><br><span class="line">5.5.x	5.5（1.1.x版本），InnoDB被Oracle收购后</span><br><span class="line">5.6.x	5.6（1.2.x版本）</span><br><span class="line">5.7.x	5.7</span><br><span class="line">8.0.x	8.0</span><br></pre></td></tr></table></figure>
+<p>show engine innodb status显示的不是当前状态，而是过去某个时间范围内InnoDB存储引擎的状态。</p>
+<p>向右拉</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Per second averages calculated from the last 59 seconds</span><br></pre></td></tr></table></figure>
+<p>在显示前端可看到以上信息，代表查询的信息为过去59秒内每2秒的平均值。</p>
+<p>show engine innodb status主要包括以下几个部分：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">BACKGROUND THREAD	后台Master线程</span><br><span class="line">SEMAPHORES	信号量信息</span><br><span class="line">LATEST DETECTED DEADLOCK	最近一次死锁信息，只有产生过死锁才会有</span><br><span class="line">TRANSACTIONS	事物信息</span><br><span class="line">FILE I&#x2F;O	IO Thread信息</span><br><span class="line">INSERT BUFFER AND ADAPTIVE HASH INDEX	INSERT BUFFER和自适应HASH索引</span><br><span class="line">LOG	日志</span><br><span class="line">BUFFER POOL AND MEMORY	BUFFER POOL和内存</span><br><span class="line">INDIVIDUAL BUFFER POOL INFO	如果设置了多个BUFFER POOL实例，这里显示每个BUFFER POOL信息。可通过innodb_buffer_pool_instances参数设置</span><br><span class="line">ROW OPERATIONS	行操作统计信息</span><br><span class="line">END OF INNODB MONITOR OUTPU	输出结束语</span><br></pre></td></tr></table></figure>
+
+<h2 id="Buffer-pool"><a href="#Buffer-pool" class="headerlink" title="Buffer pool"></a>Buffer pool</h2><p>查看：BUFFER POOL AND MEMORY</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">----------------------</span><br><span class="line">BUFFER POOL AND MEMORY</span><br><span class="line">----------------------</span><br><span class="line">Total large memory allocated 137428992 # 分配给InnoDB缓存池的内存(字节)</span><br><span class="line">Dictionary memory allocated 102398  # 分配给InnoDB数据字典的内存(字节)</span><br><span class="line">Buffer pool size   8191 # 缓存池的页数目</span><br><span class="line">Free buffers       7893 # 缓存池空闲链表的页数目</span><br><span class="line">Database pages     298  # 缓存池LRU链表的页数目</span><br><span class="line">Modified db pages  0    # 修改过的页数目</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+
+<p>Innodb的这个缓存区就是Innodb_buffer_pool，当读取数据时，就会先从缓存中查看是否数据的页（page）存在，不存在的话才去磁盘上检索，查到后缓存到这个pool里。<br>同理，插入、修改、删除也是先操作缓存里数据，之后再以一定频率更新到磁盘上。控制刷盘的机制，叫做Checkpoint。</p>
+<p><img src="/images/post/db-mysql/innodb_buffer_pool.png" alt=""></p>
+<p>注意，左边那两个不在Innodb_buffer_pool里，是另外一块内存。只不过大部分的内存都属于Innodb_buffer_pool的。</p>
+<p>mysql安装后，默认pool的大小是128M，可以通过show variables like ‘innodb_buffer_pool%’;命令查看。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'innodb_buffer_pool%'</span>;</span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_at_shutdown	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_filename	ib_buffer_pool</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_instances	8</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_abort	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_at_startup	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_size	134217728</span></span><br></pre></td></tr></table></figure>
+<p>可以通过show global status like ‘%innodb_buffer_pool_pages%’;  查看已经被占用的和空闲的。共计8000多个page。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">global</span> <span class="keyword">status</span> <span class="keyword">like</span> <span class="string">'%innodb_buffer_pool_pages%'</span>;</span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_data	7167</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_dirty	0</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_flushed	120861</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_free	1024</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_misc	1</span></span><br><span class="line"><span class="comment"># Innodb_buffer_pool_pages_total	8192</span></span><br></pre></td></tr></table></figure>
+
+<p>所以如果数据很多，而pool很小，那么性能就好不了。</p>
+<p>理论上来说，如果你给pool的内存足够大，够装下所有数据，要访问的所有数据都在pool里，那么你的所有请求都是走内存，性能将是最好的，和redis类似。</p>
+<p>官方建议pool的空间设置为物理内存的50%-75%。</p>
+<p>在mysql5.7.5之后，可以在mysql不重启的情况下动态修改pool的size，如果你设置的pool的size超过了1G的话，应该再修改一下Innodb_buffer_pool_instances=N，将pool分成N个pool实例，将来操作的数据会按照page的hash来映射到不同的pool实例。</p>
+<p>这样可以大幅优化多线程情况下，并发读取同一个pool造成的锁的竞争。</p>
+<h3 id="缓冲区LRU淘汰算法"><a href="#缓冲区LRU淘汰算法" class="headerlink" title="缓冲区LRU淘汰算法"></a>缓冲区LRU淘汰算法</h3><p>当pool的大小不够用了，满了，就会根据LRU算法（最近最少使用）来淘汰老的页面。最频繁使用的页在LRU列表的前端，最少使用的页在LRU列表的尾端。淘汰的话，就首先释放尾端的页。</p>
+<p>InnoDB的LRU和普通的不太一样，Innodb的加入了midpoint位置的概念。最新读取到的页，并不是直接放到LRU列表的头部的，而是放到midpoint位置。<br>这个位置大概是LRU列表的5/8处，该参数由innodb_old_blocks_pct控制。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">show variables like &#39;innodb_old_blocks_pct%&#39;;</span><br><span class="line">innodb_old_blocks_pct	37</span><br></pre></td></tr></table></figure>
+<p>如37是默认值，表示新读取的页插入到LRU尾端37%的位置。在midpoint之后的列表都是old列表，之前的是new列表，可以简单理解为new列表的页都是最活跃的数据。</p>
+<p>为什么不直接放头部？因为某些数据扫描操作需要访问的页很多，有时候这些页仅仅在本次查询有效，以后就不怎么用了，并不算是活跃的热点数据。那么真正活跃的还是希望放到头部去，这些新的暂不确定是否真正未来要活跃。所以，这可以理解为预热。还引入了一个参数innodb_old_blocks_time用来表示页读取到mid位置后需要等待多久才会被加入到LRU列表的热端。</p>
+<p>重要的查询命令可以看到这些信息，show engine innodb status;<br>Database pages表示LRU列表中页的数量，pages made young显示了LRU列表中页移动到前端的次数，Buffer pool hit rate表示缓冲池的命中率，100%表示良好，该值小于95%时，需要考虑是否因为全表扫描引起了LRU列表被污染。里面还有其他的参数，可以自行查阅一下代表什么意思。</p>
+<h3 id="Pool的主要空间"><a href="#Pool的主要空间" class="headerlink" title="Pool的主要空间"></a>Pool的主要空间</h3><p>其实更多的、对性能影响更大的是读缓存。毕竟多数数据库是读多写少。</p>
+<p>读缓存主要数据是索引页和数据页，如果要读取的数据在pool里没有，那就去磁盘读，读到后的新页放到pool的3/8位置，后续根据情况再决定是否放到LRU列表的头部。</p>
+<p>注意，最小单位是页，哪怕只读一条数据，也会加载整个页进去。如果是顺序读的话，刚好又在同一个页里，譬如读了id=1的，那么再读id=2的时，大概率直接从缓存里读。 </p>
+<h2 id="BACKGROUND-THREAD"><a href="#BACKGROUND-THREAD" class="headerlink" title="BACKGROUND THREAD"></a>BACKGROUND THREAD</h2><p>InnoDB存储引擎的核心操作大部分都集中在Mater Thread后台线程中。</p>
+<p>MySQL5.5版本之前：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">-----------------</span><br><span class="line">BACKGROUND THREAD</span><br><span class="line">-----------------</span><br><span class="line">srv_master_thread loops: 846676 1_second, 846675 sleeps, 84665 10_second, 17 background, 17 flush</span><br><span class="line">srv_master_thread log flush and writes: 854189</span><br></pre></td></tr></table></figure>
+<p>MySQL 5.6之后对Master Thread进行了优化，去除了sleeps的信息，srv_active为之前的每秒的循环，srv_idle为每10秒的的循环，srv_shutdown为停止的循环，通常为0，只在MySQL关闭时才会增加。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">BACKGROUND THREAD</span><br><span class="line">-----------------</span><br><span class="line">srv_master_thread loops: 3911776 srv_active, 0 srv_shutdown, 309625 srv_idle</span><br><span class="line">srv_master_thread log flush and writes: 4221384</span><br></pre></td></tr></table></figure>
+<p>上面可以看出主循环每10秒进行了309625次，每秒进行了3911776次，每10秒的操作符合1：10。</p>
+<p>负载低的情况下日志缓冲刷盘次数，4221384 ≈ 3911776+309625。</p>
+<p>根据循环次数可大概判断当前数据库负载情况。如果每秒循环次数少，每10秒次数多，证明当前负载很低；如果每秒循环次数多，每10秒次数少，远大于10：1，证明当前负载很高。</p>
+<h2 id="SEMAPHORES"><a href="#SEMAPHORES" class="headerlink" title="SEMAPHORES"></a>SEMAPHORES</h2><p>当前等待线程的列表及事件计数器，可以评估当前负载情况。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">----------</span><br><span class="line">SEMAPHORES</span><br><span class="line">----------</span><br><span class="line">OS WAIT ARRAY INFO: reservation count 58961200</span><br><span class="line">OS WAIT ARRAY INFO: signal count 125268732</span><br><span class="line">Mutex spin waits 770371493, rounds 6482840874, OS waits 20699077</span><br><span class="line">RW-shared spins 0, rounds 115276716, OS waits 14655922</span><br><span class="line">RW-excl spins 0, rounds 987115172, OS waits 12384598</span><br><span class="line">RW-sx spins 40484350, rounds 419545112, OS waits 4476477</span><br><span class="line">Spin rounds per wait: 115276716.00 RW-shared, 987115172.00 RW-excl, 10.36 RW-sx</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">OS WAIT ARRAY INFO	reservation count：表示InnoDB产生了多少次OS WAIT；</span><br><span class="line">                    signal count：表示进入OS WAIT的线程被唤醒次数</span><br><span class="line">Mutex(5.7后去除)	spins：空转次数，通过innodb_sync_spin_loops控制，超过则转到OS waits；</span><br><span class="line">                spin waits：spin线程无法获取锁而进入Spin wait；</span><br><span class="line">                rounds：spin wait进行轮询检查mutexes的次数；</span><br><span class="line">                OS waits：线程放弃spin wait进入挂起状态。</span><br><span class="line">RW-shared	RW-shared 共享锁</span><br><span class="line">RW-excl	RW-excl 排他锁</span><br><span class="line">RW-sx	5.7后新增；RW-sx 共享排他锁</span><br><span class="line">Spin rounds per wait	rounds &#x2F; spins &#x3D; 值</span><br></pre></td></tr></table></figure>
+
+<p>要明白InnoDB如何处理互斥量(Mutexes)，以及什么是两步获得锁(two-step approach)。</p>
+<ol>
+<li>首先进程试图获得一个锁，如果此锁被它人占用。它就会执行所谓的spin wait，即所谓循环的查询“锁被释放了吗？”。</li>
+<li>如果在循环过程中，一直未得到锁释放的信息，则其转入OS WAIT，即所谓线程进入挂起(suspended)状态。</li>
+<li>直到锁被释放后，通过信号(singal)唤醒线程。</li>
+</ol>
+<p>Spin wait的消耗远小于OSwaits。Spin wait利用cpu的空闲时间，检查锁的状态，OS Wait会有所谓content switch，从CPU内核中换出当前执行线程以供其它线程使用。</p>
+<p>所以应尽量减少OS waits，可以通过innodb_sync_spin_loops参数来平衡spin wait和os wait。Mutex信息可通过show engine innodb mutex查看。</p>
+<h2 id="LATEST-DETECTED-DEADLOCK"><a href="#LATEST-DETECTED-DEADLOCK" class="headerlink" title="LATEST DETECTED DEADLOCK"></a>LATEST DETECTED DEADLOCK</h2><p>记录最近一次死锁信息，只有产生过死锁才会有记录。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">------------------------</span><br><span class="line">LATEST DETECTED DEADLOCK</span><br><span class="line">------------------------</span><br><span class="line">190425 18:00:13</span><br><span class="line">*** (1) TRANSACTION:</span><br><span class="line">TRANSACTION 231E7C5DF, ACTIVE 0 sec starting index read</span><br><span class="line">mysql tables in use 1, locked 1</span><br><span class="line">LOCK WAIT 4 lock struct(s), heap size 1248, 3 row lock(s)</span><br><span class="line">MySQL thread id 1346996, OS thread handle 0x7fd968454700, query id 760545285 10.10.x.x app_user updating</span><br><span class="line">DELETE </span><br><span class="line">    FROM db_0.table_0</span><br><span class="line">    WHERE ORDER_ID IN (  456787464 , 456787465 )</span><br><span class="line">*** (1) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 5 page no 6064 n bits 824 index &#96;orderId_index&#96; of table &#96;db_0&#96;.&#96;table_0&#96; trx id 231E7C5DF lock_mode X waiting</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Record lock, heap no 180 PHYSICAL RECORD: n_fields 2; compact format; info bits 32</span><br><span class="line"> 0: len 8; hex 80000015eb6a1041; asc      j A;;</span><br><span class="line"> 1: len 8; hex 800000002018fce2; asc         ;</span><br><span class="line">*** (2) TRANSACTION:</span><br><span class="line">TRANSACTION 231E7C5DD, ACTIVE 0 sec starting index read, thread declared inside InnoDB 1</span><br><span class="line">mysql tables in use 1, locked 1</span><br><span class="line">5 lock struct(s), heap size 1248, 4 row lock(s)</span><br><span class="line">MySQL thread id 1348165, OS thread handle 0x7fd96669f700, query id 760545283 10.10.x.x app_user updating</span><br><span class="line">DELETE </span><br><span class="line">    FROM db_0.table_0</span><br><span class="line">    WHERE ORDER_ID IN (  456787464 , 456787465 )</span><br><span class="line">*** (2) HOLDS THE LOCK(S):</span><br><span class="line">RECORD LOCKS space id 5 page no 6064 n bits 824 index &#96;orderId_index&#96; of table &#96;db_0&#96;.&#96;table_0&#96; trx id 231E7C5DD lock_mode X locks rec but not gap</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Record lock, heap no 180 PHYSICAL RECORD: n_fields 2; compact format; info bits 32</span><br><span class="line"> 0: len 8; hex 80000015eb6a1041; asc      j A;;</span><br><span class="line"> 1: len 8; hex 800000002018fce2; asc         ;;</span><br><span class="line">*** (2) WAITING FOR THIS LOCK TO BE GRANTED:</span><br><span class="line">RECORD LOCKS space id 5 page no 6064 n bits 824 index &#96;orderId_index&#96; of table &#96;db_0&#96;.&#96;table_0&#96; trx id 231E7C5DD lock_mode X waiting</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Record lock, heap no 180 PHYSICAL RECORD: n_fields 2; compact format; info bits 32</span><br><span class="line"> 0: len 8; hex 80000015eb6a1041; asc      j A;;</span><br><span class="line"> 1: len 8; hex 800000002018fce2; asc         ;;</span><br><span class="line">*** WE ROLL BACK TRANSACTION （1）</span><br></pre></td></tr></table></figure>
+
+<p>死锁是指两个或两个以上的进程在执行过程中，因争夺资源而造成的一种互相等待的现象。正常死锁会自动释放，innodb有一个内在的死锁检测工具，</p>
+<p>当死锁超过一定时间后，会回滚其中一个事务，innodb_lock_wait_timeout可配置死锁等待超时时间。</p>
+<ul>
+<li><p>死锁在两情况下最容易产生：</p>
+</li>
+<li><p>高并发同时操作同一条数据</p>
+</li>
+</ul>
+<p>存在主键和辅助索引，加锁顺序相反</p>
+<p>避免死锁方法即降低并发，操作数据时使加锁顺序相同。  </p>
+<h2 id="TRANSACTIONS"><a href="#TRANSACTIONS" class="headerlink" title="TRANSACTIONS"></a>TRANSACTIONS</h2><p>包含了InnoDB事务(transaction)的统计信息。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">------------</span><br><span class="line">TRANSACTIONS</span><br><span class="line">------------</span><br><span class="line">Trx id counter 2409176</span><br><span class="line">Purge done for trx&#39;s n:o &lt; 2409171 undo n:o &lt; 0 state: running but idle</span><br><span class="line">History list length 31</span><br><span class="line">LIST OF TRANSACTIONS FOR EACH SESSION:</span><br><span class="line">---TRANSACTION 421224214038352, not started</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">---TRANSACTION 421224214044736, not started</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">---TRANSACTION 421224214039264, not started</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">---TRANSACTION 2409171, ACTIVE 1549 sec fetching rows, thread declared inside InnoDB 3871</span><br><span class="line">mysql tables in use 1, locked 0</span><br><span class="line">0 lock struct(s), heap size 1136, 0 row lock(s)</span><br><span class="line">MySQL thread id 653597, OS thread handle 140289889908480, query id 2528936 127.0.0.1 root Sending data</span><br><span class="line">SELECT &#x2F;*!40001 SQL_NO_CACHE *&#x2F; * FROM &#96;table&#96;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Trx id counter	当前事物ID</span><br><span class="line">Purge done for trx&#39;s	正在清理掉的transaction ID</span><br><span class="line">History list length	记录了undo spaces内未清掉的事务个数，Purge的原则是记录没有被其它事务继续使用。</span><br><span class="line">LIST OF TRANSACTIONS FOR EACH SESSION	每个session的事物状态</span><br></pre></td></tr></table></figure>
+<p>当前活跃的事物状态为ACTIVE，事物的详细信息，包括线程ID、执行时间、用户、SQL等。正在使用1个表，涉及锁的表0个。</p>
+<h2 id="FILE-I-O"><a href="#FILE-I-O" class="headerlink" title="FILE I/O"></a>FILE I/O</h2><p>在InnoDB中大量使用了AIO（Async IO）来处理IO 请求，IO Thread主要是负责这些IO请求的回调处理，通过调用fsync()函数协调内存与磁盘之间的数据。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">--------</span><br><span class="line">FILE I&#x2F;O</span><br><span class="line">--------</span><br><span class="line">I&#x2F;O thread 0 state: waiting for completed aio requests (insert buffer thread)</span><br><span class="line">I&#x2F;O thread 1 state: waiting for completed aio requests (log thread)</span><br><span class="line">I&#x2F;O thread 2 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 3 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 4 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 5 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 6 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 7 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 8 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 9 state: waiting for completed aio requests (read thread)</span><br><span class="line">I&#x2F;O thread 10 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 11 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 12 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 13 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 14 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 15 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 16 state: waiting for completed aio requests (write thread)</span><br><span class="line">I&#x2F;O thread 17 state: waiting for completed aio requests (write thread)</span><br><span class="line">Pending normal aio reads: [0, 0, 0, 0, 0, 0, 0, 0] , aio writes: [0, 0, 0, 0, 0, 0, 0, 0] ,</span><br><span class="line">ibuf aio reads:, log i&#x2F;o&#39;s:, sync i&#x2F;o&#39;s:</span><br><span class="line">Pending flushes (fsync) log: 0; buffer pool: 0</span><br><span class="line">15234061 OS file reads, 304461183 OS file writes, 73899457 OS fsyncs</span><br><span class="line">0.00 reads&#x2F;s, 0 avg bytes&#x2F;read, 0.24 writes&#x2F;s, 0.17 fsyncs&#x2F;s</span><br></pre></td></tr></table></figure>
+<p>InnoDB1.0版本之前有4个IO线程，1.1后做了优化，Purge Thread从Master Thread独立出来，Purge Cleaner Thread从InnoDB1.2版本引入，都是为了减轻Master Thread的工作，提高CPU利用率。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">insert buffer thread	合并插入缓冲，insert buffer维护非唯一辅助索引</span><br><span class="line">log thread	负责异步刷新事物日志</span><br><span class="line">read thread	预读，innodb_read_io_threads 默认4</span><br><span class="line">write thread	刷新脏页缓冲，innodb_write_io_threads 默认4</span><br><span class="line">purge thread	回收已经使用并分配的undo页，可设置多个</span><br><span class="line">purge cleaner Thread	刷新脏页</span><br></pre></td></tr></table></figure>
+<p>显示各个I/O thread的pending operations,pending的log和buffer pool thread的fsync()调用；</p>
+<ul>
+<li>aio：代表的是异步IO(asynchronous I/O)；</li>
+<li>OS file：显示了reads writes fsync() 调用次数。</li>
+</ul>
+<h2 id="Change-Buffer-INSERT-BUFFER-AND-ADAPTIVE-HASH-INDEX"><a href="#Change-Buffer-INSERT-BUFFER-AND-ADAPTIVE-HASH-INDEX" class="headerlink" title="(Change Buffer)INSERT BUFFER AND ADAPTIVE HASH INDEX"></a>(Change Buffer)INSERT BUFFER AND ADAPTIVE HASH INDEX</h2><h3 id="插入缓冲insert-buffer"><a href="#插入缓冲insert-buffer" class="headerlink" title="插入缓冲insert buffer"></a>插入缓冲insert buffer</h3><p>它是buffer_pool的一部分，用来做insert操作时的缓存的。</p>
+<p>如b+tree，以及数据的存放格式，那么当新插入数据时，倘若直接就插入到b+ tree里，那么可能会比较缓慢，需要读取、找到要插入的地方，还要做树的扩容、校验、寻址、落盘等等一大堆操作。</p>
+<p>在Innodb中，主键是行唯一标识，如果你的插入顺序是按照主键递增进行插入的，那么还好，它不需要磁盘的随机读取，找到了页，就能插，这样速度还是可以的。</p>
+<p>然而，如果你的表上有多个别的索引（二级索引），那么当插入时，对于那个二级索引树，就不是顺序的了，它需要根据自己的索引列进行排序，这就需要随机读取了。<br>二级索引越多，那么插入就会越慢，因为要寻找的树更多了。还有，如果你频繁地更新同一条数据，倘若也频繁地读写磁盘，那就不合适了，最好是将多个对同一page的操作，合并起来，统一操作。</p>
+<p>所以，Innodb设计了Insert Buffer，对于非聚簇索引的插入、更新操作，不是每次都插入到索引页中，而是先判断该二级索引页是否在缓冲池中，<br>若在，就直接插入，若不在，则先插入一个insert buffer里，再以一定的频率进行真正的插入到二级索引的操作，这时就可以聚合多个操作，一起去插入，就能提高性能。</p>
+<p>然而，insert buffer需要同时满足两个条件时，才会被使用：</p>
+<ul>
+<li>索引是二级索引</li>
+<li>索引不是unique</li>
+</ul>
+<p>注意，索引不能是unique，因为在插入缓冲时，数据库并不去查询索引页来判断插入的记录的唯一性，如果查找了，就又会产生随机读取。</p>
+<p>insert buffer的问题是，在写密集的情况下，内存会占有很大，默认最大可以占用1/2的Innodb_buffer_pool的空间。<br>很明显，如果占用过大，就会对其他的操作有影响，譬如能缓存的查询页就变少了。可以通过IBUF_POOL_SIZE_PER_MAX_SIZE来进行控制。</p>
+<h3 id="变更缓冲change-buffer"><a href="#变更缓冲change-buffer" class="headerlink" title="变更缓冲change buffer"></a>变更缓冲change buffer</h3><p>INSERT BUFFER即合并插入缓存，从innodb 1.0.x(MySQL5.5 之前)版本开始引入Change Buffer，是INSERT BUFFER升级版，即MySQL 5.1.x以上版本都支持，<br>不仅包括INSERT BUFFER，还包括UPDATE BUFFER、DELETE BUFFER、PURGE BUFFER。</p>
+<p>也就是所有DML操作，都会先进缓冲区，进行逻辑操作，后面才会真正落地。</p>
+<p>通过参数Innodb_change_buffering开始查看修改各种buffer的选项。可选值有inserts\deletes\purges\changes\all\none。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'Innodb_change_buffering%'</span>;</span><br><span class="line"><span class="comment">-- innodb_change_buffering	all</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'Innodb_change_buffer_max_size'</span>;</span><br><span class="line"><span class="comment">-- innodb_change_buffer_max_size	25</span></span><br></pre></td></tr></table></figure>
+<p>默认是所有操作都入buffer，参数是控制内存大小的，25代表最多使用1/4的缓冲池空间。</p>
+<p>通常来说，InnoDB辅助索引不同于聚集索引的顺序插入，如果每次修改二级索引都直接写入磁盘，则会有大量频繁的随机IO。<br>Change buffer 的主要目的是将对 非唯一 辅助索引页的操作缓存下来，以此减少辅助索引的随机IO，并达到操作合并的效果。它会占用部分Buffer Pool 的内存空间。<br>在 MySQL5.5 之前 Change Buffer其实叫 Insert Buffer，最初只支持 insert 操作的缓存，随着支持操作类型的增加，改名为 Change Buffer。<br>如果辅助索引页已经在缓冲区了，则直接修改即可；如果不在，则先将修改保存到 Change Buffer。<br>Change Buffer的数据在对应辅助索引页读取到缓冲区时合并到真正的辅助索引页中。Change Buffer 内部实现也是使用的 B+ 树。</p>
+<p>查看Change Buffer信息也可以通过 show engine innodb status 命令。更多信息见 <a href="https://mysqlserverteam.com/the-innodb-change-buffer/" target="_blank" rel="noopener">mysqlserverteam: the-innodb-change-buffer</a>。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">-------------------------------------</span><br><span class="line">INSERT BUFFER AND ADAPTIVE HASH INDEX</span><br><span class="line">-------------------------------------</span><br><span class="line">Ibuf: size 1356, free list len 149402, seg size 149404, 2004231 merges</span><br><span class="line">merged operations:</span><br><span class="line"> insert 1373793, delete mark 316276978, delete 5341003</span><br><span class="line">discarded operations:</span><br><span class="line"> insert 0, delete mark 0, delete 0</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 2 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 0 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">Hash table size 298897, node heap has 1 buffer(s)</span><br><span class="line">193.03 hash searches&#x2F;s, 713.40 non-hash searches&#x2F;s</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Ibuf：size	已经合并页的数量</span><br><span class="line">free list len	空闲列表长度</span><br><span class="line">seg size	Insert Buffer大小</span><br><span class="line">merges	合并次数</span><br><span class="line">merged operations 	</span><br><span class="line">                    Change Buffer中每个操作次数；</span><br><span class="line">                    insert代表Insert Buffer;</span><br><span class="line">                    delete mark代表Delete Buffer；</span><br><span class="line">                    delete代表Purge Buffer;</span><br><span class="line">discarded operations	Change Buffer中无需合并的次数</span><br><span class="line">hash searches&#x2F;s	通过hash索引查询</span><br><span class="line">non-hash searches&#x2F;s	不能通过hash索引查询</span><br></pre></td></tr></table></figure>
+
+<p>可以通过 innodb_change_buffering 配置是否缓存辅助索引页的修改，默认为 all，即缓存 insert/delete-mark/purge 操作<br>(注：MySQL 删除数据通常分为两步，第一步是delete-mark，即只标记，而purge才是真正的删除数据)。</p>
+<p><img src="/images/post/db-mysql/changebuffer.webp" alt=""></p>
+<h3 id="ADAPTIVE-HASH-INDEX"><a href="#ADAPTIVE-HASH-INDEX" class="headerlink" title="ADAPTIVE HASH INDEX"></a>ADAPTIVE HASH INDEX</h3><p>自适应哈希索引(AHI)查询非常快，一般时间复杂度为 O(1)，相比 B+ 树通常要查询 3~4次，效率会有很大提升。</p>
+<p>innodb 通过观察索引页上的查询次数，如果发现建立哈希索引可以提升查询效率，则会自动建立哈希索引，称之为自适应哈希索引，不需要人工干预，可以通过 innodb_adaptive_hash_index 开启，MySQL5.7 默认开启。</p>
+<p>考虑到不同系统的差异，有些系统开启自适应哈希索引可能会导致性能提升不明显，而且为监控索引页查询次数增加了多余的性能损耗，</p>
+<p> MySQL5.7 更改了 AHI 实现机制，每个 AHI 都分配了专门分区，通过 innodb_adaptive_hash_index_parts配置分区数目，默认是8个，如前一节命令列出所示。</p>
+<p>通过(Change Buffer)INSERT BUFFER 可以看到自适应哈希索引大小、使用情况、每秒使用自适应哈希索引搜索情况。<br>自适应HASH索引，由INNODB存储引擎控制，只适合等值查询，不适合范围查询。</p>
+<h2 id="LOG"><a href="#LOG" class="headerlink" title="LOG"></a>LOG</h2><p>事物日志的信息。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">LOG</span><br><span class="line">---</span><br><span class="line">Log sequence number 33859450169594</span><br><span class="line">Log flushed up to   33859450169564</span><br><span class="line">Pages flushed up to 33859450169210</span><br><span class="line">Last checkpoint at  33859450169201</span><br><span class="line">0 pending log flushes, 0 pending chkp writes</span><br><span class="line">15044267 log i&#x2F;o&#39;s done, 0.10 log i&#x2F;o&#39;s&#x2F;second</span><br></pre></td></tr></table></figure>
+<p>InnoDB事物采用Write-Ahead log策略，即事物在提交时，先写重做日志，在修改页。</p>
+<p>Write-Ahead Log：如果一个页在写入磁盘时，必须先将内存中小于该页LSN的日志先写入到磁盘中。</p>
+<p>重做日志有LSN、每个页有LSN、Checkpoint也有LSN。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Log sequence number	最新产生的日志序列号</span><br><span class="line">Log flushed up to	已刷到磁盘的重做日志的日志号</span><br><span class="line">Pages flushed up to	已刷到磁盘的页的日志号</span><br><span class="line">Last checkpoint at	最后一次检查点位置，数据和日志一致的状态</span><br><span class="line">pending	当前挂起的日志读写操作</span><br></pre></td></tr></table></figure>
+<p>LSN记录的是重做日志的总量，单位是字节。以下三种情况会将重做日志缓存刷到重做日志文件：</p>
+<ul>
+<li><p>Master Thread 每秒刷重做日志缓存到重做日志文件</p>
+</li>
+<li><p>innodb_flush_log_at_trx_commit=1时，控制Log Buffer如何写入和刷到磁盘，每次事务提交刷重做日志缓存到重做日志文件</p>
+</li>
+<li><p>重做日志缓冲池剩余空间小于1/2时，刷重做日志缓存到重做日志文件</p>
+</li>
+</ul>
+<p>innodb_flush_log_at_trx_commit 说明：</p>
+<ul>
+<li>默认为1，表示每次事务提交都会将 Log Buffer 写入操作系统缓存，并调用配置的 “flush” 方法将数据写到磁盘。设置为 1 因为频繁刷磁盘效率会偏低，但是安全性高，最多丢失 1个 事务数据。而设置为 0 和 2 则可能丢失 1秒以上 的事务数据。</li>
+<li>为 0 则表示每秒才将 Log Buffer 写入内核缓冲区并调用 “flush” 方法将数据写到磁盘。</li>
+<li>为 2 则是每次事务提交都将 Log Buffer写入内核缓冲区，但是每秒才调用 “flush” 将内核缓冲区的数据刷到磁盘。</li>
+</ul>
+<p>注意，除了 MySQL 的缓冲区，操作系统本身也有内核缓冲区。</p>
+<p>Log Buffer是 重做日志在内存中的缓冲区，大小由 innodb_log_buffer_size 定义，默认是 16M。</p>
+<p>一个大的 Log Buffer可以让大事务在提交前不必将日志中途刷到磁盘，可以提高效率。如果你的系统有很多修改很多行记录的大事务，可以增大该值。</p>
+<p><img src="/images/post/db-mysql/innodb_flush_log_at_trx_commit.png" alt=""></p>
+<p>innodb_flush_log_at_timeout 可以配置刷新日志缓存到磁盘的频率，默认是1秒。注意刷磁盘的频率并不保证就正好是这个时间，可能因为MySQL的一些操作导致推迟或提前。<br>而这个 “flush” 方法并不是C标准库的 fflush 方法(fflush是将C标准库的缓冲写到内核缓冲区，并不保证刷到磁盘)，它通过 innodb_flush_method 配置的，默认是 fsync，即日志和数据都通过 fsync 系统调用刷到磁盘。</p>
+<p>可以发现，InnoDB 基本每秒都会将 Log buffer落盘。而InnoDB中使用的 redo log 和 undo log，它们是分开存储的。<br>redo log在内存中有log buffer，在磁盘对应ib_logfile文件。而undo log是记录在表空间ibd文件中的，InnoDB为undo log会生成undo页，对undo log本身的操作（比如向undo log插入一条记录），也会记录redo log，因此undo log并不需要马上落盘。<br>而 redo log则通常会分配一块连续的磁盘空间，然后先写到log buffer，并每秒刷一次磁盘。redo log必须在数据落盘前先落盘(Write Ahead Log)，从而保证数据持久性和一致性。而数据本身的修改可以先驻留在内存缓冲池中，再根据特定的策略定期刷到磁盘。</p>
+<h2 id="BUFFER-POOL-AND-MEMORY"><a href="#BUFFER-POOL-AND-MEMORY" class="headerlink" title="BUFFER POOL AND MEMORY"></a>BUFFER POOL AND MEMORY</h2><p>innodb_buffer_pool包含数据页、索引页、undo页、insert buffer、数据字典、自适应哈希索引、锁信息等。数据库缓冲池是通过LRU列表管理的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">----------------------</span><br><span class="line">BUFFER POOL AND MEMORY</span><br><span class="line">----------------------</span><br><span class="line">Total large memory allocated 19789774848</span><br><span class="line">Dictionary memory allocated 3944999</span><br><span class="line">Buffer pool size   1179504</span><br><span class="line">Free buffers       8192</span><br><span class="line">Database pages     1116347</span><br><span class="line">Old database pages 411925</span><br><span class="line">Modified db pages  3</span><br><span class="line">Pending reads      0</span><br><span class="line">Pending writes: LRU 0, flush list 0, single page 0</span><br><span class="line">Pages made young 74514305, not young 649973267</span><br><span class="line">0.21 youngs&#x2F;s, 0.17 non-youngs&#x2F;s</span><br><span class="line">Pages read 15233915, created 7356668, written 264739684</span><br><span class="line">0.00 reads&#x2F;s, 0.00 creates&#x2F;s, 0.10 writes&#x2F;s</span><br><span class="line">Buffer pool hit rate 1000 &#x2F; 1000, young-making rate 0 &#x2F; 1000 not 0 &#x2F; 1000</span><br><span class="line">Pages read ahead 0.00&#x2F;s, evicted without access 0.00&#x2F;s, Random read ahead 0.00&#x2F;s</span><br><span class="line">LRU len: 1116347, unzip_LRU len: 0</span><br><span class="line">I&#x2F;O sum[48]:cur[0], unzip sum[0]:cur[0]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Total large memory allocated	为innodb 分配的总内存数(byte)</span><br><span class="line">Dictionary memory allocated	为innodb数据字典分配的内存数(byte)</span><br><span class="line">Buffer pool size	innodb_buffer_pool的页数量</span><br><span class="line">Free buffers	lru列表中的空闲页数量</span><br><span class="line">Database pages	lru列表中的非空闲页数量</span><br><span class="line">Old database pages	old子列表的页数量</span><br><span class="line">Modified db pages	脏页的数量</span><br><span class="line">Pending reads	挂起读的数量</span><br></pre></td></tr></table></figure>
+<p>可以看到当前Buffer Pool Size共有1179504页，即1179504*16K。新读取到的页默认插入LRU列表的5/8的位置。</p>
+<p>此值由innodb_old_blocks_pct控制，即前5/8称为new list，后面3/8的称为old list。</p>
+<p>Pages made young 显示LRU列表中old list移到new list的次数，not young显示仍在old list的次数。</p>
+<p>这两个值受innodb_old_blocks_time影响，此值为微秒。如果old list中超过30微秒不再读取，则记录not young，反之记录为Pages made young。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&gt; show global variables like &#39;%blocks%&#39;;</span><br><span class="line">+------------------------+-------+</span><br><span class="line">| Variable_name          | Value |</span><br><span class="line">+------------------------+-------+</span><br><span class="line">| innodb_old_blocks_pct  | 37    |</span><br><span class="line">| innodb_old_blocks_time | 30    |</span><br><span class="line">+------------------------+-------+</span><br></pre></td></tr></table></figure>
+<p>youngs/s,non-youngs/s，表示每秒这两类操作的次数。</p>
+<p>Pages read,created,written，表示innodb被读取，创建，写入了多少页及每秒的次数。</p>
+<p>Buffer pool hit rate，表示缓冲池命中率，如果低于95%需要具体排查。</p>
+<p>Pages read ahead，表示页面预读，随机预读的每秒页数。</p>
+<p>LRU中包含unzip_LRU，unzip_LRU是管理非16KB的压缩表。</p>
+<h2 id="INDIVIDUAL-BUFFER-POOL-INFO"><a href="#INDIVIDUAL-BUFFER-POOL-INFO" class="headerlink" title="INDIVIDUAL BUFFER POOL INFO"></a>INDIVIDUAL BUFFER POOL INFO</h2><p>可通过innodb_buffer_pool_instances 来配置多个缓冲池实例，默认为1。可减少数据库内部资源竞争，增加并发处理能力。如果分配多个缓冲池实例，每个缓冲池大小为 innodb_buffer_pool_size / innodb_buffer_pool_instances 。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">----------------------</span><br><span class="line">INDIVIDUAL BUFFER POOL INFO</span><br><span class="line">----------------------</span><br><span class="line">---BUFFER POOL 0</span><br><span class="line">Buffer pool size   147438</span><br><span class="line">Free buffers       1024</span><br><span class="line">Database pages     139530</span><br><span class="line">Old database pages 51486</span><br><span class="line">Modified db pages  0</span><br><span class="line">Pending reads      0</span><br><span class="line">Pending writes: LRU 0, flush list 0, single page 0</span><br><span class="line">Pages made young 8790743, not young 77467460</span><br><span class="line">0.00 youngs&#x2F;s, 0.00 non-youngs&#x2F;s</span><br><span class="line">Pages read 1856892, created 916430, written 30727167</span><br><span class="line">0.00 reads&#x2F;s, 0.00 creates&#x2F;s, 0.00 writes&#x2F;s</span><br><span class="line">No buffer pool page gets since the last printout</span><br><span class="line">Pages read ahead 0.00&#x2F;s, evicted without access 0.00&#x2F;s, Random read ahead 0.00&#x2F;s</span><br><span class="line">LRU len: 139530, unzip_LRU len: 0</span><br><span class="line">I&#x2F;O sum[6]:cur[0], unzip sum[0]:cur[0]</span><br><span class="line">---BUFFER POOL 1</span><br><span class="line">---BUFFER POOL 2</span><br><span class="line">---BUFFER POOL 3</span><br></pre></td></tr></table></figure>
+<p>可以通过information_schema.INNODB_BUFFER_POOL_STATS视图查看每个buffer_pool实例的信息，MySQL默认一个page大小为16K，</p>
+<p>可以得出POOL_SIZE * innodb_buffer_pool_instances * 16K = innodb_buffer_pool_size。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">(root@localhost) [information_schema] &gt;select POOL_ID,POOL_SIZE,FREE_BUFFERS,DATABASE_PAGES,OLD_DATABASE_PAGES,MODIFIED_DATABASE_PAGES,PAGES_MADE_YOUNG,PAGES_NOT_MADE_YOUNG from information_schema.INNODB_BUFFER_POOL_STATS;</span><br><span class="line">+---------+-----------+--------------+----------------+--------------------+-------------------------+------------------+----------------------+</span><br><span class="line">| POOL_ID | POOL_SIZE | FREE_BUFFERS | DATABASE_PAGES | OLD_DATABASE_PAGES | MODIFIED_DATABASE_PAGES | PAGES_MADE_YOUNG | PAGES_NOT_MADE_YOUNG |</span><br><span class="line">+---------+-----------+--------------+----------------+--------------------+-------------------------+------------------+----------------------+</span><br><span class="line">|       0 |     90112 |            0 |          90109 |              33279 |                       0 |            18064 |            132278807 |</span><br><span class="line">|       1 |     90112 |            0 |          90109 |              33282 |                       0 |            18342 |            132086061 |</span><br><span class="line">|       2 |     90112 |            0 |          90110 |              33282 |                       0 |            17631 |            132149779 |</span><br><span class="line">+---------+-----------+--------------+----------------+--------------------+-------------------------+------------------+----------------------+</span><br></pre></td></tr></table></figure>
+<p>详细说明同上。</p>
+<h2 id="ROW-OPERATIONS"><a href="#ROW-OPERATIONS" class="headerlink" title="ROW OPERATIONS"></a>ROW OPERATIONS</h2><p>显示了row 操作及其他一些统计信息。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">--------------</span><br><span class="line">ROW OPERATIONS</span><br><span class="line">--------------</span><br><span class="line">0 queries inside InnoDB, 0 queries in queue</span><br><span class="line">0 read views open inside InnoDB</span><br><span class="line">Process ID&#x3D;444943, Main thread ID&#x3D;139899621590784, state: sleeping</span><br><span class="line">Number of rows inserted 172887566, updated 227534242, deleted 56676133, read 709667077</span><br><span class="line">8.77 inserts&#x2F;s, 8.04 updates&#x2F;s, 0.00 deletes&#x2F;s, 10.92 reads&#x2F;s</span><br></pre></td></tr></table></figure>
+<p>queries，表示innodb内核中有多少个线程，队列中有多少个线程。</p>
+<p>read views open inside InnoDB，表示有多少个read view 被打开，一个read view 包含事物开始点数据库内容的MVCC快照。</p>
+<p>Process ID=444943，表示内核的主线程状态。</p>
+<p>Number of rows inserted、updated、deleted、read，表示多少行被插入，更新和删除，读取及每秒信息，可用于监控。</p>
+<p>可通过以下命令查看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">(root@localhost) [(none)] &gt;show global status like &#39;Innodb_rows_%&#39;;</span><br><span class="line">+----------------------+-----------+</span><br><span class="line">| Variable_name        | Value     |</span><br><span class="line">+----------------------+-----------+</span><br><span class="line">| Innodb_rows_deleted  | 56676133  |</span><br><span class="line">| Innodb_rows_inserted | 172887566 |</span><br><span class="line">| Innodb_rows_read     | 709667077 |</span><br><span class="line">| Innodb_rows_updated  | 227534242 |</span><br><span class="line">+----------------------+-----------+</span><br><span class="line"></span><br><span class="line">(root@localhost) [(none)] &gt;show global status like &#39;Uptime&#39;;</span><br><span class="line">+---------------+---------+</span><br><span class="line">| Variable_name | Value   |</span><br><span class="line">+---------------+---------+</span><br><span class="line">| Uptime        | 1757270 |</span><br><span class="line">+---------------+---------+</span><br><span class="line">END OF INNODB MONITOR OUTPUT</span><br></pre></td></tr></table></figure>
+
+<h2 id="InnoDB信息结束语。"><a href="#InnoDB信息结束语。" class="headerlink" title="InnoDB信息结束语。"></a>InnoDB信息结束语。</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">----------------------------</span><br><span class="line">END OF INNODB MONITOR OUTPUT</span><br><span class="line">&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;</span><br><span class="line">如果看不到这行输出，可能是有大量事务或者有一个大的死锁截断了输出信息。</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.bjlhx.top/articles/20200205/ddb6eda9.html" title="10-存储引擎层-innodb框架-内存架构">https://blog.bjlhx.top/articles/20200205/ddb6eda9.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20200205/190e6be3.html" rel="prev" title="09-存储引擎层-innodb框架-索引-使用B+树组织数据、实例查看数据">
+      <i class="fa fa-chevron-left"></i> 09-存储引擎层-innodb框架-索引-使用B+树组织数据、实例查看数据
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20200205/3890ccea.html" rel="next" title="11-InnoDB-事务隔离级别、ACID模型">
+      11-InnoDB-事务隔离级别、ACID模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#InnoDB-内存中的结构"><span class="nav-number">1.</span> <span class="nav-text">InnoDB 内存中的结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Buffer-pool"><span class="nav-number">1.1.</span> <span class="nav-text">Buffer pool</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#缓冲区LRU淘汰算法"><span class="nav-number">1.1.1.</span> <span class="nav-text">缓冲区LRU淘汰算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pool的主要空间"><span class="nav-number">1.1.2.</span> <span class="nav-text">Pool的主要空间</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BACKGROUND-THREAD"><span class="nav-number">1.2.</span> <span class="nav-text">BACKGROUND THREAD</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SEMAPHORES"><span class="nav-number">1.3.</span> <span class="nav-text">SEMAPHORES</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LATEST-DETECTED-DEADLOCK"><span class="nav-number">1.4.</span> <span class="nav-text">LATEST DETECTED DEADLOCK</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TRANSACTIONS"><span class="nav-number">1.5.</span> <span class="nav-text">TRANSACTIONS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FILE-I-O"><span class="nav-number">1.6.</span> <span class="nav-text">FILE I&#x2F;O</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Change-Buffer-INSERT-BUFFER-AND-ADAPTIVE-HASH-INDEX"><span class="nav-number">1.7.</span> <span class="nav-text">(Change Buffer)INSERT BUFFER AND ADAPTIVE HASH INDEX</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#插入缓冲insert-buffer"><span class="nav-number">1.7.1.</span> <span class="nav-text">插入缓冲insert buffer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#变更缓冲change-buffer"><span class="nav-number">1.7.2.</span> <span class="nav-text">变更缓冲change buffer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ADAPTIVE-HASH-INDEX"><span class="nav-number">1.7.3.</span> <span class="nav-text">ADAPTIVE HASH INDEX</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LOG"><span class="nav-number">1.8.</span> <span class="nav-text">LOG</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BUFFER-POOL-AND-MEMORY"><span class="nav-number">1.9.</span> <span class="nav-text">BUFFER POOL AND MEMORY</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#INDIVIDUAL-BUFFER-POOL-INFO"><span class="nav-number">1.10.</span> <span class="nav-text">INDIVIDUAL BUFFER POOL INFO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ROW-OPERATIONS"><span class="nav-number">1.11.</span> <span class="nav-text">ROW OPERATIONS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#InnoDB信息结束语。"><span class="nav-number">1.12.</span> <span class="nav-text">InnoDB信息结束语。</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">25</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>

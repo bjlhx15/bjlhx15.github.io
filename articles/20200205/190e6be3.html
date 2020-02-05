@@ -46,24 +46,23 @@
   };
 </script>
 
-  <meta name="description" content="摘要：MySQL InnoDB数据存储是以B+树索引方式存储存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
+  <meta name="description" content="摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
 <meta property="og:type" content="article">
-<meta property="og:title" content="001-mysql-物理存储、InnoDB数据B+树存储">
-<meta property="og:url" content="https://blog.bjlhx.top/articles/20200131/83b4374e.html">
+<meta property="og:title" content="09-存储引擎层-innodb框架-索引-使用B+树组织数据、实例查看数据">
+<meta property="og:url" content="https://blog.bjlhx.top/articles/20200205/190e6be3.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="摘要：MySQL InnoDB数据存储是以B+树索引方式存储存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
+<meta property="og:description" content="摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/mysql-disk.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/file-0k.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/file-1k.jpg">
+<meta property="og:image" content="https://blog.bjlhx.top/articles/20200205/source/images/post/db-mysql/ecengbtree.png">
 <meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/index-01.jpg">
-<meta property="article:published_time" content="2020-01-31T01:12:52.000Z">
-<meta property="article:modified_time" content="2020-01-31T14:57:25.456Z">
+<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/page.png">
+<meta property="article:published_time" content="2020-02-05T02:44:21.000Z">
+<meta property="article:modified_time" content="2020-02-05T02:42:57.885Z">
 <meta property="article:author" content="李宏旭">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/mysql-disk.jpg">
+<meta name="twitter:image" content="https://blog.bjlhx.top/articles/20200205/source/images/post/db-mysql/ecengbtree.png">
 
-<link rel="canonical" href="https://blog.bjlhx.top/articles/20200131/83b4374e.html">
+<link rel="canonical" href="https://blog.bjlhx.top/articles/20200205/190e6be3.html">
 
 
 <script id="page-configurations">
@@ -75,7 +74,7 @@
   };
 </script>
 
-  <title>001-mysql-物理存储、InnoDB数据B+树存储 | Blog</title>
+  <title>09-存储引擎层-innodb框架-索引-使用B+树组织数据、实例查看数据 | Blog</title>
   
 
 
@@ -165,12 +164,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">4</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">15</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">25</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -227,7 +226,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200131/83b4374e.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200205/190e6be3.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -240,7 +239,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          001-mysql-物理存储、InnoDB数据B+树存储
+          09-存储引擎层-innodb框架-索引-使用B+树组织数据、实例查看数据
         </h1>
 
         <div class="post-meta">
@@ -251,7 +250,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2020-01-31 09:12:52 / 修改时间：22:57:25" itemprop="dateCreated datePublished" datetime="2020-01-31T09:12:52+08:00">2020-01-31</time>
+              <time title="创建时间：2020-02-05 10:44:21 / 修改时间：10:42:57" itemprop="dateCreated datePublished" datetime="2020-02-05T10:44:21+08:00">2020-02-05</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -259,8 +258,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/db-mysql/" itemprop="url" rel="index">
-                    <span itemprop="name">db-mysql</span>
+                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql-core</span>
                   </a>
                 </span>
             </span>
@@ -283,24 +282,25 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>摘要：MySQL InnoDB数据存储是以B+树索引方式存储<br>存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
+        <p>摘要：mysql InnoDB 使用 B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
 <a id="more"></a>
 
-<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="存储单元"><a href="#存储单元" class="headerlink" title="存储单元"></a>存储单元</h2><p>磁盘扇区、文件系统、InnoDB 存储引擎都有各自的最小存储单元。存储数据的最小单位，类比放菜的盘子。</p>
-<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt=""></p>
-<h3 id="磁盘扇区存储单元-扇区-512字节"><a href="#磁盘扇区存储单元-扇区-512字节" class="headerlink" title="磁盘扇区存储单元-扇区-512字节"></a>磁盘扇区存储单元-扇区-512字节</h3><p>在计算机中磁盘存储数据最小单元是扇区，一个扇区的大小是 512 字节</p>
-<h3 id="文件系统存储单元-块-4k"><a href="#文件系统存储单元-块-4k" class="headerlink" title="文件系统存储单元-块-4k"></a>文件系统存储单元-块-4k</h3><p>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。</p>
-<p>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]</p>
-<p><img src="/images/post/db-mysql/001/file-0k.jpg" alt="">  <img src="/images/post/db-mysql/001/file-1k.jpg" alt=""></p>
-<h3 id="InnoDB存储单元-页-16k"><a href="#InnoDB存储单元-页-16k" class="headerlink" title="InnoDB存储单元-页-16k"></a>InnoDB存储单元-页-16k</h3><p>InnoDB 存储引擎也有自己的最小储存单元——页(Page)，一个页的大小是 16K。</p>
-<p>InnoDB 的所有数据文件(后缀为 ibd 的文件)，他的大小始终都是 16384(16K)的整数倍。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ ll |grep ibd </span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_index_stats.ibd</span><br><span class="line">-rw…………    96K 10 31 11:22 innodb_table_stats.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_master_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_relay_log_info.ibd</span><br><span class="line">-rw…………    96K 10  2  2018 slave_worker_info.ibd</span><br></pre></td></tr></table></figure>
 
 <h2 id="mysql-InnoDB-B-树组织数据、查询数据"><a href="#mysql-InnoDB-B-树组织数据、查询数据" class="headerlink" title="mysql InnoDB-B+树组织数据、查询数据"></a>mysql InnoDB-B+树组织数据、查询数据</h2><p>在MySQL中，InnoDB页的大小默认是16k，当然也可以通过参数设置：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">show variables like &#39;innodb_page_size&#39;;</span><br><span class="line">-- innodb_page_size	16384</span><br></pre></td></tr></table></figure>
 <h3 id="方式一、直接按页存储【假想】"><a href="#方式一、直接按页存储【假想】" class="headerlink" title="方式一、直接按页存储【假想】"></a>方式一、直接按页存储【假想】</h3><p>数据表中的数据都是存储在页中的，所以一个页中能存储多少行数据呢？假设一行数据的大小是 1K，那么一个页可以存放 16 行这样的数据。</p>
 <p>如果数据库按这样的方式存储，那么查找数据就成为一个问题。不知道要查找的数据存在哪个页中，每次查询都需要把所有的页遍历一遍，时间复杂度为 n。</p>
-<h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例解说：</p>
+<h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例一、2层b+ tree</p>
+<p><img src="source/images/post/db-mysql/ecengbtree.png" alt=""></p>
+<p>这个树只有2层，首先每个page都有自己的唯一编号，将来就要通过编号来找对应的page。根页做为一个第一层的索引页，里面是不存在叶子数据（行数据）的，只存放Key，同时还包含了pageNo信息，用来将来去找对应的页。</p>
+<p>所有的记录节点都是按键值的大小顺序存放在同一层的叶子节点上，由各叶子节点指针进行连接（双向指针）。所以查询时，无论正序倒序，其实是一样的扫描速度。</p>
+<p>每一层的最左边节点页面的最左边位置，会有一个Min记录，该记录由2部分组成，第一部分就是一个Min标记，代表这就是 最小值；第二部分是一个pageNo指针，指向下一层中最左边的记录。注意看根页的Min记录，就是这样的。而33号page的Min记录由于没有下一层了，所以没有pageNo指针。</p>
+<p>可以看到，上一层的Key，在下一层对应的page中，也会重复存在，譬如Key=10的记录。但是，每个page，只有第一条数据会和上层有重复，其他的不会有重复。</p>
+<p>每一个page还会有一个最大记录和最小记录，用来标记该page的边界，便于查询。</p>
+<p>由此结构可以看到，做一次查询的耗时，每一层只需要一次内存级的二分查找，定位后就进入下一层，再一次二分查找。</p>
+<p>譬如查询Key=11，那么可以定位到56号page，因为11小于78号page的最小值，之后找到56号page，在做一次二分查询。就能找到11。2层只需要2次IO，就能找到一条数据。3层3次，之前已经说过，3层和4层分别能存多少数据，这个查询效率其实是非常高的。</p>
+<p>通过这样的方式，我们就知道了一颗树是怎么构成的了。</p>
+<p>示例解说：</p>
 <ol>
 <li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt=""></li>
 </ol>
@@ -317,6 +317,37 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>小结：  InnoDB 中主键索引 B+ 树是如何组织数据、查询数据</p>
 <p>InnoDB 存储引擎的最小存储单元是页，页可以用于存放数据也可以用于存放键值+指针，在 B+ 树中叶子节点存放数据，非叶子节点存放键值+指针。</p>
 <p>索引组织表通过非叶子节点的二分查找法以及指针确定数据在哪个页中，进而在去数据页中查找到需要的数据。</p>
+<h3 id="Page内详细结构"><a href="#Page内详细结构" class="headerlink" title="Page内详细结构"></a>Page内详细结构</h3><p><img src="/images/post/db-mysql/page.png" alt=""></p>
+<p>page内的存储，共16K的空间,分为几个部分，文件管理头信息、页面头信息、页面尾信息、最小记录最大记录、用户记录、可重用空间、未使用空间、页面槽信息。</p>
+<p>用户记录就是行数据，可重用就是曾经被分配过数据后来被删了，未使用就是没分配过的空间。</p>
+<h4 id="文件管理头信息"><a href="#文件管理头信息" class="headerlink" title="文件管理头信息"></a>文件管理头信息</h4><p>它占用38个字节，里面存储的东西主要有:</p>
+<ul>
+<li>该页面的checkSum信息，校验文件是否被损坏的；</li>
+<li>该页面在当前表空间的页面号（pageNo）；</li>
+<li>当前页面的上一个页面的pageNo；</li>
+<li>下一个页面的pageNo；</li>
+<li>当前页面最后一次被修改时，对应日志的LSN值，与后面的日志系统有关；</li>
+<li>当前页面的类型；</li>
+<li>只有第0号页面会存一个LSN值，用来存储当前Innodb引擎最大的被flush的LSN值，将来做checkPoint时用；</li>
+<li>标记属于哪个表空间的（避免多个表空间，有相同的pageNo的页）</li>
+</ul>
+<h4 id="页面头信息"><a href="#页面头信息" class="headerlink" title="页面头信息"></a>页面头信息</h4><ul>
+<li>槽的个数；</li>
+<li>未使用空间的指针；</li>
+<li>存储的记录数，包括最大最小记录的管理；</li>
+<li>已被删除的记录的链表的首指针；</li>
+<li>已被标记删除的记录数；</li>
+<li>最后被插入的记录的位置；</li>
+<li>当前节点在b+ tree处于第几层，叶子就是0，往上就加1；</li>
+</ul>
+<h4 id="页面尾部："><a href="#页面尾部：" class="headerlink" title="页面尾部："></a>页面尾部：</h4><ul>
+<li>这8个字节还是用来做完整性校验的。</li>
+</ul>
+<h4 id="页面重组"><a href="#页面重组" class="headerlink" title="页面重组"></a>页面重组</h4><p>一个页面会频繁的插入删除，在插入过程中，都会去已经删除的可重用链表去找合适的空间，如果放得下，就会放进去，放不下，另寻空间。<br>时间一长，就会有空间碎片产出，譬如累计的空闲空间还有很多呢，但就是找不到能放下一条新数据的合适空间。</p>
+<p>那么带来的问题很明显，page增加，每个page存储数据量下降，磁盘占用很大，但存的数据并不多，IO数增加，性能下降。</p>
+<p>如果是一张表的话，如果大量数据被删，就需要及时处理回收空间，可以通过一个空的alter命令，如alter table tablename engine innodb，就可以将表的空间给回收重组了。</p>
+<p>对于页面也一样，在数据库向某一个页面插入时，如果找不到大小合适的空间，就会做一次页面重组操作。</p>
+<p>重组的方式是，新建一个buffer pool页面，然后将老页面的数据一条一条插入到新页面，插入完成后，将老页面空间释放掉，再修改指针位置，指向新页面。</p>
 <h2 id="mysql-InnoDB-B-树存储数据量"><a href="#mysql-InnoDB-B-树存储数据量" class="headerlink" title="mysql InnoDB-B+树存储数据量"></a>mysql InnoDB-B+树存储数据量</h2><h3 id="数据量估算"><a href="#数据量估算" class="headerlink" title="数据量估算"></a>数据量估算</h3><p><strong>以B+ 树高为 2为例计算</strong></p>
 <p>假设 B+ 树高为 2，即存在一个根节点和若干个叶子节点，那么这棵 B+ 树的存放总记录数为：根节点指针数*单个叶子节点记录行数。</p>
 <p>上文已经说明单个叶子节点（页）中的记录数=16K/1K=16。（这里假设一行记录的数据大小为 1K，实际上现在很多互联网业务数据记录大小通常就是 1K 左右）。</p>
@@ -394,7 +425,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://blog.bjlhx.top/articles/20200131/83b4374e.html" title="001-mysql-物理存储、InnoDB数据B+树存储">https://blog.bjlhx.top/articles/20200131/83b4374e.html</a>
+    <a href="https://blog.bjlhx.top/articles/20200205/190e6be3.html" title="09-存储引擎层-innodb框架-索引-使用B+树组织数据、实例查看数据">https://blog.bjlhx.top/articles/20200205/190e6be3.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -411,12 +442,12 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/articles/20200130/7021388e.html" rel="prev" title="008-模板-NexT-版权、打赏">
-      <i class="fa fa-chevron-left"></i> 008-模板-NexT-版权、打赏
+    <a href="/articles/20200205/4e769343.html" rel="prev" title="08-存储引擎层-innodb框架-索引-树到B+树演变、聚集索引与非聚集索引">
+      <i class="fa fa-chevron-left"></i> 08-存储引擎层-innodb框架-索引-树到B+树演变、聚集索引与非聚集索引
     </a></div>
       <div class="post-nav-item">
-    <a href="/articles/20200131/e01cc3be.html" rel="next" title="002-mysql索引-从树到B+树，聚集索引与非聚集索引">
-      002-mysql索引-从树到B+树，聚集索引与非聚集索引 <i class="fa fa-chevron-right"></i>
+    <a href="/articles/20200205/ddb6eda9.html" rel="next" title="10-存储引擎层-innodb框架-内存架构">
+      10-存储引擎层-innodb框架-内存架构 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -501,7 +532,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#存储单元"><span class="nav-number">1.1.</span> <span class="nav-text">存储单元</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘扇区存储单元-扇区-512字节"><span class="nav-number">1.1.1.</span> <span class="nav-text">磁盘扇区存储单元-扇区-512字节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文件系统存储单元-块-4k"><span class="nav-number">1.1.2.</span> <span class="nav-text">文件系统存储单元-块-4k</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InnoDB存储单元-页-16k"><span class="nav-number">1.1.3.</span> <span class="nav-text">InnoDB存储单元-页-16k</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-InnoDB-B-树组织数据、查询数据"><span class="nav-number">1.2.</span> <span class="nav-text">mysql InnoDB-B+树组织数据、查询数据</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#方式一、直接按页存储【假想】"><span class="nav-number">1.2.1.</span> <span class="nav-text">方式一、直接按页存储【假想】</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方式二、用-B-树的方式组织数据【实际】"><span class="nav-number">1.2.2.</span> <span class="nav-text">方式二、用 B+ 树的方式组织数据【实际】</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-InnoDB-B-树存储数据量"><span class="nav-number">1.3.</span> <span class="nav-text">mysql InnoDB-B+树存储数据量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据量估算"><span class="nav-number">1.3.1.</span> <span class="nav-text">数据量估算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InnoDB-主键索引-B-树的高度"><span class="nav-number">1.3.2.</span> <span class="nav-text">InnoDB 主键索引 B+ 树的高度</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实际操作查看"><span class="nav-number">1.4.</span> <span class="nav-text">实际操作查看</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建测试数据"><span class="nav-number">1.4.1.</span> <span class="nav-text">创建测试数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#测试表"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">测试表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#测试数据-添加"><span class="nav-number">1.4.1.2.</span> <span class="nav-text">测试数据 添加</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小结"><span class="nav-number">1.4.1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-InnoDB-B-树组织数据、查询数据"><span class="nav-number">1.</span> <span class="nav-text">mysql InnoDB-B+树组织数据、查询数据</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#方式一、直接按页存储【假想】"><span class="nav-number">1.1.</span> <span class="nav-text">方式一、直接按页存储【假想】</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方式二、用-B-树的方式组织数据【实际】"><span class="nav-number">1.2.</span> <span class="nav-text">方式二、用 B+ 树的方式组织数据【实际】</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Page内详细结构"><span class="nav-number">1.3.</span> <span class="nav-text">Page内详细结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#文件管理头信息"><span class="nav-number">1.3.1.</span> <span class="nav-text">文件管理头信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#页面头信息"><span class="nav-number">1.3.2.</span> <span class="nav-text">页面头信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#页面尾部："><span class="nav-number">1.3.3.</span> <span class="nav-text">页面尾部：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#页面重组"><span class="nav-number">1.3.4.</span> <span class="nav-text">页面重组</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-InnoDB-B-树存储数据量"><span class="nav-number">2.</span> <span class="nav-text">mysql InnoDB-B+树存储数据量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据量估算"><span class="nav-number">2.1.</span> <span class="nav-text">数据量估算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InnoDB-主键索引-B-树的高度"><span class="nav-number">2.2.</span> <span class="nav-text">InnoDB 主键索引 B+ 树的高度</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实际操作查看"><span class="nav-number">3.</span> <span class="nav-text">实际操作查看</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建测试数据"><span class="nav-number">3.1.</span> <span class="nav-text">创建测试数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#测试表"><span class="nav-number">3.1.1.</span> <span class="nav-text">测试表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#测试数据-添加"><span class="nav-number">3.1.2.</span> <span class="nav-text">测试数据 添加</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小结"><span class="nav-number">3.1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -517,14 +548,14 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-count">25</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

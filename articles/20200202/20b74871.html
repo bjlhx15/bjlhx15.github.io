@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.bjlhx.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：innodb文件系统是由一些log和每个表的ibd（16K的整数倍）等文件组成的。内部结构如下。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="05-存储引擎层-innodb框架-表空间-ibd">
+<meta property="og:url" content="https://blog.bjlhx.top/articles/20200202/20b74871.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：innodb文件系统是由一些log和每个表的ibd（16K的整数倍）等文件组成的。内部结构如下。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-02-02T00:42:20.000Z">
+<meta property="article:modified_time" content="2020-02-03T09:12:24.679Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.bjlhx.top/articles/20200202/20b74871.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>05-存储引擎层-innodb框架-表空间-ibd | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">25</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200202/20b74871.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          05-存储引擎层-innodb框架-表空间-ibd
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-02-02 08:42:20" itemprop="dateCreated datePublished" datetime="2020-02-02T08:42:20+08:00">2020-02-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-03 17:12:24" itemprop="dateModified" datetime="2020-02-03T17:12:24+08:00">2020-02-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql-core</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：<br>innodb文件系统是由一些log和每个表的ibd（16K的整数倍）等文件组成的。内部结构如下。</p>
+<a id="more"></a>
+
+<h1 id="表空间-idb简述"><a href="#表空间-idb简述" class="headerlink" title="表空间-idb简述"></a>表空间-idb简述</h1><p>ibd是存表数据的，那么在计算机里，所有的存储都是有最小存储单元的。</p>
+<p>在磁盘上，最小的单元是扇区，一个扇区是512字节，操作系统中最小单元是块（block），最小单位是4K。而innodb也有自己的最小存储单元——页（page），一页是16K。</p>
+<p>这意味着一个文件放到电脑上，哪怕它是空的，也要占用4K，它占用的空间永远是4K的整数倍。</p>
+<p>可以去查看每个ibd文件的大小，它永远是16384（16k）的整数倍。</p>
+<p>后续说明索引加载表数据的前提，mysql的数据最小是16K，也就是哪怕你只取一条，可能还不到1K，那么mysql也会取出16K的数据。</p>
+<p>因为“页”是最小单位。“页”还决定了b+ tree在某个高度下，能存放的数据量，为什么一个表存2万数据，和存1500万数据，查询速度一样。</p>
+<h2 id="单个文件表空间-frm、ibd"><a href="#单个文件表空间-frm、ibd" class="headerlink" title="单个文件表空间-frm、ibd"></a>单个文件表空间-frm、ibd</h2><p>如果想让两个表共用一个数据文件的话,共用一个ibdata，可以通过<strong>innodb_file_per_table</strong>控制。默认每个表一个。</p>
+<p>创建了一个数据库test_innodb，并且创建了几个表，可以在数据目录看一下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">db.opt</span><br><span class="line">table5hang.frm</span><br><span class="line">table5hang.ibd</span><br><span class="line">table15w.frm</span><br><span class="line">table15w.ibd</span><br><span class="line">table500w.frm</span><br><span class="line">table500w.ibd</span><br><span class="line">table1000w.frm</span><br><span class="line">table1000w.ibd</span><br></pre></td></tr></table></figure>
+<p>当新建一个库时，首先文件系统上会多一个以库名命名的文件夹。里面有ibd、frm文件，每个表对应一个ibd文件。</p>
+<ul>
+<li><p>db.opt 保存了数据库test的默认字符集 utf8mb4 和校验方法utf8mb4_general_ci；<br>存储的是mysql的一些配置信息，如编码、排序的信息，如果在创建数据库时指定了一些非默认参数的话，也会存到该文件。</p>
+</li>
+<li><p>每个表会对应一个frm文件，一个ibd文件。</p>
+<ul>
+<li><p>frm文件是表结构，无论在 MySQL 中选择了哪个存储引擎，所有的 MySQL 表都会在硬盘上创建一个 .frm 文件用来描述表的格式或者说定义； .frm 文件的格式在不同的平台上都是相同的。<br>数据字典信息(InnoDB数据字典信息主要是存储在系统表空间ibdata1文件中，由于历史原因才在 t.frm 多保留了一份)</p>
+</li>
+<li><p>ibd是表的数据和索引，是每一个表独有的表空间，文件存储了当前表的数据和相关的索引数据。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>独立的表空间文件之存储对应表的B+树数据、索引和插入缓冲等信息，其余信息还是存储在默认表空间中。</p>
+<p>这个文件所存储的内容主要就是B+树（索引），一个表可以有多个索引，也就是在一个文件中，可以存储多个索引，而如果一个表没有索引的话，用来存储数据的被称为聚簇索引，也就是说这也是一个索引。</p>
+<h3 id="采用-File-Per-Table-的优缺点"><a href="#采用-File-Per-Table-的优缺点" class="headerlink" title="采用 File-Per-Table 的优缺点"></a>采用 File-Per-Table 的优缺点</h3><ul>
+<li>优点：可以方便回收删除表所占的磁盘空间。如果使用系统表空间的话，删除表后空闲空间只能被 InnoDB 数据使用。TRUNCATE TABLE 操作会更快。<br>可以单独拷贝表空间数据到其他数据库(使用 transportable tablespace 特性)，可以更方便的观测每个表空间数据的大小。</li>
+<li>缺点：fsync 操作需要作用的多个表空间文件，比只对系统表空间这一个文件进行fsync操作会多一些 IO 操作。此外，mysqld需要维护更多的文件描述符。</li>
+</ul>
+<h2 id="当新建库时，innodb内部操作"><a href="#当新建库时，innodb内部操作" class="headerlink" title="当新建库时，innodb内部操作"></a>当新建库时，innodb内部操作</h2><p>innodb存储引擎在存储设计上模仿了Oracle的存储结构，其数据是按照表空间进行管理的。</p>
+<p>新建一个数据库时，innodb存储引擎会初始化一个名为ibdata1 的表空间文件，默认情况下，这个文件会存储所有表的数据，以及我们所熟知但看不到的系统表sys_tables、sys_columns、sys_indexes 、sys_fields等。</p>
+<p>此外，还会存储用来保证数据完整性的回滚段数据，当然这部分数据在新版本的MySQL中，已经可以通过参数来设置回滚段的存储位置了；</p>
+<p>注：不同的表既可以共用一个ibd文件，也可以每个表自己一个ibd文件，默认是一个表一个。</p>
+<p>虽然是一个表一个ibd，但这个ibd里只存储了该表的B+树数据、索引、插入缓存等信息，其余的信息如列、属性等信息还是存储在默认的ibdata1里面的。</p>
+<figure class="highlight plain"><figcaption><span>官网介绍</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">A data file that can hold data for one or more InnoDB tables and associated indexes.</span><br><span class="line"> </span><br><span class="line">The system tablespace contains the InnoDB data dictionary, and prior to MySQL 5.6 holds all other InnoDB tables by default.</span><br><span class="line"> </span><br><span class="line">The innodb_file_per_table option, enabled by default in MySQL 5.6 and higher, allows tables to be created in their own tablespaces.</span><br><span class="line"> </span><br><span class="line">File-per-table tablespaces support features such as efficient storage of off-page columns, table compression, and transportable tablespaces.</span><br><span class="line">See Section 14.7.4, “InnoDB File-Per-Table Tablespaces” for details.</span><br></pre></td></tr></table></figure>
+
+<h2 id="ibd存储的数据"><a href="#ibd存储的数据" class="headerlink" title="ibd存储的数据"></a>ibd存储的数据</h2><p>该表的所有索引数据【聚集索引】。</p>
+<p>这里使用了B+tree,B+ tree的叶子节点，就会存放所有的数据。整个表，其实就是一棵B+ tree，一个ibd就是1-N个b+ tree。N等于你的索引数量</p>
+<p>当新建一个表时，会给表创建一个主键primary Key，然后这个key就带着整行数据占据着一块空间，作为B+ tree的一个叶子节点里元素。</p>
+<p>可以理解为一个key-value键值对，key就是主键，value就是整行数据。如果你根本就没创建主键（不推荐），那innodb也会给你分配一个RowId来作为将来找它的主键，只是看不到。</p>
+<p>这棵拥有全量数据的b+ tree，就是将来提供数据的树，一般来说，这棵树最大一般4层，3层就能存2千万数据了，4层能达到n个亿，将来通过主键查询时，通过2-4次IO就能找到数据行。这个索引树，即——聚簇索引。</p>
+<h1 id="表空间-ibd内文件结构"><a href="#表空间-ibd内文件结构" class="headerlink" title="表空间-ibd内文件结构"></a>表空间-ibd内文件结构</h1><h2 id=""><a href="#" class="headerlink" title=""></a></h2>
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.bjlhx.top/articles/20200202/20b74871.html" title="05-存储引擎层-innodb框架-表空间-ibd">https://blog.bjlhx.top/articles/20200202/20b74871.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20200202/e9a15921.html" rel="prev" title="04-存储引擎层-innodb框架-磁盘上的结构-表空间">
+      <i class="fa fa-chevron-left"></i> 04-存储引擎层-innodb框架-磁盘上的结构-表空间
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20200202/12fe7f8a.html" rel="next" title="06-存储引擎层-innodb框架-表空间-段、区、页与组织结构">
+      06-存储引擎层-innodb框架-表空间-段、区、页与组织结构 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#表空间-idb简述"><span class="nav-number">1.</span> <span class="nav-text">表空间-idb简述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#单个文件表空间-frm、ibd"><span class="nav-number">1.1.</span> <span class="nav-text">单个文件表空间-frm、ibd</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#采用-File-Per-Table-的优缺点"><span class="nav-number">1.1.1.</span> <span class="nav-text">采用 File-Per-Table 的优缺点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#当新建库时，innodb内部操作"><span class="nav-number">1.2.</span> <span class="nav-text">当新建库时，innodb内部操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ibd存储的数据"><span class="nav-number">1.3.</span> <span class="nav-text">ibd存储的数据</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#表空间-ibd内文件结构"><span class="nav-number">2.</span> <span class="nav-text">表空间-ibd内文件结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#null"><span class="nav-number">2.1.</span> <span class="nav-text"></span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">25</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>
