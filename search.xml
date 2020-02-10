@@ -1,12 +1,365 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>004-shell-函数以及传递参数的几种方式</title>
+    <url>/articles/20200210/7355fbf4.html</url>
+    <content><![CDATA[<p>摘要：linux shell 可以用户定义函数，然后在shell脚本中可以随便调用。</p>
+<a id="more"></a>
+
+<h1 id="函数语法格式"><a href="#函数语法格式" class="headerlink" title="函数语法格式"></a>函数语法格式</h1><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">[ <span class="keyword">function</span> ] funname [()]</span><br><span class="line">&#123;</span><br><span class="line">    action;</span><br><span class="line">    [<span class="built_in">return</span> int;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>说明：</p>
+<ol>
+<li>可以带function fun() 定义，也可以直接fun() 定义,不带任何参数。</li>
+<li>参数返回，可以显示加：return 返回，如果不加，将以最后一条命令运行结果，作为返回值。 return后跟数值n(0-255)。执行成功 默认是 0 </li>
+</ol>
+<p>shell 语言中 0 代表 true，0 以外的值代表 false。</p>
+<ol start="3">
+<li>函数返回值在调用该函数后通过 $? 来获得。$? 仅对其上一条指令负责，一旦函数返回后其返回值没有立即保存入参数，那么其返回值将不再能通过 $? 获得。</li>
+</ol>
+<p>注意：所有函数在使用前必须定义。这意味着必须将函数放在脚本开始部分，直至shell解释器首次发现它时，才可以使用。调用函数仅使用其函数名即可。</p>
+<p>示例1、无返回值</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="function"><span class="title">test</span></span>()&#123;</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"test"</span></span><br><span class="line">&#125; </span><br><span class="line"><span class="built_in">test</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"返回值：$?"</span></span><br></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">test</span><br><span class="line">返回值：0</span><br></pre></td></tr></table></figure>
+
+<h1 id="函数参数"><a href="#函数参数" class="headerlink" title="函数参数"></a>函数参数</h1><p>在Shell中，调用函数时可以向其传递参数。在函数体内部，通过 $n 的形式来获取参数的值，例如，$1表示第一个参数，$2表示第二个参数… </p>
+<p>注意，$10 不能获取第十个参数，获取第十个参数需要${10}。当n&gt;=10时，需要使用${n}来获取参数。</p>
+<p>另外，还有几个特殊字符用来处理参数：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">参数处理	说明</span><br><span class="line">$#	传递到脚本或函数的参数个数</span><br><span class="line">$*	以一个单字符串显示所有向脚本传递的参数</span><br><span class="line">$	脚本运行的当前进程ID号</span><br><span class="line">$!	后台运行的最后一个进程的ID号</span><br><span class="line">$@	与$*相同，但是使用时加引号，并在引号中返回每个参数。</span><br><span class="line">$-	显示Shell使用的当前选项，与set命令功能相同。</span><br><span class="line">$?	显示最后命令的退出状态。0表示没有错误，其他任何值表明有错误。</span><br></pre></td></tr></table></figure>
+
+<p>示例</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="function"><span class="title">test</span></span>() &#123;</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"进程id:$"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"参数个数: <span class="variable">$&#123;#&#125;</span>"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"所有参数: $*"</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"所有参数: <span class="variable">$@</span>"</span></span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> <span class="string">"<span class="variable">$@</span>"</span>; <span class="keyword">do</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"<span class="variable">$line</span>"</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">"显示Shell使用的当前选项:$-"</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">test</span> aa xx</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"返回值：$?"</span></span><br></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">进程id:11414</span><br><span class="line">参数个数: 2</span><br><span class="line">所有参数: aa xx</span><br><span class="line">所有参数: aa xx</span><br><span class="line">aa</span><br><span class="line">xx</span><br><span class="line">显示Shell使用的当前选项:hB</span><br><span class="line">返回值：0</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>linux-shell</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-tomcat-日志分割三种方法</title>
+    <url>/articles/20200210/6998e040.html</url>
+    <content><![CDATA[<p>概述:tomcat-日志分割三种方法<br>三种方式均有优缺点，</p>
+<ul>
+<li>cronolog：需要在主机安装软件</li>
+<li>log4j：方便使用，但是不能删除</li>
+<li>crontab：需要有对应目录权限</li>
+</ul>
+<p>采取cronolog、log4j缺点：已经做好对应主机镜像，大范围使用，在应用系统级别修改，所有使用者会参与修改；<br>采用crontab，crontab不需要安装，检测linux默认自带安装。正好部署时使用shell脚本，此时只需在脚本中嵌入执行crontab脚本即可。</p>
+<a id="more"></a>
+<h1 id="方法一、用cronolog分割tomcat的catalina-out文件"><a href="#方法一、用cronolog分割tomcat的catalina-out文件" class="headerlink" title="方法一、用cronolog分割tomcat的catalina.out文件"></a>方法一、用cronolog分割tomcat的catalina.out文件</h1><p>Linux 日志切割工具cronolog详解：<a href="https://blog.csdn.net/chenkeqin_2012/article/details/52670887" target="_blank" rel="noopener">https://blog.csdn.net/chenkeqin_2012/article/details/52670887</a></p>
+<ol>
+<li>编译安装cronolog<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">wget http://cronolog.org/download/cronolog-1.6.2.tar.gz </span><br><span class="line">tar zxvf cronolog-1.6.2.tar.gz </span><br><span class="line"><span class="built_in">cd</span> cronolog-1.6.2</span><br><span class="line">./configure </span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure></li>
+<li>查看cronolog安装后所在目录（验证安装是否成功）<br>which cronolog<br>一般情况下显示为：/usr/local/sbin/cronolog </li>
+<li>编辑tomcat目录bin下的catalina.sh文件<br>找到下面这行，类似这样的行有2处：<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">org.apache.catalina.startup.Bootstrap &quot;$@&quot; start \</span><br><span class="line">      &gt;&gt; &quot;$CATALINA_OUT&quot; 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<ul>
+<li>第一处：tomcat是带“-security”参数的启动，</li>
+<li>第二处：默认tomcat启动方式，也就是else下面的那部分，我们只修改这里。</li>
+<li>另外还要把touch “$CATALINA_OUT”这行注释掉。<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment">#  touch "$CATALINA_OUT"</span></span><br><span class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$1</span>"</span> = <span class="string">"-security"</span> ] ; <span class="keyword">then</span></span><br><span class="line">    <span class="keyword">if</span> [ <span class="variable">$have_tty</span> -eq 1 ]; <span class="keyword">then</span></span><br><span class="line">      <span class="built_in">echo</span> <span class="string">"Using Security Manager"</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="built_in">shift</span></span><br><span class="line">    <span class="string">"<span class="variable">$_RUNJAVA</span>"</span> <span class="string">"<span class="variable">$LOGGING_CONFIG</span>"</span> <span class="variable">$LOGGING_MANAGER</span> <span class="variable">$JAVA_OPTS</span> <span class="variable">$CATALINA_OPTS</span> \</span><br><span class="line">      -Djava.endorsed.dirs=<span class="string">"<span class="variable">$JAVA_ENDORSED_DIRS</span>"</span> -classpath <span class="string">"<span class="variable">$CLASSPATH</span>"</span> \</span><br><span class="line">      -Djava.security.manager \</span><br><span class="line">      -Djava.security.policy==<span class="string">"<span class="variable">$CATALINA_BASE</span>"</span>/conf/catalina.policy \</span><br><span class="line">      -Dcatalina.base=<span class="string">"<span class="variable">$CATALINA_BASE</span>"</span> \</span><br><span class="line">      -Dcatalina.home=<span class="string">"<span class="variable">$CATALINA_HOME</span>"</span> \</span><br><span class="line">      -Djava.io.tmpdir=<span class="string">"<span class="variable">$CATALINA_TMPDIR</span>"</span> \</span><br><span class="line">      org.apache.catalina.startup.Bootstrap <span class="string">"<span class="variable">$@</span>"</span> start \</span><br><span class="line">      &gt;&gt; <span class="string">"<span class="variable">$CATALINA_OUT</span>"</span> 2&gt;&amp;1 &amp;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="string">"<span class="variable">$_RUNJAVA</span>"</span> <span class="string">"<span class="variable">$LOGGING_CONFIG</span>"</span> <span class="variable">$LOGGING_MANAGER</span> <span class="variable">$JAVA_OPTS</span> <span class="variable">$CATALINA_OPTS</span> \</span><br><span class="line">      -Djava.endorsed.dirs=<span class="string">"<span class="variable">$JAVA_ENDORSED_DIRS</span>"</span> -classpath <span class="string">"<span class="variable">$CLASSPATH</span>"</span> \</span><br><span class="line">      -Dcatalina.base=<span class="string">"<span class="variable">$CATALINA_BASE</span>"</span> \</span><br><span class="line">      -Dcatalina.home=<span class="string">"<span class="variable">$CATALINA_HOME</span>"</span> \</span><br><span class="line">      -Djava.io.tmpdir=<span class="string">"<span class="variable">$CATALINA_TMPDIR</span>"</span> \</span><br><span class="line">      org.apache.catalina.startup.Bootstrap <span class="string">"<span class="variable">$@</span>"</span> start 2&gt;&amp;1 | /usr/<span class="built_in">local</span>/sbin/cronolog /usr/<span class="built_in">local</span>/tomcat/logs/catalina.%Y%m%d.out &gt;&gt; /dev/null &amp;</span><br><span class="line"><span class="comment">#      &gt;&gt; "$CATALINA_OUT" 2&gt;&amp;1 &amp;</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">fi</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<ol start="4">
+<li>重启tomcat<br>查看日志目录是否生成catalina.yymmdd.out的日志文件</li>
+</ol>
+<p>-rw-r–r– 1 root root 10537 Jul 30 10:50 catalina.20140730.out</p>
+<p>配置cronolog完成了，观察每天是否有一个新的catalina.yymmdd.out的日志文件生成，定期删除日期较旧的日志文件。</p>
+<h1 id="方法二、使用log4j成功使catalina-out文件实现分割"><a href="#方法二、使用log4j成功使catalina-out文件实现分割" class="headerlink" title="方法二、使用log4j成功使catalina.out文件实现分割"></a>方法二、使用log4j成功使catalina.out文件实现分割</h1><p>　　1、在tomcat根目录下建立common/classes/log4j.properties，内容如下<br>复制代码<br>log4j.rootLogger=INFO, R<br>log4j.appender.R=org.apache.log4j.RollingFileAppender<br>log4j.appender.R.File=${catalina.home}/logs/tomcat.newlog  #设定日志文件名<br>log4j.appender.R.MaxFileSize=100KB   #设定文件到100kb即分割<br>log4j.appender.R.MaxBackupIndex=10   #设定日志文件保留的序号数<br>log4j.appender.R.layout=org.apache.log4j.PatternLayout<br>log4j.appender.R.layout.ConversionPattern=%p %t %c - %m%n<br>复制代码<br>　　2、在tomcat根目录下的common/lib下加入log4j.jar和commons-logging.jar<br>　　3、重新启动tomcat即可。</p>
+<h1 id="方法三、使用系统crontab"><a href="#方法三、使用系统crontab" class="headerlink" title="方法三、使用系统crontab"></a>方法三、使用系统crontab</h1><ol>
+<li>编写一个crontab_log_work.sh文件,shell脚本如下:<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span>  `dirname <span class="variable">$0</span>`</span><br><span class="line">d=`date +%Y%m%d`</span><br><span class="line">d7=`date -d<span class="string">'7 day ago'</span> +%Y%m%d`</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span>  ../logs/</span><br><span class="line"></span><br><span class="line">cp catalina.out catalina.out.<span class="variable">$&#123;d&#125;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">""</span> &gt; catalina.out </span><br><span class="line">rm -rf catalina.out.<span class="variable">$&#123;d7&#125;</span></span><br></pre></td></tr></table></figure></li>
+<li>编写任务执行计划 crontab_log<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">55 23 * * * crontab_log_work.sh</span><br></pre></td></tr></table></figure></li>
+<li>使用crontab 启动<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">crontab crontab_log</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>tomcat</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-shell-crontab定时任务</title>
+    <url>/articles/20200208/a16096f7.html</url>
+    <content><![CDATA[<p>摘要：有时需要操作系统统，定时做一些任务，解决一些问题。<br>通过crontab 命令，我们可以在固定的间隔时间执行指定的系统指令或 shell script脚本。时间间隔的单位可以是分钟、小时、日、月、周及以上的任意组合。这个命令非常适合周期性的日志分析或数据备份等工作。</p>
+<a id="more"></a>
+<h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>说明：</p>
+<ol>
+<li>Linux和Mac下操作crontab都是一致的</li>
+<li>配置文件都在/etc/crontab下，如果没有就创建。默认系统级别存在，不需要额外安装定时任务</li>
+<li>测试直接使用crontab -e命令创建的定时任务是放在临时文件夹的，重启会删除，并且与/etc/crontab文件无关联。</li>
+</ol>
+<h2 id="crontab服务的重启关闭，开启"><a href="#crontab服务的重启关闭，开启" class="headerlink" title="crontab服务的重启关闭，开启"></a>crontab服务的重启关闭，开启</h2><p>系统级别，是linux下用来周期性的执行某种任务或等待处理某些事件的一个守护进程。所以下述命令不可用。</p>
+<ul>
+<li>Mac系统下<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo /usr/sbin/cron start</span><br><span class="line">sudo /usr/sbin/cron restart</span><br><span class="line">sudo /usr/sbin/cron stop</span><br></pre></td></tr></table></figure></li>
+<li>Ubuntu<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo /etc/init.d/cron start</span><br><span class="line">sudo /etc/init.d/cron stop</span><br><span class="line">sudo /etc/init.d/cron restart</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><p>查看定时任务：<code>crontab -l</code><br>列出用户test的所有调度任务:<code>crontab -l -u test</code><br>删除所有调度任务：<code>crontab -r</code></p>
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><ul>
+<li><p>方式一、系统级别-/etc/crontab 方式</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo vim /etc/crontab</span><br><span class="line">*/1 * * * * root /bin/date &gt;&gt; /tmp/time2.txt</span><br></pre></td></tr></table></figure>
+<p>保存使用：<code>:wq!</code>；默认超管只读权限，需要强制保存退出</p>
+</li>
+<li><p>方式二、用户级别-crontab -e 自定义脚本启动</p>
+</li>
+</ul>
+<ol>
+<li>执行脚本编写<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 每分钟执行一次date命令，输出时间到time.txt文本</span></span><br><span class="line">*/1 * * * * /bin/date &gt;&gt; /tmp/time.txt</span><br></pre></td></tr></table></figure></li>
+<li>crontab命令调用crontab文件<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">crontab testing_crontab</span><br></pre></td></tr></table></figure></li>
+<li>查看 文件内容<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">tail -f  /tmp/time.txt</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="etc-crontab文件和crontab-e命令区别"><a href="#etc-crontab文件和crontab-e命令区别" class="headerlink" title="/etc/crontab文件和crontab -e命令区别"></a>/etc/crontab文件和crontab -e命令区别</h2><ol>
+<li>修改/etc/crontab这种方法只有root用户能用，这种方法更加方便与直接直接给其他用户设置计划任务，而且还可以指定执行shell等等，crontab -e这种所有用户都可以使用，普通用户也只能为自己设置计划任务。然后自动写入/var/spool/cron/usename</li>
+<li>crontab -e是某个用户的周期计划任务；/etc/crontab是系统的周期任务</li>
+<li>crontab -e与/etc/crontab修改语法格式不一样，后者多一个user指定</li>
+<li>不管用crontab -e或者/etc/crontab都不需要重新启动crond服务</li>
+<li>crontab  -e是针对用户的cron来设计的，如果是系统的例行性任务，需要编辑/etc/crontab文件。需要注意的是：crontab -e的作用其实是/usr/bin/crontab这个执行文件，但是/etc/crontab是个纯文本文件，可以root的身份编辑这个文件。</li>
+<li>cron服务的最低检测时间单位是分钟，所以cron会每分钟读取一次/etc/crontab与/var/spool/cron中的数据内容，因此，只要您编辑完/etc/crontab文件并且保存之后，crontab时设定就会自动执行。</li>
+</ol>
+<p>注意：在Linux下的crontab会自动帮我们每分钟重新读取一次/etc/crontab的例行工作事项，但是某些原因或在其他的unix系统中，由于crontab是读到内存中，所以在您修改完/etc/crontab之后可能并不会马上执行，这时请重新启动crond服务。</p>
+<p>/et</p>
+<h1 id="crontab-命令"><a href="#crontab-命令" class="headerlink" title="crontab 命令"></a>crontab 命令</h1><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">crontab [-u user] file [-u user] [ -e | -l | -r ]</span><br><span class="line">*   -u user：用来设定某个用户的crontab服务；</span><br><span class="line">*   file：file是命令文件的名字,表示将file做为crontab的任务列表文件并载入crontab。如果在命令行中没有指定这个文件，crontab命令将接受标准输入（键盘）上键入的命令，并将它们载入crontab。</span><br><span class="line">*   -e：编辑某个用户的crontab文件内容。如果不指定用户，则表示编辑当前用户的crontab文件。</span><br><span class="line">*   -l：显示某个用户的crontab文件内容，如果不指定用户，则表示显示当前用户的crontab文件内容。</span><br><span class="line">*   -r：从/var/spool/cron目录中删除某个用户的crontab文件，如果不指定用户，则默认删除当前用户的crontab文件。</span><br><span class="line">*   -i：在删除用户的crontab文件时给确认提示。</span><br></pre></td></tr></table></figure>
+
+<h1 id="cron语法"><a href="#cron语法" class="headerlink" title="cron语法"></a>cron语法</h1><h2 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h2><p>分钟 小时 日期 月份 周 命令<br>如：数字范围 0-59 0-23 1-31 1-12 0-7 echo “hello” &gt;&gt; abc.log  </p>
+<figure class="highlight plain"><figcaption><span>特殊字符的含义</span></figcaption><table><tr><td class="code"><pre><span class="line">*(星号) 代表任何时刻都接受。</span><br><span class="line">,(逗号) 代表分隔时段的意思。</span><br><span class="line">-(减号) 代表一段时间范围内。</span><br><span class="line">&#x2F;n(斜线) 那个 n 代表数字，每隔 n 单位间隔。</span><br></pre></td></tr></table></figure>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><ul>
+<li>每年的五月一日 10:5 执行一次：<code>5 10 1 5 * command（要是执行网址（curl &quot;http://网址&quot;），或者执行其它的直接写路径）</code></li>
+<li>每天的三点，六点各执行一次：<code>00 3,6 * * * command</code></li>
+<li>每天的8:20, 9:20,10:20,11:20各执行一次：<code>20 8-11 * * * command</code></li>
+<li>每五分钟执行一次：<code>*/5 * * * * command</code></li>
+<li>每周一十点执行一次：<code>00 10 * * 1 command</code></li>
+<li>每天 02:00 执行任务：<code>0 2 * * * /bin/sh backup.sh</code></li>
+<li>每天 5:00和17:00执行任务：<code>0 5,17 * * * /scripts/script.sh</code></li>
+<li>每分钟执行一次任务：<code>* * * * * /scripts/script.sh</code></li>
+<li>每周日 17:00 执行任务：<code>0 17 * * sun /scripts/script.sh</code></li>
+<li>每 10min 执行一次任务：<code>*/10 * * * * /scripts/monitor.sh</code></li>
+<li>在特定的某几个月执行任务：<code>* * * jan,may,aug * /script/script.sh</code></li>
+<li>在特定的某几天执行任务：<code>0 17 * * sun,fri /script/scripy.sh（在每周五、周日的17点执行任务）</code></li>
+<li>在某个月的第一个周日执行任务：<code>0 2 * * sun [ $(date +%d) -le 07 ] &amp;&amp; /script/script.sh</code></li>
+<li>每四个小时执行一个任务：<code>0 */4 * * * /scripts/script.sh</code></li>
+<li>每周一、周日执行任务：<code>0 4,17 * * sun,mon /scripts/script.sh</code></li>
+<li>每个30秒执行一次任务：我们没有办法直接通过上诉类似的例子去执行，因为最小的是1min。但是我们可以通过如下的方法。<br><code>* * * * * /scripts/script.sh</code><br><code>* * * * * sleep 30; /scripts/script.sh</code></li>
+<li>多个任务在一条命令中配置<br><code>* * * * * /scripts/script.sh; /scripts/scrit2.sh</code></li>
+<li>每年执行一次任务<br><code>@yearly /scripts/script.sh</code><br>@yearly 类似于“0 0 1 1 *”。它会在每年的第一分钟内执行，通常我们可以用这个发送新年的问候。</li>
+<li>系统重启时执行：<code>@reboot /scripts/script.sh</code></li>
+</ul>
+<h1 id="清除日志命令"><a href="#清除日志命令" class="headerlink" title="清除日志命令"></a>清除日志命令</h1><p>主要目标：每日凌晨前10分钟，将catalina.out日志，copy重命名 catalina.out-2020-02-08.log，清空服务器上的catalina.out日志，</p>
+<p>编译一个shell</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+]]></content>
+      <categories>
+        <category>linux-shell</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-tools-mac-vscode</title>
+    <url>/articles/20200208/6d6ffdd4.html</url>
+    <content><![CDATA[<p>概述:mac下基础操作</p>
+<a id="more"></a>
+<h1 id="软件设置"><a href="#软件设置" class="headerlink" title="软件设置"></a>软件设置</h1><p>支持：JavaScript, TypeScript and Node.js and has a rich ecosystem of extensions for other languages (such as C++, C#, Java, Python, PHP, Go) and runtimes (such as .NET and Unity).</p>
+<h2 id="下载-安装"><a href="#下载-安装" class="headerlink" title="下载 安装"></a>下载 安装</h2><ol>
+<li>下载地址<br><a href="https://code.visualstudio.com/" target="_blank" rel="noopener">https://code.visualstudio.com/</a></li>
+</ol>
+<p>下载后直接运行</p>
+<h2 id="界面操作说明"><a href="#界面操作说明" class="headerlink" title="界面操作说明"></a>界面操作说明</h2><h3 id="界面展示语言设置"><a href="#界面展示语言设置" class="headerlink" title="界面展示语言设置"></a>界面展示语言设置</h3><p>command + shift + p，配置语言 或者 Configure Language，选择后会打开 locale.json 文件,【版本不一样其他类似】</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	<span class="attr">"locale"</span>:<span class="string">"zh-CN"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>界面说明<br>顶部：工具栏<br>最左侧：快捷工具栏【资源管理器、搜索、git、调试、扩展工具】</li>
+<li>关闭更新<br>并将联机社会组中部分关闭</li>
+</ol>
+<h2 id="常用快捷键"><a href="#常用快捷键" class="headerlink" title="常用快捷键"></a>常用快捷键</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">^ &#96; ：调取和关闭终端</span><br><span class="line">⌘ + 、 ⌘ + ：很容易的实现整个页面所有字体大小</span><br><span class="line">⌥ ⇧ F：格式化文件快捷键</span><br></pre></td></tr></table></figure>
+
+<h2 id="git使用"><a href="#git使用" class="headerlink" title="git使用"></a>git使用</h2><p>点击 左侧 打开git 操作窗，列表中即文件变化,输入框可以输入 commit message，上面 对号 是提交 </p>
+<ol>
+<li>界面说明<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">左下角，分支选择</span><br><span class="line">顶部 操作</span><br><span class="line">省略号  是 git更多操作</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="markdown-支持"><a href="#markdown-支持" class="headerlink" title="markdown 支持"></a>markdown 支持</h2><p>  vscode 在没有安装任何插件的情况下是可以直接编写markdown文档的，以及 可以预览</p>
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-tools-mac-sublime text3</title>
+    <url>/articles/20200208/6c7c66a.html</url>
+    <content><![CDATA[<p>概述:mac下基础操作</p>
+<a id="more"></a>
+<h1 id="软件设置"><a href="#软件设置" class="headerlink" title="软件设置"></a>软件设置</h1><h2 id="停止更新提示："><a href="#停止更新提示：" class="headerlink" title="停止更新提示："></a>停止更新提示：</h2><ol>
+<li>preferences→setting→增加如下<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;font_size&quot;: 17,</span><br><span class="line">    &quot;update_check&quot;: false,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+注意：一定要在每一行结束加逗号</li>
+</ol>
+<h2 id="插件安装包"><a href="#插件安装包" class="headerlink" title="插件安装包"></a>插件安装包</h2><h3 id="安装-Package-Control"><a href="#安装-Package-Control" class="headerlink" title="安装 Package Control"></a>安装 Package Control</h3><ol>
+<li>安装</li>
+</ol>
+<ul>
+<li>方式一、在线安装<br>Mac: cmd+shift+p<br>输入;Install Package Control, 按 enter</li>
+<li>方式二、离线安装<br>下载：<a href="https://packagecontrol.io/installation" target="_blank" rel="noopener">https://packagecontrol.io/installation</a> 下载 ： Package Control.sublime-package 即可</li>
+</ul>
+<p>Mac位置:/Users/用户名/Library/Application Support/Sublime Text 3/Installed Packages</p>
+<ol start="2">
+<li>使用<br>重启Sublime3,如果菜单-&gt;Preferences有Package Setting和Package Control就说明安装成功。</li>
+</ol>
+<p>Ctrl+Shift+p输入install选中Install Package回车就可以安装插件。</p>
+<p>一般有些慢，可以在 菜单-&gt;Preferences有Package Setting 的setting user增加</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&quot;debug&quot;: true,</span><br><span class="line">&quot;downloader_precedence&quot;:</span><br><span class="line">&#123;</span><br><span class="line">	&quot;linux&quot;:[&quot;curl&quot;,&quot;urllib&quot;,&quot;wget&quot;],</span><br><span class="line">	&quot;osx&quot;:[&quot;curl&quot;,&quot;urllib&quot;],</span><br><span class="line">	&quot;windows&quot;:[&quot;wininet&quot;]</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装markdown-相关"><a href="#安装markdown-相关" class="headerlink" title="安装markdown 相关"></a>安装markdown 相关</h3><ol>
+<li>安装预览：cmd+ shift + p,输入 install package，注意看左下角在加载，完毕后 出现输出框，输入 markdown preview 查找合适即可</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">test</span><br></pre></td></tr></table></figure>
+
+<p>markdown edit,preview</p>
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-mysql-基础操作-常用数据类型</title>
+    <url>/articles/20200205/93944b35.html</url>
+    <content><![CDATA[<p>摘要：mysql 常用数据类型:数值类型、字符串类型、日期类型</p>
+<a id="more"></a>
+
+<p>更多：<a href="https://www.cnblogs.com/bjlhx/category/998292.html" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/category/998292.html</a></p>
+<h1 id="数值类型"><a href="#数值类型" class="headerlink" title="数值类型"></a>数值类型</h1><p>MySQL中支持5种整数类型，其实很大程度上相同的，只是存储值的大小范围不同而已。其次是浮点类型float和double类型</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">tinyint：占用1个字节，相对于java中的byte</span><br><span class="line">smallint：占用2个字节，相对于java中的short</span><br><span class="line">int：占用4个字节，相对于java中的int【推荐直接使用这个，已于扩展，降低转换】</span><br><span class="line">bigint：占用8个字节，相对于java中的long【自增主键推荐使用】</span><br><span class="line">float：4字节单精度浮点类型，相对于java中的float</span><br><span class="line">double：8字节双精度浮点类型，相对于java中的double</span><br></pre></td></tr></table></figure>
+<h1 id="字符串类型"><a href="#字符串类型" class="headerlink" title="字符串类型"></a>字符串类型</h1><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">char()------定长字符串，最长255个字符。定长会浪费空间</span><br><span class="line">varchar()----变长(不定长)字符串，最长不超过 65535个字节,一般超过255个字节，会使用text类型. 不定长节省空间,剩余空间会留给别的数据使用</span><br><span class="line">text--------长文本类型,最长65535个字节</span><br></pre></td></tr></table></figure>
+
+<p>总结： char、varchar、text都可以表示字符串类型，其区别在于：</p>
+<ol>
+<li>char在保存数据时, 如果存入的字符串长度小于指定的长度n,后面会用空格补全。</li>
+<li>varchar和text保存数据时, 按数据的真实长度存储, 剩余的空间可以留给别的数据用.</li>
+<li>char会造成空间浪费(不足指定长度的会用空格补全), 但是由于不需要计算数据的长度, 因此速度更快。（即浪费空间、节约时间）</li>
+<li>varchar和text但是节省了空间, 但是存储的速度不如char快(因为要计算数据的实际长度)</li>
+</ol>
+<h1 id="日期类型"><a href="#日期类型" class="headerlink" title="日期类型"></a>日期类型</h1><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">date：年月日</span><br><span class="line">time：时分秒</span><br><span class="line">datetime：年月日 时分秒</span><br><span class="line">	5.6后：使用：DEFAULT NOW()、DEFAULT CURRENT_TIMESTAMP设置</span><br><span class="line">timestamp：时间戳，与datetime存储相同的数据。</span><br><span class="line">	1、插入记录时，时间戳字段包含DEFAULT CURRENT_TIMESTAMP，如插入记录时未指定具体时间数据则将该时间戳字段值设置为当前时间</span><br><span class="line">  	2、更新记录时，时间戳字段包含ON UPDATE CURRENT_TIMESTAMP，如更新记录时未指定具体时间数据则将该时间戳字段值设置为当前时间</span><br><span class="line">	CURRENT_TIMESTAMP表示使用CURRENT_TIMESTAMP()函数来获取当前时间，类似于NOW()函数</span><br></pre></td></tr></table></figure>
+<ul>
+<li>timestamp最大表示2038年，而datetime范围是1000~9999</li>
+<li>timestamp在插入数、修改数据时，可以自动更新成系统当前时间</li>
+</ul>
+]]></content>
+      <categories>
+        <category>db-mysql</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-mysql-基础操作-连接、库表操作、字段</title>
+    <url>/articles/20200205/8d83348a.html</url>
+    <content><![CDATA[<p>摘要：mysql 库表操作</p>
+<a id="more"></a>
+
+<p>其他：<a href="https://www.cnblogs.com/bjlhx/category/998292.html" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/category/998292.html</a></p>
+<h1 id="连接登录"><a href="#连接登录" class="headerlink" title="连接登录"></a>连接登录</h1><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 帮助</span></span><br><span class="line">mysql -?</span><br><span class="line"><span class="comment"># 常用参数</span></span><br><span class="line"><span class="comment"># -h 表示服务器名字。localhost表示本地 可以省略</span></span><br><span class="line"><span class="comment"># -P 端口</span></span><br><span class="line"><span class="comment"># -u 表示用户名</span></span><br><span class="line"><span class="comment"># -p 表示密码。直接在-p后面输入密码即可，中间不能有空格。 新版本不能指定，需要手工输入</span></span><br><span class="line"><span class="comment"># -D 指定数据库，权限不够时。</span></span><br></pre></td></tr></table></figure>
+<p>连接 </p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mysql -hlocalhost -uroot -p123456</span><br></pre></td></tr></table></figure>
+<p>进入后，语句以 ; 结尾</p>
+<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><h2 id="库"><a href="#库" class="headerlink" title="库"></a>库</h2><ul>
+<li>查看所有数据库: <code>show databases;</code></li>
+<li>进入数据库: <code>use 库名;</code></li>
+<li>查看数据库使用端口:<code>show variables like &#39;port&#39;;</code></li>
+<li>数据库编码:<code>show variables like &#39;character%&#39;;</code><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">character_set_client      为客户端编码方式；</span><br><span class="line">character_set_connection  为建立连接使用的编码；</span><br><span class="line">character_set_database    为数据库的编码；</span><br><span class="line">character_set_results     为结果集的编码；</span><br><span class="line">character_set_server      为数据库服务器的编码；</span><br></pre></td></tr></table></figure></li>
+<li>查看数据库最大连接数:<code>show variables like &#39;%max_connections%&#39;;</code></li>
+<li>查看数据库当前连接数，并发数:<code>show status like &#39;Threads%&#39;;</code><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Threads_cached : 代表当前此时此刻线程缓存中有多少空闲线程。</span><br><span class="line">Threads_connected :代表当前已建立连接的数量，因为一个连接就需要一个线程，所以也可以看成当前被使用的线程数。</span><br><span class="line">Threads_created :代表从最近一次服务启动，已创建线程的数量。</span><br><span class="line">Threads_running :代表当前激活的（非睡眠状态）线程数。并不是代表正在使用的线程数，有时候连接已建立，但是连接处于sleep状态，这里相对应的线程也是sleep状态。</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ul>
+<h2 id="表"><a href="#表" class="headerlink" title="表"></a>表</h2><ul>
+<li>查看正在使用的数据库：<code>select database();</code></li>
+<li>查看库中所有的表: <code>show tables;</code></li>
+<li>查看表结构: <code>desc/describe 表名</code>;或：<code>show columns from table_name [from database_name];</code></li>
+<li>查看表-列结构: <code>desc/describe 表名 列名;</code></li>
+<li>查看表生成的DDL sql语句:<code>show create table tname;</code></li>
+<li>查看库表信息：<code>SHOW TABLE STATUS [{FROM | IN} db_name] [LIKE &#39;pattern&#39; | WHERE expr]</code><figure class="highlight plain"><figcaption><span>字段含义</span></figcaption><table><tr><td class="code"><pre><span class="line">返回列	说明</span><br><span class="line">Name	表名称</span><br><span class="line">Engine	表的存储引擎</span><br><span class="line">Version	版本</span><br><span class="line">Row_format	行格式</span><br><span class="line">Rows	表中的行数。对于非事务性表，这个值是精确的，对于事务性引擎，这个值通常是估算的。</span><br><span class="line">Avg_row_length	平均每行的大下（字节）</span><br><span class="line">Data_length	表的数据量(单位：字节)</span><br><span class="line">Max_data_length	表可以容纳的最大数据量</span><br><span class="line">Index_length	索引占用磁盘的空间大小</span><br><span class="line">Data_free	标识已分配，但现在未使用的空间，并且包含了已被删除行的空间。</span><br><span class="line">Auto_increment	下一个Auto_increment的值</span><br><span class="line">Create_time	表的创建时间</span><br><span class="line">Update_time	表的最近更新时间</span><br><span class="line">Check_time	最近一次使用 check table 或myisamchk工具检查表的时间</span><br><span class="line">Collation	表的字符集和字符排序规则</span><br><span class="line">Checksum	如果启用，则对整个表的内容计算时的校验和</span><br><span class="line">Create_options	表创建时的其它</span><br><span class="line">Comment	表在创建是添加的注释说明</span><br></pre></td></tr></table></figure>
+或者 <code>select * from information_schema.tables where TABLE_SCHEMA=&#39;库名&#39;</code></li>
+</ul>
+<h2 id="库、表"><a href="#库、表" class="headerlink" title="库、表"></a>库、表</h2><ul>
+<li>显示数据库状态：<code>status;</code></li>
+<li>退出/断开连接:<code>exit;或quit;或 \q;或ctrl+c;</code></li>
+</ul>
+<h1 id="数据库操作"><a href="#数据库操作" class="headerlink" title="数据库操作"></a>数据库操作</h1><h2 id="库操作"><a href="#库操作" class="headerlink" title="库操作"></a>库操作</h2><h3 id="建库"><a href="#建库" class="headerlink" title="建库"></a>建库</h3><p>字符集： 1.若没有显式设置，则自动使用服务器级的配置 ； 2.显式设置：在创建库时指定 ，如下</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">if</span> <span class="keyword">not</span>  <span class="keyword">exists</span>  库名 <span class="keyword">default</span> <span class="keyword">charset</span> utf8 <span class="keyword">collate</span> utf8_general_ci;</span><br></pre></td></tr></table></figure>
+<p>查看 库信息</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.schemata <span class="keyword">where</span> schema_name = <span class="string">'test_sql'</span>; </span><br><span class="line"><span class="comment">-- def	test_sql	utf8	utf8_general_ci</span></span><br></pre></td></tr></table></figure>
+<h3 id="字段约束"><a href="#字段约束" class="headerlink" title="字段约束"></a>字段约束</h3><p>创建表时, 除了要给每个列指定对应的数据类型, 有时也需要给列添加约束。常见的约束有：主键约束、唯一约束、非空约束、外键约束。</p>
+<h4 id="主键-primary-key-【主键索引，聚集索引】"><a href="#主键-primary-key-【主键索引，聚集索引】" class="headerlink" title="主键(primary key)【主键索引，聚集索引】"></a>主键(primary key)【主键索引，聚集索引】</h4><p>主键是数据表中，一行记录的唯一标识。比如学生的编号，人的身份证号;<br>当主键为数值时，为了方便维护，可以设置主键为自增（auto_increment）</p>
+<h4 id="唯一-unique"><a href="#唯一-unique" class="headerlink" title="唯一(unique)"></a>唯一(unique)</h4><p>保证所约束的列必须是唯一的，即不能重复出现，例如：用户注册时，保存的用户名不可以重复。</p>
+<blockquote>
+<ul>
+<li>约束 全称完整性约束，它是关系数据库中的对象，用来存放插入到一个表中一列数据的规则，用来确保数据的准确性和一致性。</li>
+<li>索引 数据库中用的最频繁的操作是数据查询，索引就是为了加速表中数据行的检索而创建的一种分散的数据结构。可以把索引类比成书的目录，有目录的肯定比没有目录的书，更方便查找。</li>
+<li>唯一约束 保证在一个字段或者一组字段里的数据都与表中其它行的对应数据不同。和主键约束不同，唯一约束允许为 NULL，只是只能有一行。</li>
+<li>唯一索引 不允许具有索引值相同的行，从而禁止重复的索引或键值。</li>
+</ul>
+</blockquote>
+<p>在mysql 中唯一约束 与 唯一索引 一样。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 唯一约束</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1(</span><br><span class="line">	<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span> AUTO_INCREMENT  <span class="keyword">COMMENT</span> <span class="string">'主键约束'</span>,</span><br><span class="line">	username <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">UNIQUE</span> <span class="keyword">comment</span> <span class="string">'唯一约束'</span>,</span><br><span class="line">	<span class="keyword">password</span> <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'非空约束'</span>,</span><br><span class="line">	address <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">default</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'默认为空'</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-- 建立唯一索引</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t2(</span><br><span class="line">	<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span> AUTO_INCREMENT  <span class="keyword">COMMENT</span> <span class="string">'主键约束'</span>,</span><br><span class="line">	username <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">default</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'约束'</span>,</span><br><span class="line">	<span class="keyword">password</span> <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'非空约束'</span>,</span><br><span class="line">	address <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">default</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'默认为空'</span></span><br><span class="line">);</span><br><span class="line"><span class="keyword">ALTER</span>  <span class="keyword">TABLE</span>  <span class="string">`t2`</span>  <span class="keyword">ADD</span>  <span class="keyword">UNIQUE</span> (<span class="string">`username`</span> ) ;</span><br></pre></td></tr></table></figure>
+<p>查看 ddl t1,t2均为</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t1`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> AUTO_INCREMENT <span class="keyword">COMMENT</span> <span class="string">'主键约束'</span>,</span><br><span class="line">  <span class="string">`username`</span> <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">COLLATE</span> utf8_bin <span class="keyword">DEFAULT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'唯一约束'</span>,</span><br><span class="line">  <span class="string">`password`</span> <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">COLLATE</span> utf8_bin <span class="keyword">NOT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'非空约束'</span>,</span><br><span class="line">  <span class="string">`address`</span> <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">COLLATE</span> utf8_bin <span class="keyword">DEFAULT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'默认为空'</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>),</span><br><span class="line">  <span class="keyword">UNIQUE</span> <span class="keyword">KEY</span> <span class="string">`username`</span> (<span class="string">`username`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8 <span class="keyword">COLLATE</span>=utf8_bin</span><br></pre></td></tr></table></figure>
+
+<h4 id="非空-not-null"><a href="#非空-not-null" class="headerlink" title="非空(not null)"></a>非空(not null)</h4><p>保证所约束的列必须是不为空的，即在插入记录时，该列必须要赋值，例如：用户注册时，保存的密码不能为空。<br>创建user表, 指定密码不能为空</p>
+<h4 id="外键"><a href="#外键" class="headerlink" title="外键"></a>外键</h4><p>外键是用于表和表之间关系的列</p>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">user</span>(</span><br><span class="line">	<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span> auto_increament  <span class="keyword">COMMENT</span> <span class="string">'主键约束'</span>,</span><br><span class="line">	username <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">unique</span> <span class="keyword">comment</span> <span class="string">'唯一约束'</span>,</span><br><span class="line">	<span class="keyword">password</span> <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'非空约束'</span>,</span><br><span class="line">	address <span class="built_in">varchar</span>(<span class="number">50</span>) <span class="keyword">default</span> <span class="literal">null</span> <span class="keyword">comment</span> <span class="string">'默认为空'</span>,</span><br><span class="line">	...</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="删库"><a href="#删库" class="headerlink" title="删库"></a>删库</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">drop</span> <span class="keyword">database</span> 库名;</span><br></pre></td></tr></table></figure>
+
+<h2 id="表、字段操作"><a href="#表、字段操作" class="headerlink" title="表、字段操作"></a>表、字段操作</h2><h3 id="建表"><a href="#建表" class="headerlink" title="建表"></a>建表</h3><ol>
+<li>是否需要删除<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">drop</span> <span class="keyword">table</span> <span class="keyword">if</span> <span class="keyword">exists</span> 表名;</span><br></pre></td></tr></table></figure></li>
+<li>创建【推荐】<br>create table 表名 (字段设定列表) default charset=utf8 default collate=utf8_bin; <ul>
+<li>字符集：1.若没有显式设置，则自动使用数据库级的配置 ；2.显式设置：在创建表时指定 </li>
+<li>字段列表类型：查看下文</li>
+<li>成功后，可以使用<code>desc 表名</code>或<code>show create table 表名</code>查看</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="keyword">IF</span> <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">`user`</span>(</span><br><span class="line">   <span class="string">`user_id`</span> <span class="built_in">INT</span>(<span class="number">20</span>) AUTO_INCREMENT,</span><br><span class="line">   <span class="string">`user_name`</span> <span class="built_in">VARCHAR</span>(<span class="number">100</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">   <span class="string">`user_age`</span> <span class="built_in">int</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">   <span class="string">`regist_date`</span> <span class="built_in">DATE</span>,</span><br><span class="line">   PRIMARY <span class="keyword">KEY</span> ( <span class="string">`user_id`</span> )</span><br><span class="line">)<span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=utf8 <span class="keyword">DEFAULT</span> <span class="keyword">COLLATE</span>=utf8_unicode_ci  <span class="keyword">COMMENT</span> <span class="string">'用户信息表'</span>;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="删表"><a href="#删表" class="headerlink" title="删表"></a>删表</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">drop</span> <span class="keyword">table</span> <span class="keyword">if</span> <span class="keyword">exists</span> 表名;</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改表名"><a href="#修改表名" class="headerlink" title="修改表名"></a>修改表名</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> 表名 <span class="keyword">rename</span> [<span class="keyword">TO</span>|<span class="keyword">AS</span>] 新表名;</span><br><span class="line"><span class="comment">-- 或</span></span><br><span class="line"><span class="keyword">rename</span> <span class="keyword">table</span> 表名 <span class="keyword">to</span> 新表名;</span><br></pre></td></tr></table></figure>
+
+<h3 id="表字段操作"><a href="#表字段操作" class="headerlink" title="表字段操作"></a>表字段操作</h3><h4 id="改表-加字段"><a href="#改表-加字段" class="headerlink" title="改表-加字段"></a>改表-加字段</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">add</span> <span class="keyword">COLUMN</span> new_name <span class="built_in">VARCHAR</span>(<span class="number">20</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="改表-删段名"><a href="#改表-删段名" class="headerlink" title="改表-删段名"></a>改表-删段名</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> <span class="keyword">user</span> <span class="keyword">drop</span> <span class="keyword">column</span> old_name;</span><br></pre></td></tr></table></figure>
+
+<h4 id="改表-改字段名"><a href="#改表-改字段名" class="headerlink" title="改表-改字段名"></a>改表-改字段名</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">change</span> <span class="keyword">column</span> old_name new_name <span class="built_in">varchar</span>(<span class="number">255</span>) <span class="keyword">default</span> <span class="literal">NULL</span> <span class="keyword">comment</span> <span class="string">'注释'</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="改表-改字段类型或大小"><a href="#改表-改字段类型或大小" class="headerlink" title="改表-改字段类型或大小"></a>改表-改字段类型或大小</h4><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">modify</span> <span class="keyword">column</span> column1  <span class="built_in">decimal</span>(<span class="number">10</span>,<span class="number">1</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span> <span class="keyword">COMMENT</span> <span class="string">'注释'</span>;</span><br></pre></td></tr></table></figure>
+
+<h1 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h1><p>参看：<a href="https://www.cnblogs.com/bjlhx/p/11953939.html" target="_blank" rel="noopener">012-MySQL 索引添加以及优化说明</a></p>
+]]></content>
+      <categories>
+        <category>db-mysql</category>
+      </categories>
+  </entry>
+  <entry>
     <title>001-mysql-主键设计</title>
     <url>/articles/20200205/dd81f687.html</url>
     <content><![CDATA[<p>摘要：MySQL InnoDB数据存储是以B+树索引方式存储<br>存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
 <a id="more"></a>
 
-<h1 id="mysql知识储备"><a href="#mysql知识储备" class="headerlink" title="mysql知识储备"></a>mysql知识储备</h1><ol>
+<h1 id="mysql知识储备"><a href="#mysql知识储备" class="headerlink" title="mysql知识储备"></a>mysql知识储备</h1><p>参看：<a href="http://blog.bjlhx.top/categories/db-mysql-core/">http://blog.bjlhx.top/categories/db-mysql-core/</a></p>
+<ol>
 <li>InnoDB为聚集主键类型的引擎，数据会按照主键进行排序</li>
 <li>mysql 的索引是B+tree，聚集索引使用主键，没有主键默认生成一个隐式主键rowId，辅助索引保存的是主键</li>
 <li>innodb 存储单元是页，每页 16k，数据类型过大，会跨页，溢出等</li>
@@ -14,22 +367,34 @@
 </ol>
 <h1 id="主键定义"><a href="#主键定义" class="headerlink" title="主键定义"></a>主键定义</h1><p>表中经常有一个列或多列的组合，其值能唯一地标识表中的每一行。这样的一列或多列称为表的主键，通过它可强制表的实体完整性。</p>
 <h1 id="主键设计原则"><a href="#主键设计原则" class="headerlink" title="主键设计原则"></a>主键设计原则</h1><p>总原则：根据数据库表的具体使用范围来决定采用不同的表主键定义。</p>
-<p>数据库设计的三大范式<br>◆ 第一范式（1NF）：强调的是列的原子性，即列不能够再分成其他几列。简而言之，第一范式就是无重复的列</p>
-<p>◆ 第二范式（2NF）：首先要满足它是1NF，另外还需要包含两部分内容：一是表必须有一个主键；二是没有包含在主键中的列必须完全依赖于主键，而不能只依赖于主键的一部分。简而言之，第二范式就是非主属性非部分依赖于主关键字</p>
-<p>◆ 第三范式（3NF）：首先是 2NF，另外非主键列必须直接依赖于主键，不能存在传递依赖。即不能存在：非主键列 A 依赖于非主键列 B，非主键列 B 依赖于主键的情况。简而言之，第三范式（3NF）要求一个数据库表中不包含已在其它表中已包含的非主关键字信息。</p>
-<p>反范式主键的设计原则<br>◆ 主键应当是对用户没有意义的。业务上的‘主键’可以通过唯一键（Unique Key）或唯一索引（Unique Index）和其它约束条件实现</p>
-<p>◆ 主键应该是单列的，以便提高连接和筛选操作的效率</p>
-<p>◆ 不要更新主键。实际上，因为主键除了惟一地标识一行之外再没有其他的用途了，所以也就没有理由去对它更新。另外，主键的值通常不重用，意味着记录被删除后，该主键值不再使用</p>
-<p>◆ 主键不应包含动态变化的数据，如时间戳、创建时间列、修改时间列等</p>
-<p>◆ 主键应当由计算机自动生成。</p>
-<p>反范式跟范式所要求的正好相反，在反范式的设计模式，我们可以允许适当的数据的冗余，用这个冗余去取操作数据时间的缩短。本质上就是用空间来换取时间，把数据冗余在多个表中，当查询时可以减少或者是避免表之间的关联（手册中也有禁止三表以上 JOIN 的条款）。<br>但需要注意的是，采用代理主键是为了避免业务逻辑变化导致主键变更，以及提高 JOIN 效率等。但在实际查询中，数据查询还是需要通过业务上的唯一键进行匹配的，而不应该将代理主键作为查询条件，尤其不能将代理主键作为查询条件输入项提供给用户。</p>
-<p>总体来说，实际应用中应当具体问题具体分析，结合范式和反范式两种设计思想。对数据一致性和完整性较高、而对查询效率要求并不严格的地方，应当更倾向于遵从范式；而类似分布式、高并发集群的场景，则应当更考虑反范式的设计方案。具体主键的选取原则与策略，请参考文章 Choose a Primary Key: Natural or Surrogate<br>————————————————<br>版权声明：本文为CSDN博主「丁永辉」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。<br>原文链接：<a href="https://blog.csdn.net/qq_24891153/article/details/100187824" target="_blank" rel="noopener">https://blog.csdn.net/qq_24891153/article/details/100187824</a></p>
-<ol>
-<li>尽量单列，提高连接和筛选效率</li>
-<li>不包含动态变化的数据（时间戳，创建、修改时间列）</li>
-<li>由计算机自动生成（选取合适的生成策略）</li>
-<li>非必要情况不要更新MySQL主键</li>
-</ol>
+<p>数据库设计的三大范式</p>
+<ul>
+<li><p>第一范式（1NF）：指在关系模型中，对于添加的一个规范要求，所有的域都应该是原子性的，即数据库表的每一列都是不可分割的原子数据项，而不能是集合，数组，记录等非原子数据项。<br>即实体中的某个属性有多个值时，必须拆分为不同的属性。在符合第一范式（1NF）表中的每个域值只能是实体的一个属性或一个属性的一部分。简而言之，第一范式就是无重复的域。</p>
+</li>
+<li><p>第二范式（2NF）：首先要满足它是1NF，另外还需要包含两部分内容：一是表必须有一个主键；二是没有包含在主键中的列必须完全依赖于主键，而不能只依赖于主键的一部分。简而言之，第二范式就是非主属性非部分依赖于主关键字</p>
+</li>
+<li><p>第三范式（3NF）：首先是 2NF，另外非主键列必须直接依赖于主键，不能存在传递依赖。即不能存在：非主键列 A 依赖于非主键列 B，非主键列 B 依赖于主键的情况。简而言之，第三范式（3NF）要求一个数据库表中不包含已在其它表中已包含的非主关键字信息。</p>
+</li>
+</ul>
+<p>反范式主键的设计原则</p>
+<ul>
+<li>主键应当是对用户没有意义的。业务上的‘主键’可以通过唯一键（Unique Key）或唯一索引（Unique Index）和其它约束条件实现</li>
+<li>主键应该是单列的，以便提高连接和筛选操作的效率</li>
+<li>不要更新主键。实际上，因为主键除了惟一地标识一行之外再没有其他的用途了，所以也就没有理由去对它更新。另外，主键的值通常不重用，意味着记录被删除后，该主键值不再使用</li>
+<li>主键不应包含动态变化的数据，如时间戳、创建时间列、修改时间列等</li>
+<li>主键应当由计算机自动生成。</li>
+</ul>
+<p>反范式跟范式所要求的正好相反，在反范式的设计模式，可以允许适当的数据的冗余，用这个冗余去取操作数据时间的缩短。<br>本质上就是用空间来换取时间，把数据冗余在多个表中，当查询时可以减少或者是避免表之间的关联（手册中也有禁止三表以上 JOIN 的条款）。</p>
+<p>但需要注意的是，采用代理主键是为了避免业务逻辑变化导致主键变更，以及提高 JOIN 效率等。但在实际查询中，数据查询还是需要通过业务上的唯一键进行匹配的，<br>而不应该将代理主键作为查询条件，尤其不能将代理主键作为查询条件输入项提供给用户。</p>
+<p>总体来说，实际应用中应当具体问题具体分析，结合范式和反范式两种设计思想。<br>对数据一致性和完整性较高、而对查询效率要求并不严格的地方，应当更倾向于遵从范式；而类似分布式、高并发集群的场景，则应当更考虑反范式的设计方案。</p>
+<h2 id="确保主键的无意义性"><a href="#确保主键的无意义性" class="headerlink" title="确保主键的无意义性"></a>确保主键的无意义性</h2><p>在开发过程中，有意义的字段例如“用户登录信息表”将“登录名”（英文名）作为主键，“订单表”中将“订单编号”作为主键，如此设计主键一般都是没什么问题，因为将这些主键基本不具有“意义更改”的可能性。</p>
+<p>但是，也有一些例外的情况，例如“订单表”需要支持需求“订单可以作废，并重新生成订单，而且订单号要保持原订单号一致”，那将“订单编号”作为主键就满足不了要求了。</p>
+<p>因此在使用具有实际意义的字段作为主键时，需要考虑是否存在这种可能性。</p>
+<p>要用代理主键，不要使用业务主键。任何一张表，强烈建议不要使用有业务含义的字段充当主键。我们通常都是在表中单独添加一个整型的编号充当主键字段。</p>
+<h2 id="采用整型主键"><a href="#采用整型主键" class="headerlink" title="采用整型主键"></a>采用整型主键</h2><p>主键通常都是整数，不建议使用字符串当主键。（如果主键是用于集群式服务，可以采用字符串类型）</p>
+<h2 id="减少主键的变动"><a href="#减少主键的变动" class="headerlink" title="减少主键的变动"></a>减少主键的变动</h2><p>主键的值通常都不允许修改，除非本记录被删除。</p>
+<h2 id="避免重复使用主键"><a href="#避免重复使用主键" class="headerlink" title="避免重复使用主键"></a>避免重复使用主键</h2><p>主键的值通常不重用，意味着记录被删除后，该主键值不再使用。</p>
+<h2 id="主键字段定义区分"><a href="#主键字段定义区分" class="headerlink" title="主键字段定义区分"></a>主键字段定义区分</h2><p>主键不要直接定义成【id】，而要加上前缀，定义成【表名id】或者【表名_id】</p>
 <h1 id="主键设计的常用方案"><a href="#主键设计的常用方案" class="headerlink" title="主键设计的常用方案"></a>主键设计的常用方案</h1><h2 id="自增ID"><a href="#自增ID" class="headerlink" title="自增ID"></a>自增ID</h2><ul>
 <li><p>方案：数据库设置：AUTO_INCREMENT</p>
 </li>
@@ -40,7 +405,8 @@
 </ul>
 <ol>
 <li>数据库自动编号，速度快，而且是增量增长，聚集型主键按顺序存放，对于检索非常有利。</li>
-<li>数字型，占用空间小，易排序，在程序中传递方便。</li>
+<li>数字型，占用空间小，易排序，在程序中传递方便。<br>同样数据量的情况下，自增id主键的数据量是字符串主键的1/2，对于考虑成本的公司来说无疑是一件好事，并且数据量小对备份还原数据都有大大的好处。</li>
+<li>Mysql会按照键值的大小进行顺序存放，如果设置自增id为主键，这个时候主键是按照一种紧凑的接近顺序写入的方式进行存储数据。<br>如果用其他字段作为主键的话，此时Mysql不得不为了将新记录插到合适位置而移动数据，甚至目标页面可能已经被回写到磁盘上而从缓存中清掉，<br>此时又要从磁盘上读回来，这增加了很多额外的开销，同时频繁的移动、分页操作造成了大量的碎片。</li>
 </ol>
 <ul>
 <li>缺点：</li>
@@ -49,9 +415,12 @@
 <li>不支持水平分片架构，水平分片的设计当中，这种方法显然不能保证全局唯一。</li>
 <li>表锁<br>在MySQL5.1.22之前，InnoDB自增值是通过其本身的自增长计数器来获取值，该实现方式是通过表锁机制来完成的（AUTO-INC LOCKING）。<br>锁不是在每次事务完成后释放，而是在完成对自增长值插入的SQL语句后释放，要等待其释放才能进行后续操作。<br>比如说当表里有一个auto_increment字段的时候，innoDB会在内存里保存一个计数器用来记录auto_increment的值，当插入一个新行数据时，<br>就会用一个表锁来锁住这个计数器，直到插入结束。如果大量的并发插入，表锁会引起SQL堵塞。<br>在5.1.22之后，InnoDB为了解决自增主键锁表的问题，引入了参数innodb_autoinc_lock_mode：<br>0：通过表锁的方式进行，也就是所有类型的insert都用AUTO-inc locking（表锁机制）。<br>1：默认值，对于simple insert 自增长值的产生使用互斥量对内存中的计数器进行累加操作，对于bulk insert 则还是使用表锁的方式进行。<br>2：对所有的insert-like 自增长值的产生使用互斥量机制完成，性能最高，并发插入可能导致自增值不连续，可能会导致Statement 的 Replication 出现不一致，使用该模式，需要用 Row Replication的模式。</li>
 <li>可能不连续</li>
+<li>当系统与其他系统集成时，需要数据导入时，很难保证原系统的ID不发生主键冲突。</li>
+<li>如果其他系统主键不是数字型，会导致修改主键数据类型，导致其他相关表的修改。</li>
 </ol>
-<h2 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h2><ul>
-<li><p>方案：应用程序UUID</p>
+<h2 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h2><p>UUID是指在一台机器上生成的数字，它保证对在同一时空中的所有机器都是唯一的。在UUID的算法中，可能会用到诸如网卡MAC地址，IP，主机名，进程ID等信息以保证其独立性。</p>
+<ul>
+<li><p>方案：mysql uuid()函数，应用程序UUID函数</p>
 </li>
 <li><p>使用场景：不推荐使用，针对mysql缺点过于严重</p>
 </li>
@@ -70,7 +439,39 @@
 <li>针对InnoDB引擎会徒增IO压力，InnoDB为聚集主键类型的引擎，数据会按照主键进行排序，由于UUID的无序性，InnoDB会产生巨大的IO压力。InnoDB主键索引和数据存储位置相关（簇类索引），uuid 主键可能会引起数据位置频繁变动，严重影响性能。</li>
 <li>UUID长度过长，一个UUID占用128个比特（16个字节）。主键索引KeyLength长度过大，而影响能够基于内存的索引记录数量，进而影响基于内存的索引命中率，而基于硬盘进行索引查询性能很差。严重影响数据库服务器整体的性能表现。</li>
 </ol>
-<h2 id="分布式方案"><a href="#分布式方案" class="headerlink" title="分布式方案"></a>分布式方案</h2><pre><code>待续</code></pre>]]></content>
+<h2 id="自建的id生成器"><a href="#自建的id生成器" class="headerlink" title="自建的id生成器"></a>自建的id生成器</h2><p>当数据量比较大，又是分布式架构的时候，可能需要考虑各种分库分表方案了。<br>自建id生成器，可以保证全局唯一，可以参考snowflake的算法（18位）方案，具体实施也可以根据自身业务进行调整算法。其次需要考虑的就是服务的高可用。</p>
+<h2 id="业务编号做主键"><a href="#业务编号做主键" class="headerlink" title="业务编号做主键"></a>业务编号做主键</h2><ul>
+<li><p>优点<br>此方法就是采用实际业务中的唯一字段的“编号”作为主键设计，这在小型的项目中是推荐这样做的，因为这可以使项目比较简单化，</p>
+</li>
+<li><p>缺点：<br>但在使用中却可能带来一些麻烦，比如要进行编号修改”时，可能要涉及到很多相关联的其他表，后果很严重”;或“业务要求允许编号重复时”</p>
+</li>
+</ul>
+<h2 id="max加1"><a href="#max加1" class="headerlink" title="max加1"></a>max加1</h2><ul>
+<li><p>优点：<br>由于自动编号存在那些问题，采用自己生成，同样是数字型的，只是把自动增长去掉了，采用在Insert时，读取Max值后加一，这种方法可 以避免自动编号的问题，</p>
+</li>
+<li><p>缺点：<br>但也存在一个效率问题，如果记录非常大的话，那么Max()也会影响效率的;更严重的是并发性问题，如果同时有两人读到相同的Max后，加一后插入的ID值会重复。</p>
+</li>
+</ul>
+<h2 id="自制加一"><a href="#自制加一" class="headerlink" title="自制加一"></a>自制加一</h2><ul>
+<li><p>优点：<br>考虑Max加一的效率后，采用自制加一，也就是建一个特别的表，字段为：表名，当前序列值。这样在往表中插入值时，先从此表中找到相应表的最大值后加 一，进行插入，<br>也可能会存在并发处理，这个并发处理，我们可以采用lock线程的方式来避免，在生成此值的时，先Lock，取到值以后，再unLock出来，这样不会有两人同时生成了。<br>这比Max加一的速度要快多了。</p>
+</li>
+<li><p>缺点：<br>但同样存在一个问题：在与其他系统集成时，脱离了系统中的生成方法后，很麻 烦保证自制表中的最大值与导入后的保持一致，而且数字型都存在老数据的导入问题。<br>因此在“自制加一”中可以把主键设为字符型的。字符型的 自制加一我倒是蛮推荐的，应该字符型主键可以应付很多我们意想不到的情况。</p>
+</li>
+</ul>
+<h1 id="主键的选取建议"><a href="#主键的选取建议" class="headerlink" title="主键的选取建议"></a>主键的选取建议</h1><p>此处的分布式主要指 分库分表。非应用分布式</p>
+<ol>
+<li><p>非分布式架构直接套用自增id做主键</p>
+</li>
+<li><p>小规模分布式架构用uuid或者自增id+步长做主键</p>
+</li>
+<li><p>大规模分布式架构用自建的id生成器做主键，参考twitter的[snowflake算法][2]</p>
+</li>
+</ol>
+<p>（1）单实例或者单节点组：<br>经过500W、1000W的单机表测试，自增ID相对UUID来说，自增ID主键性能高于UUID，磁盘存储费用比UUID节省一半的钱。所以在单实例上或者单节点组上，使用自增ID作为首选主键。</p>
+<p>（2）分布式架构场景：<br>20个节点组下的小型规模的分布式场景，为了快速实现部署，可以采用多花存储费用、牺牲部分性能而使用UUID主键快速部署；</p>
+<p>20到200个节点组的中等规模的分布式场景，可以采用自增ID+步长的较快速方案。</p>
+<p>200以上节点组的大数据下的分布式场景，可以借鉴类似twitter雪花算法构造的全局自增ID作为主键。</p>
+]]></content>
       <categories>
         <category>db-mysql</category>
       </categories>
