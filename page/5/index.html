@@ -158,12 +158,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">9</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">14</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">36</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">51</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -220,7 +220,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200202/20b74871.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200210/6998e040.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -234,7 +234,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200202/20b74871.html" class="post-title-link" itemprop="url">05-存储引擎层-innodb框架-表空间-ibd</a>
+            <a href="/articles/20200210/6998e040.html" class="post-title-link" itemprop="url">001-tomcat-日志分割三种方法</a>
         </h1>
 
         <div class="post-meta">
@@ -243,24 +243,18 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-02-02 08:42:20" itemprop="dateCreated datePublished" datetime="2020-02-02T08:42:20+08:00">2020-02-02</time>
+              <time title="创建时间：2020-02-10 20:10:58 / 修改时间：21:53:32" itemprop="dateCreated datePublished" datetime="2020-02-10T20:10:58+08:00">2020-02-10</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
-                    <span itemprop="name">db-mysql-core</span>
+                  <a href="/categories/tomcat/" itemprop="url" rel="index">
+                    <span itemprop="name">tomcat</span>
                   </a>
                 </span>
             </span>
@@ -276,10 +270,16 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：<br>innodb文件系统是由一些log和每个表的ibd（16K的整数倍）等文件组成的。内部结构如下。</p>
+          <p>概述:tomcat-日志分割三种方法<br>三种方式均有优缺点，</p>
+<ul>
+<li>cronolog：需要在主机安装软件</li>
+<li>log4j：方便使用，但是不能删除</li>
+<li>crontab：需要有对应目录权限</li>
+</ul>
+<p>采取cronolog、log4j缺点：已经做好对应主机镜像，大范围使用，在应用系统级别修改，所有使用者会参与修改；<br>采用crontab，crontab不需要安装，检测linux默认自带安装。正好部署时使用shell脚本，此时只需在脚本中嵌入执行crontab脚本即可。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200202/20b74871.html#more" rel="contents">
+              <a class="btn" href="/articles/20200210/6998e040.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -303,7 +303,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200202/e9a15921.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200208/a16096f7.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -317,7 +317,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200202/e9a15921.html" class="post-title-link" itemprop="url">04-存储引擎层-innodb框架-磁盘上的结构-表空间</a>
+            <a href="/articles/20200208/a16096f7.html" class="post-title-link" itemprop="url">003-shell-crontab定时任务</a>
         </h1>
 
         <div class="post-meta">
@@ -327,14 +327,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-02 07:30:44" itemprop="dateCreated datePublished" datetime="2020-02-02T07:30:44+08:00">2020-02-02</time>
+              <time title="创建时间：2020-02-08 15:10:01" itemprop="dateCreated datePublished" datetime="2020-02-08T15:10:01+08:00">2020-02-08</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
+                <time title="修改时间：2020-02-10 21:53:32" itemprop="dateModified" datetime="2020-02-10T21:53:32+08:00">2020-02-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -342,8 +342,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
-                    <span itemprop="name">db-mysql-core</span>
+                  <a href="/categories/linux-shell/" itemprop="url" rel="index">
+                    <span itemprop="name">linux-shell</span>
                   </a>
                 </span>
             </span>
@@ -359,10 +359,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：<br>物理存储， InnoDB 里的所有表数据，都以索引（聚簇索引+二级索引）的形式存储起来，索引包含了表数据。</p>
+          <p>摘要：有时需要操作系统统，定时做一些任务，解决一些问题。<br>通过crontab 命令，我们可以在固定的间隔时间执行指定的系统指令或 shell script脚本。时间间隔的单位可以是分钟、小时、日、月、周及以上的任意组合。这个命令非常适合周期性的日志分析或数据备份等工作。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200202/e9a15921.html#more" rel="contents">
+              <a class="btn" href="/articles/20200208/a16096f7.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -386,7 +386,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200201/4ced7854.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200208/6d6ffdd4.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -400,7 +400,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200201/4ced7854.html" class="post-title-link" itemprop="url">03-存储引擎层、InnoDB 架构</a>
+            <a href="/articles/20200208/6d6ffdd4.html" class="post-title-link" itemprop="url">002-tools-mac-vscode</a>
         </h1>
 
         <div class="post-meta">
@@ -410,14 +410,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-01 19:19:50" itemprop="dateCreated datePublished" datetime="2020-02-01T19:19:50+08:00">2020-02-01</time>
+              <time title="创建时间：2020-02-08 13:59:07" itemprop="dateCreated datePublished" datetime="2020-02-08T13:59:07+08:00">2020-02-08</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
+                <time title="修改时间：2020-02-10 21:53:32" itemprop="dateModified" datetime="2020-02-10T21:53:32+08:00">2020-02-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -425,8 +425,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
-                    <span itemprop="name">db-mysql-core</span>
+                  <a href="/categories/tools/" itemprop="url" rel="index">
+                    <span itemprop="name">tools</span>
                   </a>
                 </span>
             </span>
@@ -442,10 +442,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：物理存储文件结构</p>
+          <p>概述:mac下基础操作</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200201/4ced7854.html#more" rel="contents">
+              <a class="btn" href="/articles/20200208/6d6ffdd4.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -469,7 +469,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200201/73b4253b.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200208/6c7c66a.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -483,7 +483,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200201/73b4253b.html" class="post-title-link" itemprop="url">02-Server服务层</a>
+            <a href="/articles/20200208/6c7c66a.html" class="post-title-link" itemprop="url">001-tools-mac-sublime text3</a>
         </h1>
 
         <div class="post-meta">
@@ -493,14 +493,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-01 17:19:47" itemprop="dateCreated datePublished" datetime="2020-02-01T17:19:47+08:00">2020-02-01</time>
+              <time title="创建时间：2020-02-08 09:09:21" itemprop="dateCreated datePublished" datetime="2020-02-08T09:09:21+08:00">2020-02-08</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
+                <time title="修改时间：2020-02-10 21:53:32" itemprop="dateModified" datetime="2020-02-10T21:53:32+08:00">2020-02-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -508,8 +508,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
-                    <span itemprop="name">db-mysql-core</span>
+                  <a href="/categories/tools/" itemprop="url" rel="index">
+                    <span itemprop="name">tools</span>
                   </a>
                 </span>
             </span>
@@ -525,10 +525,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：Server服务层聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。</p>
+          <p>概述:mac下基础操作</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200201/73b4253b.html#more" rel="contents">
+              <a class="btn" href="/articles/20200208/6c7c66a.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -552,7 +552,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200201/3a03a839.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200205/93944b35.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -566,7 +566,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200201/3a03a839.html" class="post-title-link" itemprop="url">01-网络连接层</a>
+            <a href="/articles/20200205/93944b35.html" class="post-title-link" itemprop="url">003-mysql-基础操作-常用数据类型</a>
         </h1>
 
         <div class="post-meta">
@@ -576,14 +576,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-01 16:20:17" itemprop="dateCreated datePublished" datetime="2020-02-01T16:20:17+08:00">2020-02-01</time>
+              <time title="创建时间：2020-02-05 21:19:44" itemprop="dateCreated datePublished" datetime="2020-02-05T21:19:44+08:00">2020-02-05</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
+                <time title="修改时间：2020-02-10 21:53:32" itemprop="dateModified" datetime="2020-02-10T21:53:32+08:00">2020-02-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -591,8 +591,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
-                    <span itemprop="name">db-mysql-core</span>
+                  <a href="/categories/db-mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql</span>
                   </a>
                 </span>
             </span>
@@ -608,14 +608,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：数据库三层架构</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">网络层</span><br><span class="line">  ↓</span><br><span class="line">server层</span><br><span class="line">  ↓</span><br><span class="line">存储层</span><br></pre></td></tr></table></figure>
-<p>存储层：mysql作为一个插件式的数据库，在存储层支持多种引擎，譬如默认的innodb，和之前版本默认的MyIsam。由不同的引擎提供相同的接口给server层调用，来完成数据的增删改查。</p>
-<p>server层：是mysql比较复杂的地方，里面包含了大量的逻辑，譬如语义分析、查询优化、日志、缓存等等。</p>
-<p>网络层：主要是提供socket连接。</p>
+          <p>摘要：mysql 常用数据类型:数值类型、字符串类型、日期类型</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200201/3a03a839.html#more" rel="contents">
+              <a class="btn" href="/articles/20200205/93944b35.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -639,7 +635,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/11/">11</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -707,14 +703,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">36</span>
+          <span class="site-state-item-count">51</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">14</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

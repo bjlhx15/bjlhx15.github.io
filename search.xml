@@ -1,6 +1,374 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>001-mac安装、工具vscode配置、工程目录</title>
+    <url>/articles/20200214/769cb3c4.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p><a href="https://www.cnblogs.com/bjlhx/p/11940108.html" target="_blank" rel="noopener">001-mac搭建Python开发环境、Anaconda、zsh兼容</a></p>
+<h2 id="检测安装情况"><a href="#检测安装情况" class="headerlink" title="检测安装情况"></a>检测安装情况</h2><p>一般默认安装了 py2</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># py 3 版本检测</span></span><br><span class="line">python3 -V</span><br><span class="line"><span class="comment"># py 2 版本检测</span></span><br><span class="line">python2 -V</span><br><span class="line"><span class="comment"># Anaconda 版本检测</span></span><br><span class="line">conda --version</span><br></pre></td></tr></table></figure>
+
+<h2 id="vscodoe安装Python插件"><a href="#vscodoe安装Python插件" class="headerlink" title="vscodoe安装Python插件"></a>vscodoe安装Python插件</h2><p>搜索后安装“Python”即可,成功后重启</p>
+<p>如果你同时安装了多个版本的Python（如Python2.7，Python3.x和Anaconda），你可以通过点击左下角的语言（这里的Python x.x.x）或在命令盘中选择select interpreter来切换Python解释器。VSCode默认用PEP8标准来格式化Python代码，但你也可以选用其他标准。</p>
+<h1 id="python项目工程结构"><a href="#python项目工程结构" class="headerlink" title="python项目工程结构"></a>python项目工程结构</h1><p>参看几个比较流行的python开源项目<br><a href="https://github.com/pallets/flask" target="_blank" rel="noopener">flask</a><br><a href="https://github.com/psf/requests" target="_blank" rel="noopener">requests</a><br><a href="https://github.com/nvbn/thefuck" target="_blank" rel="noopener">thefuck</a><br><a href="https://github.com/docker/compose" target="_blank" rel="noopener">compose</a><br><a href="https://github.com/tensorflow/tensorflow" target="_blank" rel="noopener">tensorflow</a><br><a href="https://github.com/django/django" target="_blank" rel="noopener">django</a></p>
+<p>如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Project&#x2F;</span><br><span class="line">|-- bin&#x2F;    存放项目的一些可执行文件，或 script&#x2F;。</span><br><span class="line">|   |-- foo</span><br><span class="line">|</span><br><span class="line">|-- project&#x2F; 存放项目的所有源代码。(1) 源代码中的所有模块、包都应该放在此目录。不要置于顶层目录。(2) 其子目录tests&#x2F;存放单元测试代码； (3) 程序的入口最好命名为main.py。</span><br><span class="line">|   |-- __init__.py</span><br><span class="line">|   |-- main.py   </span><br><span class="line">|   |-- moduleA</span><br><span class="line">|   |   |-- __init__.py</span><br><span class="line">|   |   |-- packageA.py</span><br><span class="line">|   |-- moduleB</span><br><span class="line">|   |   |-- __init__.py</span><br><span class="line">|   |   |-- packageB.py</span><br><span class="line">|</span><br><span class="line">|-- tests&#x2F;</span><br><span class="line">|   |-- __init__.py</span><br><span class="line">|   |-- test_main.py</span><br><span class="line">|</span><br><span class="line">|-- docs&#x2F; 文档</span><br><span class="line">|   |-- conf.py</span><br><span class="line">|   |-- abc.rst</span><br><span class="line">|</span><br><span class="line">|-- setup.py  安装、部署、打包的脚本</span><br><span class="line">|-- requirements.txt 存放软件依赖的外部Python包列表</span><br><span class="line">|-- README  说明</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://stackoverflow.com/questions/193161/what-is-the-best-project-structure-for-a-python-application" target="_blank" rel="noopener">查看</a></p>
+]]></content>
+      <categories>
+        <category>python-syntax</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-ab压力测试之post与get请求</title>
+    <url>/articles/20200214/8dd4d804.html</url>
+    <content><![CDATA[<p>摘要：使用ab检测指定地址 处理问题能力。</p>
+<a id="more"></a>
+
+<h1 id="模拟get请求"><a href="#模拟get请求" class="headerlink" title="模拟get请求"></a>模拟get请求</h1><p>直接在url后面带参数即可</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ab -c 10 -n 10 http://www.test.api.com/?gid=2</span><br></pre></td></tr></table></figure>
+<h1 id="模拟post请求"><a href="#模拟post请求" class="headerlink" title="模拟post请求"></a>模拟post请求</h1><h2 id="application-x-www-form-urlencoded"><a href="#application-x-www-form-urlencoded" class="headerlink" title="application/x-www-form-urlencoded"></a>application/x-www-form-urlencoded</h2><p>在当前目录下创建一个文件post.txt,编辑文件post.txt写入</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">cid&#x3D;4&amp;status&#x3D;1</span><br></pre></td></tr></table></figure>
+<p>相当于post传递cid,status参数</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ab -n 100  -c 10 -p <span class="string">'post.txt'</span> -T <span class="string">'application/x-www-form-urlencoded'</span> <span class="string">'http://test.api.com/ttk/auth/info/'</span></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>test-ab</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>007-高性能网站建设笔记-12移除重读脚本、13配置ETag、14使用ajax</title>
+    <url>/articles/20200214/96280786.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="12移除重读脚本"><a href="#12移除重读脚本" class="headerlink" title="12移除重读脚本"></a>12移除重读脚本</h1><h1 id="13配置ETag"><a href="#13配置ETag" class="headerlink" title="13配置ETag"></a>13配置ETag</h1><p>[Pragma、Expires、Cache-Control、max-age、Last-Modified、用户刷新访问、避免过度304]（<a href="https://www.cnblogs.com/bjlhx/p/10338625.html）" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/p/10338625.html）</a></p>
+<h1 id="14使用ajax"><a href="#14使用ajax" class="headerlink" title="14使用ajax"></a>14使用ajax</h1>]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>006-高性能网站建设笔记-09减少DNS查找、10精简javscript、11避免重定向</title>
+    <url>/articles/20200214/d6bed999.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="09减少DNS查找"><a href="#09减少DNS查找" class="headerlink" title="09减少DNS查找"></a>09减少DNS查找</h1><p>DNS 域名解析也会耗时。</p>
+<h1 id="10精简javscript"><a href="#10精简javscript" class="headerlink" title="10精简javscript"></a>10精简javscript</h1><p>混淆：也能优化注释和空白，但是注意混淆可能会使代码出现错误</p>
+<p>压缩和精简：推荐压缩，会使变量名，方法名变短，减少带宽，增加下载速度，解析速度。</p>
+<h1 id="11避免重定向"><a href="#11避免重定向" class="headerlink" title="11避免重定向"></a>11避免重定向</h1><p>重定向会增加http请求次数</p>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>004-高性能网站建设笔记-05样式表放在顶部、06脚本放在底部</title>
+    <url>/articles/20200213/372b80cc.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="05样式表放在顶部【必须】"><a href="#05样式表放在顶部【必须】" class="headerlink" title="05样式表放在顶部【必须】"></a>05样式表放在顶部【必须】</h1><p>将样式表放在 head中，在html规范中，也明确规定Link需出现下head中，不限次数</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">link</span> <span class="attr">href</span>=<span class="string">"//storage.jd.com/sy-static.jd.com/1564972561844_index.min.css"</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<p>避免了白屏和无样式内容的闪烁问题</p>
+<h1 id="06脚本放在底部"><a href="#06脚本放在底部" class="headerlink" title="06脚本放在底部"></a>06脚本放在底部</h1><p>DOM 加载是顺序加载<a href="http://blog.bjlhx.top/categories/html_jd_css">more</a></p>
+<p>如果脚本在页面头部，可能会造成，页面阻塞。</p>
+<h2 id="并行下载-无意义，会发生脚本阻塞下载"><a href="#并行下载-无意义，会发生脚本阻塞下载" class="headerlink" title="并行下载-无意义，会发生脚本阻塞下载"></a>并行下载-无意义，会发生脚本阻塞下载</h2><p>如果页面编写了 script 标签，那么每个脚本都会产生一个http请求，进而进行下载。</p>
+<p>在http 1.1规范，建议浏览器从每个主机名并行下载两个组件。简单理解，默认同时下载两个文件。</p>
+<p>增加并行下载数量：可以简单使用CNAME（DNS别名）来将组件分别放到多个主机域名中。</p>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>增加了带宽以及cpu的使用</p>
+<h2 id="脚本阻塞下载"><a href="#脚本阻塞下载" class="headerlink" title="脚本阻塞下载"></a>脚本阻塞下载</h2><p>并行下载组件的优点多多，但是，在下载脚本时并行下载实际上是被禁用的–即使用了不同的主机名，浏览器也不会启动其他的下载。<br>原因：<br>1、脚本可能使用了document.write来修改页面内容，因此浏览器会等待，以确保页面能够恰当的布局。<br>2、为了保证脚本能够按照正确的顺序执行。</p>
+<p>如果并行下载多个脚本，就无法保证响应是按照特定顺序到达浏览器的。如后面的先下载，结果后面的执行了，但内部有依赖于上一个脚本的代码，或导致js错误</p>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>005-高性能网站建设笔记-07避免CSS表达式、08使用外部的js和css</title>
+    <url>/articles/20200213/ac31f31.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="07避免CSS表达式"><a href="#07避免CSS表达式" class="headerlink" title="07避免CSS表达式"></a>07避免CSS表达式</h1><p>浏览器兼容，大部分不支持css表达式</p>
+<h1 id="08使用外部的js和css"><a href="#08使用外部的js和css" class="headerlink" title="08使用外部的js和css"></a>08使用外部的js和css</h1><h2 id="内联和外置"><a href="#内联和外置" class="headerlink" title="内联和外置"></a>内联和外置</h2><ul>
+<li>内联：默认的script 引入</li>
+<li>外置：动态加载 脚本<br>切割公共部分，适当选择使用外部js和css<figure class="highlight js"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">doOnload</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">  setTimeout(<span class="string">"downloadComponents()"</span>,<span class="number">10</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">window</span>.onload=doOnload;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">doenloadComponents</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">  downloadJS(<span class="string">"ss"</span>);</span><br><span class="line">  downloadCSS(<span class="string">"aaa"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">downloadJS</span>(<span class="params">url</span>)</span>&#123;</span><br><span class="line">  <span class="keyword">var</span> elem = <span class="built_in">document</span>.createElement(<span class="string">"script"</span>);</span><br><span class="line">  elem.src = url;</span><br><span class="line">  <span class="built_in">document</span>.body.appendChild(elem);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">downloadCSS</span>(<span class="params">url</span>)</span>&#123;</span><br><span class="line">  <span class="keyword">var</span> elem = <span class="built_in">document</span>.createElement(<span class="string">"link"</span>);</span><br><span class="line">  elem.rel = <span class="string">"stylesheet"</span>;</span><br><span class="line">  elem.type = <span class="string">"text/css"</span>;</span><br><span class="line">  elem.href = url;</span><br><span class="line">  <span class="built_in">document</span>.body.appendChild(elem);</span><br><span class="line">&#125;</span><br><span class="line">&lt;<span class="regexp">/script&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-高性能网站建设笔记-03添加Expires头、04压缩组件</title>
+    <url>/articles/20200213/457472c2.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="03添加Expires头-【推荐Cache-Control】"><a href="#03添加Expires头-【推荐Cache-Control】" class="headerlink" title="03添加Expires头-【推荐Cache-Control】"></a>03添加Expires头-【推荐Cache-Control】</h1><h2 id="添加Expires头和Cache-Control"><a href="#添加Expires头和Cache-Control" class="headerlink" title="添加Expires头和Cache-Control"></a>添加Expires头和Cache-Control</h2><p>关于gzip压缩、http缓存控制和缓存校验[Pragma、Expires、Cache-Control、max-age、Last-Modified、用户刷新访问、避免过度304]（<a href="https://www.cnblogs.com/bjlhx/p/10338625.html）" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/p/10338625.html）</a></p>
+<p>可以参看，大部分站点会将变更较少的图片、js、css等设置成缓存30天以上</p>
+<h1 id="04压缩组件"><a href="#04压缩组件" class="headerlink" title="04压缩组件"></a>04压缩组件</h1><h2 id="压缩的是什么"><a href="#压缩的是什么" class="headerlink" title="压缩的是什么"></a>压缩的是什么</h2><p>主要压缩静态资源：html 文档、js、css、xml、json等</p>
+<p>压缩成本：花费额外的CPU 周期完成压缩，配置文件大于一个常规值开始压缩，如：1M 或 2M</p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>nginx开启压缩：<a href="https://www.cnblogs.com/bjlhx/p/12034531.html" target="_blank" rel="noopener">006-nginx.conf详解-error_page 使用、压缩</a></p>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-分析Chrome的瀑布流（Waterfall）</title>
+    <url>/articles/20200213/961373d8.html</url>
+    <content><![CDATA[<p>摘要：当需要调试网页或分析网站性能时，我们往往会F12打开浏览器控制台，查看网络请求，看网页加载了哪些资源，以及对应的请求方式（Method）、状态码（Status）、资源类型（Type）、大小（Size）、耗费的时间（Time）等。</p>
+<p>如果某个资源耗费的时间比较长，需要深入分析时，则需要看：瀑布流（Waterfall），在Waterfall中可以看出时间具体花在了哪些部分。</p>
+<!-- maore -->
+
+<h1 id="解说"><a href="#解说" class="headerlink" title="解说"></a>解说</h1><p>打开用chrome console，可以看到如下</p>
+<p><img src="/images/post/performance-web/chrome-console.jpg" alt=""></p>
+<p>可以看到页面加载的时间窗口。此时可以将鼠标放置 右侧的waterfall上，可以查看具体耗时</p>
+<p><img src="/images/post/performance-web/chrome-console2.jpg" alt=""></p>
+<h2 id="瀑布流中各项指标含义如下："><a href="#瀑布流中各项指标含义如下：" class="headerlink" title="瀑布流中各项指标含义如下："></a>瀑布流中各项指标含义如下：</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Queueing：浏览器将资源放入队列时间，比如：遇到更高优先级的请求或请求并发超过6了。</span><br><span class="line">Stalled：因放入队列时间而发生的停滞时间。</span><br><span class="line">Proxy negotiation：与代理服务器协商时间。</span><br><span class="line">DNS Lookup：DNS解析时间，浏览器需要将域名转换成IP。</span><br><span class="line">Initial Connection：在浏览器发送请求前，需要建立HTTP连接的时间。</span><br><span class="line">SSL：如果网站使用了HTTPS，这个就是浏览器与服务器建立安全性连接的时间。</span><br><span class="line">Request sent：请求发送的时间。</span><br><span class="line">Waiting (TTFB)：等待服务端返回数据的时间，这个时间受制于服务端处理性能。</span><br><span class="line">Content Download：浏览器下载资源的时间，这个时间受制于文件大小和带宽。</span><br></pre></td></tr></table></figure>
+
+<p>如何优化，请参看：<a href="http://blog.bjlhx.top/categories/performance-web">http://blog.bjlhx.top/categories/performance-web</a></p>
+]]></content>
+      <categories>
+        <category>performance</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-高性能网站建设笔记-01减少http请求、02使用内容发布网络CDN</title>
+    <url>/articles/20200213/481fe23c.html</url>
+    <content><![CDATA[<p>摘要：减少http请求：图片地图、css scripts、内联图片和脚本、样式表的合并</p>
+<a id="more"></a>
+
+<h1 id="减少http请求"><a href="#减少http请求" class="headerlink" title="减少http请求"></a>减少http请求</h1><h2 id="图片地图-【不常用】"><a href="#图片地图-【不常用】" class="headerlink" title="图片地图-【不常用】"></a>图片地图-【不常用】</h2><p>多个图片合成一个，根据区域不同触发不同操作。<br>或者一个图片有多个区域触发不同操作，不用将图片拆成多个<br>如，导航栏 有帮助、关于、设置等图标，变成一个图片，根据坐标触发不同操作。</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"planets.gif"</span> <span class="attr">alt</span>=<span class="string">"Planets"</span> <span class="attr">usemap</span>=<span class="string">"#planetmap"</span> /&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">map</span> <span class="attr">name</span>=<span class="string">"planetmap"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">area</span> <span class="attr">href</span>=<span class="string">"sun.htm"</span> <span class="attr">shape</span>=<span class="string">"rect"</span> <span class="attr">coords</span>=<span class="string">"0,0,110,260"</span>&gt;</span>Sun<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">area</span> <span class="attr">href</span>=<span class="string">"mercur.htm"</span> <span class="attr">shape</span>=<span class="string">"circle"</span> <span class="attr">coords</span>=<span class="string">"129,161,10"</span>&gt;</span>Mercury<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">area</span> <span class="attr">href</span>=<span class="string">"venus.htm"</span> <span class="attr">shape</span>=<span class="string">"circle"</span> <span class="attr">coords</span>=<span class="string">"180,139,14"</span>&gt;</span>Venus<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">map</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="css-scripts-【即雪碧图，常用】"><a href="#css-scripts-【即雪碧图，常用】" class="headerlink" title="css scripts-【即雪碧图，常用】"></a>css scripts-【即雪碧图，常用】</h2><p>多个图片合成一个，根据区域不同触发不同操作。只不过是 使用css脚本控制，需要用到background-position属性</p>
+<p>主要适用：页面背景、按钮、导航栏、链接图标等</p>
+<p>图片截取都是从左上角的（0,0）坐标开始，所有需要把所需的图片移动想左、上移动，移动到所截取的图片的位置即可</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">    <span class="tag">&lt;<span class="name">style</span>&gt;</span></span><br><span class="line"><span class="css">        <span class="comment">/*空格  ：后代选择器（所有后代）*/</span></span></span><br><span class="line"><span class="css">        <span class="selector-id">#container</span> <span class="selector-tag">div</span>&#123;</span></span><br><span class="line">            width: 25px;</span><br><span class="line">            height: 25px;</span><br><span class="line">            color: red;</span><br><span class="line">            background-image: url("../../img/icon.gif");</span><br><span class="line">            background-repeat: no-repeat;</span><br><span class="line">        &#125;</span><br><span class="line"><span class="css">        <span class="selector-id">#div2</span>&#123;<span class="attribute">background-position</span>:-<span class="number">42px</span> <span class="number">0</span>; &#125;</span></span><br><span class="line"><span class="css">        <span class="selector-id">#div3</span>&#123;  <span class="attribute">background-position</span>: -<span class="number">165px</span> -<span class="number">25px</span>; &#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;/<span class="name">style</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">title</span>&gt;</span>雪碧图<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"container"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"div2"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"div3"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="内联图片-【适当使用】"><a href="#内联图片-【适当使用】" class="headerlink" title="内联图片-【适当使用】"></a>内联图片-【适当使用】</h2><p>将图片编码，通html放置在一起，已达到降低请求次数。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&lt;img src&#x3D;&quot;data:[mediatype][;base64],base64data&gt;  data - 取得数据的协定名称</span><br><span class="line"></span><br><span class="line">mediatype:image&#x2F;png - 数据类型名称</span><br><span class="line">base64 - 数据的编码方法</span><br><span class="line">base64data - 编码后的数据</span><br><span class="line">: , ; - data URI scheme 指定的分隔符号</span><br></pre></td></tr></table></figure>
+<p>缺点</p>
+<ol>
+<li>浏览器不会缓存内联图片资源</li>
+<li>存在大小限制</li>
+<li>base64编码会使图片大小增大，导致网页整体下载速度减慢</li>
+</ol>
+<h2 id="合并脚本和样式表"><a href="#合并脚本和样式表" class="headerlink" title="合并脚本和样式表"></a>合并脚本和样式表</h2><p>样式表-每个页面统一成一个<br>脚本-适当合并，尽量减少脚本数量</p>
+<h1 id="使用内容发布网络CDN"><a href="#使用内容发布网络CDN" class="headerlink" title="使用内容发布网络CDN"></a>使用内容发布网络CDN</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>CDN(Content Delivery Network)是指内容分发网络，也称为内容传送网络</p>
+<h2 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h2><p>归纳起来，CDN具有以下主要功能：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">(1)节省骨干网带宽，减少带宽需求量；</span><br><span class="line">(2)提供服务器端加速，解决由于用户访问量大造成的服务器过载问题；</span><br><span class="line">(3)服务商能使用Web Cache技术在本地缓存用户访问过的Web页面和对象，实现相同对象的访问无须占用主干的出口带宽，并提高用户访问因特网页面的相应时间的需求；</span><br><span class="line">(4)能克服网站分布不均的问题，并且能降低网站自身建设和维护成本；</span><br><span class="line">(5)降低“通信风暴”的影响，提高网络访问的稳定性。</span><br></pre></td></tr></table></figure>
+
+<h2 id="基本原理"><a href="#基本原理" class="headerlink" title="基本原理"></a>基本原理</h2><p>CDN的基本原理是广泛采用各种缓存服务器，将这些缓存服务器分布到用户访问相对集中的地区或网络中，在用户访问网站时，利用全局负载技术将用户的访问指向距离最近的工作正常的缓存服务器上，由缓存服务器直接响应用户请求。</p>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-使用、参数讲解</title>
+    <url>/articles/20200213/629a2186.html</url>
+    <content><![CDATA[<p>摘要：使用ab检测指定地址 处理问题能力。</p>
+<a id="more"></a>
+
+<h1 id="AB的简介"><a href="#AB的简介" class="headerlink" title="AB的简介"></a>AB的简介</h1><h2 id="命令常用参数"><a href="#命令常用参数" class="headerlink" title="命令常用参数"></a>命令常用参数</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ab --<span class="built_in">help</span></span><br><span class="line"><span class="comment"># -n requests Number of requests to perform //本次测试发起的总请求数</span></span><br><span class="line"><span class="comment"># -c concurrency Number of multiple requests to make　　 //一次产生的请求数（或并发数）</span></span><br><span class="line"><span class="comment"># -t timelimit Seconds to max. wait for responses　　　　//测试所进行的最大秒数，默认没有时间限制。</span></span><br><span class="line"><span class="comment"># -r Don't exit on socket receive errors.    // 抛出异常继续执行测试任务</span></span><br><span class="line"><span class="comment"># -p postfile File containing data to POST　　//包含了需要POST的数据的文件，文件格式如“p1=1&amp;p2=2”.使用方法是 -p 111.txt</span></span><br><span class="line"><span class="comment"># -T content-type Content-type header for POSTing</span></span><br><span class="line"><span class="comment"># //POST数据所使用的Content-type头信息，如 -T “application/x-www-form-urlencoded” 。 （配合-p）</span></span><br><span class="line"><span class="comment"># -v verbosity How much troubleshooting info to print</span></span><br><span class="line"><span class="comment"># //设置显示信息的详细程度 – 4或更大值会显示头信息， 3或更大值可以显示响应代码(404, 200等), 2或更大值可以显示警告和其他信息。 -V 显示版本号并退出。</span></span><br><span class="line"><span class="comment"># -C attribute Add cookie, eg. -C “c1=1234,c2=2,c3=3” (repeatable)</span></span><br><span class="line"><span class="comment"># //-C cookie-name=value 对请求附加一个Cookie:行。 其典型形式是name=value的一个参数对。此参数可以重复，用逗号分割。</span></span><br><span class="line"><span class="comment"># 提示：可以借助session实现原理传递 JSESSIONID参数， 实现保持会话的功能，如-C ” c1=1234,c2=2,c3=3, JSESSIONID=FF056CD16DA9D71CB131C1D56F0319F8″ 。</span></span><br><span class="line"><span class="comment"># -w Print out results in HTML tables　　//以HTML表的格式输出结果。默认时，它是白色背景的两列宽度的一张表。</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ab -c 500 -n 5000 http://jd.com/</span><br></pre></td></tr></table></figure>
+<p>说明：发送 5000个请求，每次发送500 个</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ab -c 500 -n 5000 http://jd.com/</span><br><span class="line"><span class="comment"># This is ApacheBench, Version 2.3 &lt;$Revision: 1826891 $&gt;</span></span><br><span class="line"><span class="comment"># Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/</span></span><br><span class="line"><span class="comment"># Licensed to The Apache Software Foundation, http://www.apache.org/</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Benchmarking jd.com (be patient)</span></span><br><span class="line"><span class="comment"># Completed 500 requests</span></span><br><span class="line"><span class="comment"># Completed 1000 requests</span></span><br><span class="line"><span class="comment"># Completed 1500 requests</span></span><br><span class="line"><span class="comment"># Completed 2000 requests</span></span><br><span class="line"><span class="comment"># Completed 2500 requests</span></span><br><span class="line"><span class="comment"># Completed 3000 requests</span></span><br><span class="line"><span class="comment"># Completed 3500 requests</span></span><br><span class="line"><span class="comment"># Completed 4000 requests</span></span><br><span class="line"><span class="comment"># Completed 4500 requests</span></span><br><span class="line"><span class="comment"># Completed 5000 requests</span></span><br><span class="line"><span class="comment"># Finished 5000 requests</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># Server Software:        jfe #测试服务器的名字</span></span><br><span class="line"><span class="comment"># Server Hostname:        jd.com  #请求的URL主机名</span></span><br><span class="line"><span class="comment"># Server Port:            80   #请求端口</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Document Path:          / #请求路径</span></span><br><span class="line"><span class="comment"># Document Length:        165 bytes #HTTP响应数据的正文长度</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Concurrency Level:      500   #并发用户数，这是我们设置的参数之一</span></span><br><span class="line"><span class="comment"># Time taken for tests:   14.630 seconds  #所有这些请求被处理完成所花费的总时间 单位秒</span></span><br><span class="line"><span class="comment"># Complete requests:      5000  #总请求数量，这是我们设置的参数之一</span></span><br><span class="line"><span class="comment"># Failed requests:        0     #表示失败的请求数量</span></span><br><span class="line"><span class="comment"># Non-2xx responses:      5000</span></span><br><span class="line"><span class="comment"># Total transferred:      1715000 bytes #所有请求的响应数据长度总和。包括每个HTTP响应数据的头信息和正文数据的长度</span></span><br><span class="line"><span class="comment"># HTML transferred:       825000 bytes  #所有请求的响应数据中正文数据的总和，也就是减去了Total transferred中HTTP响应数据中的头信息的长度</span></span><br><span class="line"><span class="comment"># Requests per second:    341.75 [#/sec] (mean) #吞吐量，计算公式：Complete requests/Time taken for tests  总请求数/处理完成这些请求数所花费的时间</span></span><br><span class="line"><span class="comment"># Time per request:       1463.049 [ms] (mean)   #用户平均请求等待时间，计算公式：Time token for tests/（Complete requests/Concurrency Level）。处理完成所有请求数所花费的时间/（总请求数/并发用户数）</span></span><br><span class="line"><span class="comment"># Time per request:       2.926 [ms] (mean, across all concurrent requests) #服务器平均请求等待时间，计算公式：Time taken for tests/Complete requests，正好是吞吐率的倒数。也可以这么统计：Time per request/Concurrency Level</span></span><br><span class="line"><span class="comment"># Transfer rate:          114.47 [Kbytes/sec] received  #表示这些请求在单位时间内从服务器获取的数据长度，计算公式：Total trnasferred/ Time taken for tests，这个统计很好的说明服务器的处理能力达到极限时，其出口宽带的需求量。</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Connection Times (ms)   #网络消耗时间，</span></span><br><span class="line"><span class="comment">#               min  mean[+/-sd] median   max</span></span><br><span class="line"><span class="comment"># Connect:        9  242 414.5    138    3513</span></span><br><span class="line"><span class="comment"># Processing:    12  407 801.4    158   11468</span></span><br><span class="line"><span class="comment"># Waiting:       12  276 575.5    147    8130</span></span><br><span class="line"><span class="comment"># Total:         26  649 938.0    320   12727</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Percentage of the requests served within a certain time (ms)</span></span><br><span class="line"><span class="comment">#   50%    320    #50%用户请求在320ms内返回</span></span><br><span class="line"><span class="comment">#   66%    359    #60%用户请求在359ms内返回</span></span><br><span class="line"><span class="comment">#   75%    858</span></span><br><span class="line"><span class="comment">#   80%   1009</span></span><br><span class="line"><span class="comment">#   90%   1431    #这是一个衡量点，主要参看指标</span></span><br><span class="line"><span class="comment">#   95%   2478</span></span><br><span class="line"><span class="comment">#   98%   3963    #98%用户请求在3963ms内返回</span></span><br><span class="line"><span class="comment">#   99%   4664</span></span><br><span class="line"><span class="comment">#  100%  12727 (longest request)</span></span><br></pre></td></tr></table></figure>
+<h2 id="关键指标说明"><a href="#关键指标说明" class="headerlink" title="关键指标说明"></a>关键指标说明</h2><p>主要看90% 的请求响应时间</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">TPS吞吐量：请求数&#x2F;请求响应的时间(s) ，即每秒请求数，对应 Request per second一项，tps&#x3D;13.24 req&#x2F;s</span><br><span class="line">响应时间：请求发送到接受到请求的时间差，单位为ms，一般看90%的响应时间，此时RT&#x3D;862ms</span><br><span class="line">并发连接数：每秒服务器端能处理的连接数。并发连接数 &#x3D; 吞吐量*响应时间，并发连接数&#x3D;11.4 req</span><br><span class="line">PV:Page View网页的浏览次数,或者点击量</span><br><span class="line">UV:Unique Visitor,一台ip地址为一个访客。00:00-24:00内相同的客户端只被计算一次</span><br><span class="line">峰值QPS:每天80%的访问集中在20%的时间里，这20%时间叫做峰值时间</span><br><span class="line">( 总PV数 * 80% ) &#x2F; ( 每天秒数 * 20% ) &#x3D; 峰值时间每秒请求数(QPS)</span><br><span class="line">峰值机器数：保证机器数量抗住峰值QPS，机器数 &#x3D; 峰值QPS&#x2F;单台机器QPS</span><br></pre></td></tr></table></figure>
+
+<h2 id="防重放攻击处理"><a href="#防重放攻击处理" class="headerlink" title="防重放攻击处理"></a>防重放攻击处理</h2><p>上述请求没有增加防重放攻击处理，可以尝试请求测试下百度的，</p>
+<p>可以看到 发送了100个，失败了99个，做了重放攻击的处理<br>如</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ab -c 10 -n 100 http://www.baidu.com/</span><br><span class="line">This is ApacheBench, Version 2.3 &lt;<span class="variable">$Revision</span>: 1826891 $&gt;</span><br><span class="line">Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/</span><br><span class="line">Licensed to The Apache Software Foundation, http://www.apache.org/</span><br><span class="line"></span><br><span class="line">Benchmarking www.baidu.com (be patient).....<span class="keyword">done</span></span><br><span class="line"></span><br><span class="line">Server Software:        BWS/1.1</span><br><span class="line">Server Hostname:        www.baidu.com</span><br><span class="line">Server Port:            80</span><br><span class="line"></span><br><span class="line">Document Path:          /</span><br><span class="line">Document Length:        168409 bytes</span><br><span class="line"></span><br><span class="line">Concurrency Level:      10</span><br><span class="line">Time taken <span class="keyword">for</span> tests:   4.660 seconds</span><br><span class="line">Complete requests:      100</span><br><span class="line">Failed requests:        99</span><br><span class="line">   (Connect: 0, Receive: 0, Length: 99, Exceptions: 0)</span><br><span class="line">Total transferred:      16300978 bytes</span><br><span class="line">HTML transferred:       16182926 bytes</span><br><span class="line">Requests per second:    21.46 [<span class="comment">#/sec] (mean)</span></span><br><span class="line">Time per request:       466.012 [ms] (mean)</span><br><span class="line">Time per request:       46.601 [ms] (mean, across all concurrent requests)</span><br><span class="line">Transfer rate:          3415.99 [Kbytes/sec] received</span><br><span class="line"></span><br><span class="line">Connection Times (ms)</span><br><span class="line">              min  mean[+/-sd] median   max</span><br><span class="line">Connect:        7   83  46.2     77     219</span><br><span class="line">Processing:   134  371  76.3    383     775</span><br><span class="line">Waiting:        7   91  40.2     87     205</span><br><span class="line">Total:        141  454  72.9    455     826</span><br><span class="line"></span><br><span class="line">Percentage of the requests served within a certain time (ms)</span><br><span class="line">  50%    455</span><br><span class="line">  66%    477</span><br><span class="line">  75%    488</span><br><span class="line">  80%    496</span><br><span class="line">  90%    509</span><br><span class="line">  95%    585</span><br><span class="line">  98%    654</span><br><span class="line">  99%    826</span><br><span class="line"> 100%    826 (longest request)</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>test-ab</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-安装简介</title>
+    <url>/articles/20200213/ff1f09cb.html</url>
+    <content><![CDATA[<h1 id="AB的简介"><a href="#AB的简介" class="headerlink" title="AB的简介"></a>AB的简介</h1><p>ab是apachebench命令的缩写。Apache Bench 是 Apache 服务器的一个web压力测试工具.</p>
+<p>ab是apache自带的压力测试工具。ab非常实用，它不仅可以对apache服务器进行网站访问压力测试，也可以对或其它类型的服务器进行压力测试。比如nginx、tomcat、IIS等</p>
+<p>ab也是一个命令行工具，对发起负载的本机要求很低，根据ab命令可以创建很多的并发访问线程，模拟多个访问者同时对某一个URL地址进行访问，因此可以用来测试目标服务器的负载压力。缺点就是没有图形化结果，不能监控。</p>
+<h1 id="ab的原理"><a href="#ab的原理" class="headerlink" title="ab的原理"></a>ab的原理</h1><p>　　ab的原理：ab命令会创建多个并发访问线程，模拟多个访问者同时对某一URL地址进行访问。它的测试目标是基于URL的，因此，它既可以用来测试apache的负载压力，也可以测试nginx、lighthttp、tomcat、IIS等其它Web服务器的压力。</p>
+<p>　　ab命令对发出负载的计算机要求很低，它既不会占用很高CPU，也不会占用很多内存。但却会给目标服务器造成巨大的负载，其原理类似CC攻击。自己测试使用也需要注意，否则一次上太多的负载。可能造成目标服务器资源耗完，严重时甚至导致死机</p>
+<h1 id="ab的安装"><a href="#ab的安装" class="headerlink" title="ab的安装"></a>ab的安装</h1><h2 id="linux-上，安装命令："><a href="#linux-上，安装命令：" class="headerlink" title="linux 上，安装命令："></a>linux 上，安装命令：</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum -y install httpd-tools</span><br></pre></td></tr></table></figure>
+<p>查看参数说明：ab –help</p>
+<h2 id="MAC中自带了Apache"><a href="#MAC中自带了Apache" class="headerlink" title="MAC中自带了Apache"></a>MAC中自带了Apache</h2><h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>在使用ab命令时，并发了过高会出现错误：Too many open files，由于系统打开文件数量限制了。</p>
+<ol>
+<li>查看系统打开文件数量<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -a </span><br><span class="line"><span class="comment"># -t: cpu time (seconds)              unlimited</span></span><br><span class="line"><span class="comment"># -f: file size (blocks)              unlimited</span></span><br><span class="line"><span class="comment"># -d: data seg size (kbytes)          unlimited</span></span><br><span class="line"><span class="comment"># -s: stack size (kbytes)             8192</span></span><br><span class="line"><span class="comment"># -c: core file size (blocks)         0</span></span><br><span class="line"><span class="comment"># -v: address space (kbytes)          unlimited</span></span><br><span class="line"><span class="comment"># -l: locked-in-memory size (kbytes)  unlimited</span></span><br><span class="line"><span class="comment"># -u: processes                       1418</span></span><br><span class="line"><span class="comment"># -n: file descriptors                8192</span></span><br></pre></td></tr></table></figure></li>
+<li>修改打开文件数量，修改成1024，<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -n 1024</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>test-ab</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-高性能网站建设笔记-整体规则</title>
+    <url>/articles/20200213/90bc3718.html</url>
+    <content><![CDATA[<p>摘要：web性能优化，指导规则；性能黄金法则：只有10%-20%的最终用户响应时间花在了下载HTML文档上；其余的80%-90%的时间花在了下载页面中的所有组件上。</p>
+<a id="more"></a>
+
+<h1 id="整体规则"><a href="#整体规则" class="headerlink" title="整体规则"></a>整体规则</h1><p>按照优先级排序，不是每个网站要求使用每个规则，但是值得参考。</p>
+<ul>
+<li>规则1——减少HTTP请求- </li>
+<li>规则2——使用内容发布网络- </li>
+<li>规则3——添加Expires头- </li>
+<li>规则4——压缩组件- </li>
+<li>规则5——将样式表放在顶部- </li>
+<li>规则6——将脚本放在底部- </li>
+<li>规则7——避免CSS表达式- </li>
+<li>规则8——使用外部JavaScript和CSS- </li>
+<li>规则9——减少DNS查找- </li>
+<li>规则10——精简JavaScript- </li>
+<li>规则11——避免重定向- </li>
+<li>规则12——移除重复脚本- </li>
+<li>规则13——配置ETag- </li>
+<li>规则14——使AjaX可缓存</li>
+</ul>
+<h1 id="跟踪web页面性能方法"><a href="#跟踪web页面性能方法" class="headerlink" title="跟踪web页面性能方法"></a>跟踪web页面性能方法</h1><p>获取页面耗时，请参看：<a href="http://blog.bjlhx.top/categories/performance">http://blog.bjlhx.top/categories/performance</a> 关于使用Chrome 瀑布流<br>获取接口耗时，请参看：<a href="http://blog.bjlhx.top/categories/test-ab">http://blog.bjlhx.top/categories/test-ab</a> </p>
+<h1 id="http协议概述"><a href="#http协议概述" class="headerlink" title="http协议概述"></a>http协议概述</h1><p>参看：<a href="https://www.cnblogs.com/bjlhx/p/10987051.html" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/p/10987051.html</a></p>
+<p>关于gzip压缩、http缓存控制和缓存校验【Pragma、Expires、Cache-Control、max-age、Last-Modified、用户刷新访问、避免过度304】<br>参看：<a href="https://www.cnblogs.com/bjlhx/p/10338625.html" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/p/10338625.html</a></p>
+<p>nginx开启压缩：<a href="https://www.cnblogs.com/bjlhx/p/12034531.html" target="_blank" rel="noopener">006-nginx.conf详解-error_page 使用、压缩</a></p>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-性能测试方法及性能优化分类</title>
+    <url>/articles/20200213/7add234f.html</url>
+    <content><![CDATA[<p>摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式</p>
+<a id="more"></a>
+
+<h1 id="性能测试方法"><a href="#性能测试方法" class="headerlink" title="性能测试方法"></a>性能测试方法</h1><p>性能测试是一个不断对系统添加访问压力，以获得系统性能指标、最大负载能力、最大压力承受能力的过程。</p>
+<p>性能测试方法：</p>
+<ul>
+<li>性能测试：以系统设计初期规划的性能指标为预期目标，对系统不断施加压力。验证系统在资源可接受范围内，能否达到性能预期。</li>
+<li>负载測试：对系统不断地添加并发请求以添加系统压力，知道系统的某项或多项性能指标达到安全临界值。如某种资源已经呈饱和状态，这是继续对系统施加压力，系统的处理能力不但不提高，反而会下降。</li>
+<li>压力测试：超过安全负载的情况下。对系统继续施加压力，知道系统崩溃或不能再处理请求，一次获得系统最大压力承受能力。</li>
+<li>稳定性测试：被測试系统在特定硬件、软件、网络环境条件下。给系统载入一定业务压力，使系统执行一段较长时间，以此检測系统是否稳定。在不同生成环境、不同一时候间点的请求压力是不均匀的，呈波浪特性。因此为了更好地模拟生产环境，稳定性測试也不应均与地对系统施加压力。</li>
+</ul>
+<h1 id="性能优化分类"><a href="#性能优化分类" class="headerlink" title="性能优化分类"></a>性能优化分类</h1><p>参看现在大多数站点分层架构设计,性能优化可分为：web前端性能优化、应用server性能优化、存储server性能优化。</p>
+<h2 id="web前端性能优化"><a href="#web前端性能优化" class="headerlink" title="web前端性能优化"></a>web前端性能优化</h2><ul>
+<li>浏览器访问优化：降低http请求;使用浏览器缓存;启用压缩;css放在页面最上面、javaScript放在页面最以下;降低Cookie传输</li>
+<li>CDN加速</li>
+<li>反向代理</li>
+</ul>
+<h2 id="应用server性能优化"><a href="#应用server性能优化" class="headerlink" title="应用server性能优化"></a>应用server性能优化</h2><ul>
+<li>内存数据库的使用（Redis、等）</li>
+<li>异步操作（消息队列）</li>
+<li>使用集群（负载均衡）</li>
+<li>代码优化</li>
+</ul>
+<h2 id="存储性能优化"><a href="#存储性能优化" class="headerlink" title="存储性能优化"></a>存储性能优化</h2><ul>
+<li>机械硬盘→固态硬盘</li>
+<li>B+树 vs LSM树</li>
+<li>RAID vs HDFS</li>
+<li>DB表结构设计，索引设计</li>
+<li>elastsearch 合理使用</li>
+</ul>
+]]></content>
+      <categories>
+        <category>performance</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-网站的性能指标及指标测试方法</title>
+    <url>/articles/20200213/ea81502f.html</url>
+    <content><![CDATA[<p>摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式</p>
+<a id="more"></a>
+
+<h1 id="常用网站性能参数"><a href="#常用网站性能参数" class="headerlink" title="常用网站性能参数"></a>常用网站性能参数</h1><h2 id="并发数"><a href="#并发数" class="headerlink" title="并发数"></a>并发数</h2><p>是指系统同时能处理的请求数量，这个也是反应了系统的负载能力。</p>
+<h2 id="响应时间-RT"><a href="#响应时间-RT" class="headerlink" title="响应时间(RT)"></a>响应时间(RT)</h2><p>响应时间是一个系统最重要的指标之一，它的数值大小直接反应了系统的快慢。响应时间是指执行一个请求从开始到最后收到响应数据所花费的总体时间。</p>
+<h2 id="吞吐量-Throughput-TPS"><a href="#吞吐量-Throughput-TPS" class="headerlink" title="吞吐量(Throughput)-TPS"></a>吞吐量(Throughput)-TPS</h2><p>吞吐量是指单位时间内系统能处理的请求数量，体现系统处理请求的能力，这是目前最常用的性能测试指标。</p>
+<p>QPS（每秒查询数）、TPS（每秒事务数）是吞吐量的常用量化指标，另外还有HPS（每秒HTTP请求数）。</p>
+<p>跟吞吐量有关的几个重要是：并发数、响应时间。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">QPS（TPS）&#x3D; 并发数 &#x2F; 平均响应时间</span><br></pre></td></tr></table></figure>
+
+<h3 id="QPS和TPS有什么区别？"><a href="#QPS和TPS有什么区别？" class="headerlink" title="QPS和TPS有什么区别？"></a>QPS和TPS有什么区别？</h3><p>TPS是每秒处理的请求数，是统计每秒用户的请求次数。QPS是每秒处理的查询次数，是统计每秒对于服务器查询的次数。用户一次请求，tps+1，而可能该请求中对应3次服务器查询次数，则qps+3。</p>
+<p>例如输入一个url，返回html内容，对应查询服务器一次，而有可能在html中再次出现一个url，还需查询同样的服务器一次，则此时QPS&gt;TPS。</p>
+<h2 id="页面浏览量-PV"><a href="#页面浏览量-PV" class="headerlink" title="页面浏览量(PV)"></a>页面浏览量(PV)</h2><p>PV即Page View的简写, 即页面浏览量或点击量，用户每次刷新即被计算一次。<br>单台服务器每天PV计算：<br>公式1：每天总PV = QPS * 3600 * 6<br>公式2：每天总PV = QPS * 3600 * 8</p>
+<h2 id="网站独立访客-UV"><a href="#网站独立访客-UV" class="headerlink" title="网站独立访客(UV)"></a>网站独立访客(UV)</h2><p>UV即Unique Visitor的简写，访问您网站的一台电脑客户端为一个访客。00:00-24:00内相同的客户端只被计算一次<br>服务器数量。<br>机器：峰值时间每秒QPS / 单台机器的QPS = 需要的机器<br>机器：ceil( 每天总PV / 单台服务器每天总PV )</p>
+<h2 id="峰值QPS和机器计算公式"><a href="#峰值QPS和机器计算公式" class="headerlink" title="峰值QPS和机器计算公式"></a>峰值QPS和机器计算公式</h2><p>原理：每天80%的访问集中在20%的时间里，这20%时间叫做峰值时间<br>公式：( 总PV数 * 80% ) / ( 每天秒数 * 20% ) = 峰值时间每秒请求数(QPS)<br>机器：峰值时间每秒QPS / 单台机器的QPS = 需要的机器</p>
+<p>例子：<br>每天300万PV的在单台机器上，这台机器需要多少QPS？<br>答：( 3000000 * 0.8 ) / (86400 * 0.2 ) = 139 (QPS)<br>如果一台机器的QPS是58，需要几台机器来支持？<br>答：139 / 58 = 3</p>
+<h1 id="如何评估网站性能参数"><a href="#如何评估网站性能参数" class="headerlink" title="如何评估网站性能参数"></a>如何评估网站性能参数</h1><h2 id="针对中小型站点"><a href="#针对中小型站点" class="headerlink" title="针对中小型站点"></a>针对中小型站点</h2><ul>
+<li>方式一、使用：ab，可参看：<a href="http://blog.bjlhx.top/categories/test-ab">http://blog.bjlhx.top/categories/test-ab</a></li>
+</ul>
+<p>初步评估 站点TPS等性能参数</p>
+<ul>
+<li>方式二、jemter评估</li>
+</ul>
+<h2 id="大型-对应性能团队"><a href="#大型-对应性能团队" class="headerlink" title="大型-对应性能团队"></a>大型-对应性能团队</h2>]]></content>
+      <categories>
+        <category>performance</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-html，css，js加载顺序</title>
+    <url>/articles/20200212/6bc16603.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+<p>示例：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">head</span> <span class="attr">lang</span>=<span class="string">"en"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">"utf-8"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">title</span>&gt;</span><span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">link</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> <span class="attr">href</span>=<span class="string">"css/*.css"</span> <span class="attr">rel</span>=<span class="string">"external nofollow"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">"js/*.js&gt;&lt;/script&gt;</span></span></span><br><span class="line"><span class="tag"><span class="string">&lt;/head&gt;</span></span></span><br></pre></td></tr></table></figure>
+
+<h1 id="DOM加载"><a href="#DOM加载" class="headerlink" title="DOM加载"></a>DOM加载</h1><p>DOM文档的加载顺序是由上而下的顺序加载；</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">1. 浏览器一边下载HTML网页，一边开始解析</span><br><span class="line">2. 解析过程中，发现&lt;script&gt;标签</span><br><span class="line">3. 暂停解析，网页渲染的控制权转交给JavaScript引擎</span><br><span class="line">4. 如果&lt;script&gt;标签引用了外部脚本，就下载该脚本，否则就直接执行</span><br><span class="line">5. 执行完毕，控制权交还渲染引擎，恢复往下解析HTML网页</span><br></pre></td></tr></table></figure>
+
+<h2 id="DOM加载到link标签"><a href="#DOM加载到link标签" class="headerlink" title="DOM加载到link标签"></a>DOM加载到link标签</h2><p>css文件的加载是与DOM的加载并行的，也就是说，css在加载时Dom还在继续加载构建，而过程中遇到的css样式或者img，则会向服务器发送一个请求，待资源返回后，将其添加到dom中的相对应位置中；</p>
+<h2 id="DOM加载到script标签"><a href="#DOM加载到script标签" class="headerlink" title="DOM加载到script标签"></a>DOM加载到script标签</h2><p>由于js文件不会与DOM并行加载，因此需要等待js整个文件加载完之后才能继续DOM的加载，倘若js脚本文件过大，则可能导致浏览器页面显示滞后，出现“假死”状态，这种效应称之为“阻塞效应”；会导致出现非常不好的用户体验；</p>
+<p>而这个特性也是为什么在js文件中开头需要$(document).ready(function(){})或者（function(){}）或者window.onload,即是让DOM文档加载完成之后才执行js文件，这样才不会出现查找不到DOM节点等问题；</p>
+<p>js阻塞其他资源的加载的原因是：浏览器为了防止js修改DOM树，需要重新构建DOM树的情况出现；</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>html需要等head中所有的js和css加载完成后才会开始绘制，但是html不需要等待放在body最后的js下载执行就会开始绘制,因此将js放在body的最后面，可以避免资源阻塞，同时使静态的html页面迅速显示。将脚本文件都放在网页尾部加载，还有一个好处。在DOM结构生成之前就调用DOM，JavaScript会报错，如果脚本都在网页尾部加载，就不存在这个问题，因为这时DOM肯定已经生成了。</p>
+<p>前提，js是外部脚本；</p>
+<h3 id="defer"><a href="#defer" class="headerlink" title="defer"></a>defer</h3><p>外链的js如果含有defer=”true”属性，将会并行加载js，到页面全部加载完成后才会执行，会按顺序执行。</p>
+<p>defer属性的作用是，告诉浏览器，等到DOM加载完成后，再执行指定脚本。</p>
+<ol>
+<li>浏览器开始解析HTML网页</li>
+<li>解析过程中，发现带有defer属性的script标签</li>
+<li>浏览器继续往下解析HTML网页，同时并行下载script标签中的外部脚本</li>
+<li>浏览器完成解析HTML网页，此时再执行下载的脚本<br>对于内置而不是连接外部脚本的script标签，以及动态生成的script标签，defer属性不起作用。<br>在script标签中添加 defer=“ture”，则会让js与DOM并行加载，待页面加载完成后再执行js文件，这样则不存在阻塞；</li>
+</ol>
+<h3 id="async"><a href="#async" class="headerlink" title="async"></a>async</h3><p>在scirpt标签中添加 async=“ture”，这个属性告诉浏览器该js文件是异步加载执行的，也就是不依赖于其他js和css，也就是说无法保证js文件的加载顺序，但是同样有与DOM并行加载的效果；</p>
+<p>async属性的作用是，使用另一个进程下载脚本，下载时不会阻塞渲染。</p>
+<ol>
+<li>浏览器开始解析HTML网页</li>
+<li>解析过程中，发现带有async属性的script标签</li>
+<li>浏览器继续往下解析HTML网页，同时并行下载script标签中的外部脚本</li>
+<li>脚本下载完成，浏览器暂停解析HTML网页，开始执行下载的脚本</li>
+<li>脚本执行完毕，浏览器恢复解析HTML网页</li>
+</ol>
+<p>同时使用defer和async属性时，defer属性会失效；</p>
+<p>可以将scirpt标签放在body标签之后，这样就不会出现加载的冲突了。</p>
+<p>一般来说，如果脚本之间没有依赖关系，就使用async属性，如果脚本之间有依赖关系，就使用defer属性。如果同时使用async和defer属性，后者不起作用，浏览器行为由async属性决定。</p>
+<p>但是</p>
+]]></content>
+      <categories>
+        <category>html_js_css</category>
+      </categories>
+  </entry>
+  <entry>
     <title>007-shell-编程注意事项、引号区别</title>
     <url>/articles/20200212/b4490d2f.html</url>
     <content><![CDATA[<p>摘要：shell开发时，注意事项</p>
