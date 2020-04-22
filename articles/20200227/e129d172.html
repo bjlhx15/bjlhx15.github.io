@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.bjlhx.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：github：https:&#x2F;&#x2F;github.com&#x2F;bjlhx15&#x2F;framework-middleware.git">
+<meta property="og:type" content="article">
+<meta property="og:title" content="002-数据库分库分表架构与框架">
+<meta property="og:url" content="https://blog.bjlhx.top/articles/20200227/e129d172.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：github：https:&#x2F;&#x2F;github.com&#x2F;bjlhx15&#x2F;framework-middleware.git">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-02-27T06:36:55.000Z">
+<meta property="article:modified_time" content="2020-02-27T12:17:39.535Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.bjlhx.top/articles/20200227/e129d172.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>002-数据库分库分表架构与框架 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">21</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">92</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200227/e129d172.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          002-数据库分库分表架构与框架
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-02-27 14:36:55 / 修改时间：20:17:39" itemprop="dateCreated datePublished" datetime="2020-02-27T14:36:55+08:00">2020-02-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/framework-middleware/" itemprop="url" rel="index">
+                    <span itemprop="name">framework-middleware</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：github：<a href="https://github.com/bjlhx15/framework-middleware.git" target="_blank" rel="noopener">https://github.com/bjlhx15/framework-middleware.git</a></p>
+<a id="more"></a>
+
+<h1 id="分库分表方式"><a href="#分库分表方式" class="headerlink" title="分库分表方式"></a>分库分表方式</h1><h2 id="垂直拆分与水平拆分"><a href="#垂直拆分与水平拆分" class="headerlink" title="垂直拆分与水平拆分"></a>垂直拆分与水平拆分</h2><p>表结构与数据，user</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">id  name  age   gender  address</span><br><span class="line">1   张三1  15    男      北京市大兴区</span><br><span class="line">2   李四2  17    男      北京市海淀区</span><br><span class="line">3   李四3  17    男      北京市海淀区</span><br><span class="line">4   李四4  17    男      北京市海淀区</span><br></pre></td></tr></table></figure>
+
+<h3 id="垂直拆分【纵向拆分】"><a href="#垂直拆分【纵向拆分】" class="headerlink" title="垂直拆分【纵向拆分】"></a>垂直拆分【纵向拆分】</h3><p>表结构拆分，如上分为：</p>
+<ul>
+<li>示例<br>表1，user_base<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">id  name  age   gender  </span><br><span class="line">1   张三1   15    男    </span><br><span class="line">2   李四2   17    男</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<p>表2，user_ext</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">id  address</span><br><span class="line">1    北京市大兴区</span><br><span class="line">2    北京市海淀区</span><br></pre></td></tr></table></figure>
+<ul>
+<li>优点：</li>
+</ul>
+<ol>
+<li>拆分后业务清晰，查分规则明确</li>
+<li>系统之间整合扩展容易</li>
+<li>按照成本、应用等级、应用类型等将表放置在不同的机器上，便于管理</li>
+<li>便于实现动静分离、冷热分离的数据库表的设计模式</li>
+<li>数据维护简单</li>
+</ol>
+<ul>
+<li>缺点</li>
+</ul>
+<ol>
+<li>部分业务表无法关联【join】、只能通过接口方式解决。提高了复杂度</li>
+<li>存在单库、单表性能瓶颈。不易进行数据扩展和性能提升</li>
+<li>事务处理复杂。</li>
+</ol>
+<h3 id="水平拆分"><a href="#水平拆分" class="headerlink" title="水平拆分"></a>水平拆分</h3><p>数据拆分，如上表可分为：</p>
+<ul>
+<li><p>示例<br>表1，user1</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">id  name  age   gender  address</span><br><span class="line">1   张三1  15    男      北京市大兴区</span><br><span class="line">3   李四3  17    男      北京市海淀区</span><br></pre></td></tr></table></figure>
+<p>表2，user2</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">id  name  age   gender  address</span><br><span class="line">2   张三2  15    男      北京市大兴区</span><br><span class="line">4   李四4  17    男      北京市海淀区</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>优点：</p>
+</li>
+</ul>
+<ol>
+<li>单库单表数量级一定，有助于性能的提升</li>
+<li>应用改造少，只需增加路由规则</li>
+<li>提高了系统稳定性和负载能力</li>
+</ol>
+<ul>
+<li>缺点：</li>
+</ul>
+<ol>
+<li>数据分散，使用join较难，性能差</li>
+<li>拆分规则难以抽象</li>
+<li>分片事务的一致性难以解决</li>
+<li>数据扩容的难度和维护量极大</li>
+</ol>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>共同问题：</p>
+<ol>
+<li>分布式事务问题</li>
+<li>跨节点join问题</li>
+<li>存在跨节点合并排序、分页问题</li>
+<li>多数据源管理问题</li>
+</ol>
+<p>如上，垂直拆分，倾向于业务拆分，技术上比较关注水平拆分。。</p>
+<h2 id="使用数据库的三个阶段"><a href="#使用数据库的三个阶段" class="headerlink" title="使用数据库的三个阶段"></a>使用数据库的三个阶段</h2><p>单库单表→单库多表→多库多表</p>
+<h2 id="分库分表适用情况"><a href="#分库分表适用情况" class="headerlink" title="分库分表适用情况"></a>分库分表适用情况</h2><ol>
+<li>数据表瓶颈【mysql 单表5000w数据达到极限】</li>
+<li>数据库吞吐瓶颈</li>
+<li>未来预留设计</li>
+</ol>
+<h1 id="解决实施方案"><a href="#解决实施方案" class="headerlink" title="解决实施方案"></a>解决实施方案</h1><p>主要有三类：客户端分片、代理分片、支持事务的分布式数据库</p>
+<h2 id="客户端分片"><a href="#客户端分片" class="headerlink" title="客户端分片"></a>客户端分片</h2><p>应用端实现，每个应用层直接嵌入分片逻辑，一般一个jar。主要有三种方式:应用层直接实现、通过定制JDBC协议实现、通过定义ORM框架实现。</p>
+<h3 id="应用层直接实现"><a href="#应用层直接实现" class="headerlink" title="应用层直接实现"></a>应用层直接实现</h3><p>直接在应用层，根据分片字段读取分片规则，然后解析分片规则。根据分片规则实现切分的路由逻辑，从应用层直接决定每次操作应该使用哪个数据库实例、数据库以及数据库表。通常实现方式是封装成一个jar。</p>
+<ul>
+<li>优点：简单、快速、方便定位问题</li>
+<li>缺点：业务侵入、产生较多的数据库连接</li>
+</ul>
+<h3 id="通过定制JDBC协议实现"><a href="#通过定制JDBC协议实现" class="headerlink" title="通过定制JDBC协议实现"></a>通过定制JDBC协议实现</h3><p>在jdbc层进行处理，参看sharding jdbc</p>
+<ul>
+<li>优点：业务透明，不侵入</li>
+<li>缺点：需要了解jdbc协议</li>
+</ul>
+<h3 id="通过定义ORM框架实现"><a href="#通过定义ORM框架实现" class="headerlink" title="通过定义ORM框架实现"></a>通过定义ORM框架实现</h3><p>把分片规则实现到orm框架或者通过ORM框架的扩展机制来完成分库分表逻辑。如mybatis，</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">"getUser"</span> <span class="attr">parameterType</span>=<span class="string">"java.util.Map"</span> <span class="attr">resultType</span>=<span class="string">"User"</span>&gt;</span></span><br><span class="line">select * from User_#&#123;index&#125;</span><br><span class="line">where userId=#&#123;userId&#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="代理分片"><a href="#代理分片" class="headerlink" title="代理分片"></a>代理分片</h2><p>在应用层与数据库层中增加一个代理层，把分片的路由规则配置在代理层,代理层对外提供与JDBC兼容的接口给应用层，应用层开发不必关心分片规则。</p>
+<ul>
+<li>优点：应用开发专注业务逻辑</li>
+<li>缺点：增加了代理层，而且数据库部署一般与应用分离。</li>
+</ul>
+<p>框架：Cobar和Mycat</p>
+<h2 id="支持事务的分布式数据库"><a href="#支持事务的分布式数据库" class="headerlink" title="支持事务的分布式数据库"></a>支持事务的分布式数据库</h2><p>如：OceanBase、TiDB，对外提供JDBC接口。</p>
+<h1 id="分库分表的架构设计"><a href="#分库分表的架构设计" class="headerlink" title="分库分表的架构设计"></a>分库分表的架构设计</h1><p>如上，垂直拆分，倾向于业务拆分，技术上比较关注水平拆分。故后续研究是水平拆分</p>
+<h2 id="水平切分方式的路由过程和分片维度"><a href="#水平切分方式的路由过程和分片维度" class="headerlink" title="水平切分方式的路由过程和分片维度"></a>水平切分方式的路由过程和分片维度</h2><h3 id="路由过程"><a href="#路由过程" class="headerlink" title="路由过程"></a>路由过程</h3><p>在表设计时，需要确定对表按照什么样的规则进行分库分表。</p>
+<p>针对输入的请求，通过分库分表规则查找到对应的表和库的过程叫做路由。</p>
+<h3 id="水平切分的分片维度"><a href="#水平切分的分片维度" class="headerlink" title="水平切分的分片维度"></a>水平切分的分片维度</h3><h4 id="按照哈希切片"><a href="#按照哈希切片" class="headerlink" title="按照哈希切片"></a>按照哈希切片</h4><p>对数据分某个字段求哈希，在除以分片总数后取模，取模后相同的数据为一个分片，这种将数据分成多个分片的方法叫哈希分片。</p>
+<p>设计系统时，要充分考虑如何设计数据库的分库分表的路由规则。</p>
+<ul>
+<li>优点：数据分散均匀，数据压力分散的效果比较好</li>
+<li>缺点：查询需求需要聚合处理。</li>
+</ul>
+<h4 id="按照时间切片"><a href="#按照时间切片" class="headerlink" title="按照时间切片"></a>按照时间切片</h4><p>按照指定时间周期进行切片【如按年，按月】，主要取决于数据交易量。</p>
+<p>针对具有明确时间特点的数据进行切分。</p>
+<h2 id="分片后的事务处理机制"><a href="#分片后的事务处理机制" class="headerlink" title="分片后的事务处理机制"></a>分片后的事务处理机制</h2><h3 id="分布式事务"><a href="#分布式事务" class="headerlink" title="分布式事务"></a>分布式事务</h3><p>由于将单表的数据切片后存储在多个数据库甚至多个数据库实例中，所以依靠数据库本身的事务机制不能满足所有场景的需要。</p>
+<p>主流分布式事务解决方案：两阶段提交协议、最大努力保证模式、事务补偿机制</p>
+<h4 id="两阶段提交协议"><a href="#两阶段提交协议" class="headerlink" title="两阶段提交协议"></a>两阶段提交协议</h4><p>将分布式事务分为两个阶段，一个是准备阶段，一个是提交阶段，两个阶段都是由事务管理器发起。</p>
+<p>基于两阶段提交协议，事务管理器能够最大限度地保证跨数据库操作的事务的原子性，是分布式系统环境下最严格的事务实现方法。</p>
+<p>符合J2EE规范的AppServer（如：webSphere、Jboss等）对关系型数据库数据源和消息队列都实现了两阶段提交协议。。只需在使用时配置即可。</p>
+<ul>
+<li>缺点<br>两阶段提交协议，会有性能问题，难以进行水平伸缩，因为在提交事务的过程中，事务管理器需要和每个参与者进行准备和提交的操作的协调，在准备阶段锁定资源，在提交阶段消费资源，但是由于参与者较多，锁定资源和消费资源之间的时间差被拉长，导致响应速度较慢，在此期间产生死锁或者不确定结果的可能性比较大。因此在互联网行业里，为了追求性能的提升，很少时候两阶段提交协议。</li>
+</ul>
+<p>另外，由于两阶段提交协议是阻塞协议，在极端情况下不能快速响应请求方，因此目前有提出过三阶段提交协议，解决了两阶段提交协议的阻塞问题，但仍然需要事务管理器在参与者之间协调，才能完成一个分布式事务。</p>
+<h4 id="最大努力保证模式"><a href="#最大努力保证模式" class="headerlink" title="最大努力保证模式"></a>最大努力保证模式</h4><p>一种常用的保证分布式一致性的模式，最大努力保证模式适用于对一致性要求并不十分严格但是对性能要求较高的场景。</p>
+<p>具体实现，在更新多个资源时，将多个资源的提交尽量延后到最后一刻处理，这样的话，如果业务流程出现问题，则所有的资源更新都可以回滚，事务仍然保持一致性。<br>唯一可能出现问题，在提交多个资源时发生了系统异常，如网络问题，一旦出现这种情况，就需要进行实时补偿，将已提交的事务进行回滚，同TCC模式类似。</p>
+<p>示例：如 涉及两个操作，一个是消息消费，一个是更新数据库，需要保证分布式的一致性。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1、开始消息事务</span><br><span class="line">2、开始数据库事务</span><br><span class="line">3、接收消息</span><br><span class="line">4、更新数据库</span><br><span class="line">5、提交数据库事务</span><br><span class="line">6、提交消息事务</span><br></pre></td></tr></table></figure>
+<p>1-4不是很重要，5、6 发生异常都会回滚，5-6之间异常，导致消息被重发，消息重复消费，需要通过幂等进行处理。</p>
+<p>对于提交顺序，需要充分考虑。如数据库事务中嵌套远程调用事务，且远程调用事务是耗时任务，导致数据库事务拉长，拖垮数据库。</p>
+<h4 id="事务补偿机制"><a href="#事务补偿机制" class="headerlink" title="事务补偿机制"></a>事务补偿机制</h4><p>性能要求比较高场景中，两阶段提交协议不适用，最大努力保证模式会使多个分布式操作互相嵌套，也可能不适合。</p>
+<p>事务补偿机制，提高性能，并且能够尽最大可能地保证事务的最终一致性。</p>
+<p>在数据库分库分表后，如果涉及的多个更新操作在某一个数据库范围内完成，则可以使用数据库内的本地事务保证一致性；对于跨库的多个操作，可通过补偿和重试，使其在一定时间窗口内完成操作。</p>
+<h3 id="事务路由"><a href="#事务路由" class="headerlink" title="事务路由"></a>事务路由</h3>
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.bjlhx.top/articles/20200227/e129d172.html" title="002-数据库分库分表架构与框架">https://blog.bjlhx.top/articles/20200227/e129d172.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20200227/9b0c33d0.html" rel="prev" title="001-分布式id生成">
+      <i class="fa fa-chevron-left"></i> 001-分布式id生成
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20200229/414b8f31.html" rel="next" title="004-图形相似-特征提取算法概述">
+      004-图形相似-特征提取算法概述 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#分库分表方式"><span class="nav-number">1.</span> <span class="nav-text">分库分表方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#垂直拆分与水平拆分"><span class="nav-number">1.1.</span> <span class="nav-text">垂直拆分与水平拆分</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#垂直拆分【纵向拆分】"><span class="nav-number">1.1.1.</span> <span class="nav-text">垂直拆分【纵向拆分】</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#水平拆分"><span class="nav-number">1.1.2.</span> <span class="nav-text">水平拆分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结"><span class="nav-number">1.1.3.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用数据库的三个阶段"><span class="nav-number">1.2.</span> <span class="nav-text">使用数据库的三个阶段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分库分表适用情况"><span class="nav-number">1.3.</span> <span class="nav-text">分库分表适用情况</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#解决实施方案"><span class="nav-number">2.</span> <span class="nav-text">解决实施方案</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#客户端分片"><span class="nav-number">2.1.</span> <span class="nav-text">客户端分片</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#应用层直接实现"><span class="nav-number">2.1.1.</span> <span class="nav-text">应用层直接实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通过定制JDBC协议实现"><span class="nav-number">2.1.2.</span> <span class="nav-text">通过定制JDBC协议实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通过定义ORM框架实现"><span class="nav-number">2.1.3.</span> <span class="nav-text">通过定义ORM框架实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代理分片"><span class="nav-number">2.2.</span> <span class="nav-text">代理分片</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#支持事务的分布式数据库"><span class="nav-number">2.3.</span> <span class="nav-text">支持事务的分布式数据库</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#分库分表的架构设计"><span class="nav-number">3.</span> <span class="nav-text">分库分表的架构设计</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#水平切分方式的路由过程和分片维度"><span class="nav-number">3.1.</span> <span class="nav-text">水平切分方式的路由过程和分片维度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#路由过程"><span class="nav-number">3.1.1.</span> <span class="nav-text">路由过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#水平切分的分片维度"><span class="nav-number">3.1.2.</span> <span class="nav-text">水平切分的分片维度</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#按照哈希切片"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">按照哈希切片</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#按照时间切片"><span class="nav-number">3.1.2.2.</span> <span class="nav-text">按照时间切片</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分片后的事务处理机制"><span class="nav-number">3.2.</span> <span class="nav-text">分片后的事务处理机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#分布式事务"><span class="nav-number">3.2.1.</span> <span class="nav-text">分布式事务</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#两阶段提交协议"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">两阶段提交协议</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#最大努力保证模式"><span class="nav-number">3.2.1.2.</span> <span class="nav-text">最大努力保证模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#事务补偿机制"><span class="nav-number">3.2.1.3.</span> <span class="nav-text">事务补偿机制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事务路由"><span class="nav-number">3.2.2.</span> <span class="nav-text">事务路由</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">92</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>
