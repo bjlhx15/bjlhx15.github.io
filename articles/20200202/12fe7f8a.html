@@ -19,7 +19,7 @@
 <script id="hexo-configurations">
   var NexT = window.NexT || {};
   var CONFIG = {
-    hostname: new URL('https://blog.bjlhx.top').hostname,
+    hostname: new URL('https://blog.itag.top').hostname,
     root: '/',
     scheme: 'Pisces',
     version: '7.7.0',
@@ -49,29 +49,29 @@
   <meta name="description" content="摘要：InnoDB表空间文件.ibd文件内部存储单元是页，初始大小为 96K，而InnoDB默认页大小为 16K。当然页大小也可以通过 innodb_page_size 配置为 4K, 8K…64K 等。 如果用二进制打开，以16K划分一页。在ibd文件中，0-16KB偏移量即为0号数据页，16KB-32KB的为1号数据页，以此类推。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="06-存储引擎层-innodb框架-表空间-段、区、页与组织结构">
-<meta property="og:url" content="https://blog.bjlhx.top/articles/20200202/12fe7f8a.html">
+<meta property="og:url" content="https://blog.itag.top/articles/20200202/12fe7f8a.html">
 <meta property="og:site_name" content="Blog">
 <meta property="og:description" content="摘要：InnoDB表空间文件.ibd文件内部存储单元是页，初始大小为 96K，而InnoDB默认页大小为 16K。当然页大小也可以通过 innodb_page_size 配置为 4K, 8K…64K 等。 如果用二进制打开，以16K划分一页。在ibd文件中，0-16KB偏移量即为0号数据页，16KB-32KB的为1号数据页，以此类推。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/006/tablespace.webp">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/mysql-disk.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/file-0k.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/001/file-1k.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/page-struct.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/insupermum.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/index-page-extents1.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/ibdfile.webp">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/index-page-extents2.png">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/index-struct.webp">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/fseg.webp">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/db-mysql/bptreepagestruct.webp">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/006/tablespace.webp">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/001/mysql-disk.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/001/file-0k.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/001/file-1k.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/page-struct.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/insupermum.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/index-page-extents1.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/ibdfile.webp">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/index-page-extents2.png">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/index-struct.webp">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/fseg.webp">
+<meta property="og:image" content="https://blog.itag.top/images/post/db-mysql/bptreepagestruct.webp">
 <meta property="article:published_time" content="2020-02-02T01:30:07.000Z">
 <meta property="article:modified_time" content="2020-02-05T08:57:25.610Z">
 <meta property="article:author" content="李宏旭">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://blog.bjlhx.top/images/post/db-mysql/006/tablespace.webp">
+<meta name="twitter:image" content="https://blog.itag.top/images/post/db-mysql/006/tablespace.webp">
 
-<link rel="canonical" href="https://blog.bjlhx.top/articles/20200202/12fe7f8a.html">
+<link rel="canonical" href="https://blog.itag.top/articles/20200202/12fe7f8a.html">
 
 
 <script id="page-configurations">
@@ -235,7 +235,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200202/12fe7f8a.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200202/12fe7f8a.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -595,7 +595,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://blog.bjlhx.top/articles/20200202/12fe7f8a.html" title="06-存储引擎层-innodb框架-表空间-段、区、页与组织结构">https://blog.bjlhx.top/articles/20200202/12fe7f8a.html</a>
+    <a href="https://blog.itag.top/articles/20200202/12fe7f8a.html" title="06-存储引擎层-innodb框架-表空间-段、区、页与组织结构">https://blog.itag.top/articles/20200202/12fe7f8a.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！

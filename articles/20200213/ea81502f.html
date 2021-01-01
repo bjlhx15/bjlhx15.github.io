@@ -19,7 +19,7 @@
 <script id="hexo-configurations">
   var NexT = window.NexT || {};
   var CONFIG = {
-    hostname: new URL('https://blog.bjlhx.top').hostname,
+    hostname: new URL('https://blog.itag.top').hostname,
     root: '/',
     scheme: 'Pisces',
     version: '7.7.0',
@@ -49,7 +49,7 @@
   <meta name="description" content="摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式">
 <meta property="og:type" content="article">
 <meta property="og:title" content="001-网站的性能指标及指标测试方法">
-<meta property="og:url" content="https://blog.bjlhx.top/articles/20200213/ea81502f.html">
+<meta property="og:url" content="https://blog.itag.top/articles/20200213/ea81502f.html">
 <meta property="og:site_name" content="Blog">
 <meta property="og:description" content="摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式">
 <meta property="og:locale" content="zh_CN">
@@ -58,7 +58,7 @@
 <meta property="article:author" content="李宏旭">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://blog.bjlhx.top/articles/20200213/ea81502f.html">
+<link rel="canonical" href="https://blog.itag.top/articles/20200213/ea81502f.html">
 
 
 <script id="page-configurations">
@@ -222,7 +222,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200213/ea81502f.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/ea81502f.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -301,7 +301,7 @@
 <h2 id="峰值QPS和机器计算公式"><a href="#峰值QPS和机器计算公式" class="headerlink" title="峰值QPS和机器计算公式"></a>峰值QPS和机器计算公式</h2><p>原理：每天80%的访问集中在20%的时间里，这20%时间叫做峰值时间<br>公式：( 总PV数 * 80% ) / ( 每天秒数 * 20% ) = 峰值时间每秒请求数(QPS)<br>机器：峰值时间每秒QPS / 单台机器的QPS = 需要的机器</p>
 <p>例子：<br>每天300万PV的在单台机器上，这台机器需要多少QPS？<br>答：( 3000000 * 0.8 ) / (86400 * 0.2 ) = 139 (QPS)<br>如果一台机器的QPS是58，需要几台机器来支持？<br>答：139 / 58 = 3</p>
 <h1 id="如何评估网站性能参数"><a href="#如何评估网站性能参数" class="headerlink" title="如何评估网站性能参数"></a>如何评估网站性能参数</h1><h2 id="针对中小型站点"><a href="#针对中小型站点" class="headerlink" title="针对中小型站点"></a>针对中小型站点</h2><ul>
-<li>方式一、使用：ab，可参看：<a href="http://blog.bjlhx.top/categories/test-ab">http://blog.bjlhx.top/categories/test-ab</a></li>
+<li>方式一、使用：ab，可参看：<a href="http://blog.bjlhx.top/categories/test-ab" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/test-ab</a></li>
 </ul>
 <p>初步评估 站点TPS等性能参数</p>
 <ul>
@@ -342,7 +342,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://blog.bjlhx.top/articles/20200213/ea81502f.html" title="001-网站的性能指标及指标测试方法">https://blog.bjlhx.top/articles/20200213/ea81502f.html</a>
+    <a href="https://blog.itag.top/articles/20200213/ea81502f.html" title="001-网站的性能指标及指标测试方法">https://blog.itag.top/articles/20200213/ea81502f.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！

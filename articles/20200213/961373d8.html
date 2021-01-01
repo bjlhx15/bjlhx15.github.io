@@ -19,7 +19,7 @@
 <script id="hexo-configurations">
   var NexT = window.NexT || {};
   var CONFIG = {
-    hostname: new URL('https://blog.bjlhx.top').hostname,
+    hostname: new URL('https://blog.itag.top').hostname,
     root: '/',
     scheme: 'Pisces',
     version: '7.7.0',
@@ -49,19 +49,19 @@
   <meta name="description" content="摘要：当需要调试网页或分析网站性能时，我们往往会F12打开浏览器控制台，查看网络请求，看网页加载了哪些资源，以及对应的请求方式（Method）、状态码（Status）、资源类型（Type）、大小（Size）、耗费的时间（Time）等。 如果某个资源耗费的时间比较长，需要深入分析时，则需要看：瀑布流（Waterfall），在Waterfall中可以看出时间具体花在了哪些部分。   解说打开用chro">
 <meta property="og:type" content="article">
 <meta property="og:title" content="003-分析Chrome的瀑布流（Waterfall）">
-<meta property="og:url" content="https://blog.bjlhx.top/articles/20200213/961373d8.html">
+<meta property="og:url" content="https://blog.itag.top/articles/20200213/961373d8.html">
 <meta property="og:site_name" content="Blog">
 <meta property="og:description" content="摘要：当需要调试网页或分析网站性能时，我们往往会F12打开浏览器控制台，查看网络请求，看网页加载了哪些资源，以及对应的请求方式（Method）、状态码（Status）、资源类型（Type）、大小（Size）、耗费的时间（Time）等。 如果某个资源耗费的时间比较长，需要深入分析时，则需要看：瀑布流（Waterfall），在Waterfall中可以看出时间具体花在了哪些部分。   解说打开用chro">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/performance-web/chrome-console.jpg">
-<meta property="og:image" content="https://blog.bjlhx.top/images/post/performance-web/chrome-console2.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/performance-web/chrome-console.jpg">
+<meta property="og:image" content="https://blog.itag.top/images/post/performance-web/chrome-console2.jpg">
 <meta property="article:published_time" content="2020-02-13T07:16:53.000Z">
 <meta property="article:modified_time" content="2020-02-18T09:32:12.276Z">
 <meta property="article:author" content="李宏旭">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://blog.bjlhx.top/images/post/performance-web/chrome-console.jpg">
+<meta name="twitter:image" content="https://blog.itag.top/images/post/performance-web/chrome-console.jpg">
 
-<link rel="canonical" href="https://blog.bjlhx.top/articles/20200213/961373d8.html">
+<link rel="canonical" href="https://blog.itag.top/articles/20200213/961373d8.html">
 
 
 <script id="page-configurations">
@@ -225,7 +225,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.bjlhx.top/articles/20200213/961373d8.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/961373d8.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -297,7 +297,7 @@
 <p><img src="/images/post/performance-web/chrome-console2.jpg" alt=""></p>
 <h2 id="瀑布流中各项指标含义如下："><a href="#瀑布流中各项指标含义如下：" class="headerlink" title="瀑布流中各项指标含义如下："></a>瀑布流中各项指标含义如下：</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Queueing：浏览器将资源放入队列时间，比如：遇到更高优先级的请求或请求并发超过6了。</span><br><span class="line">Stalled：因放入队列时间而发生的停滞时间。</span><br><span class="line">Proxy negotiation：与代理服务器协商时间。</span><br><span class="line">DNS Lookup：DNS解析时间，浏览器需要将域名转换成IP。</span><br><span class="line">Initial Connection：在浏览器发送请求前，需要建立HTTP连接的时间。</span><br><span class="line">SSL：如果网站使用了HTTPS，这个就是浏览器与服务器建立安全性连接的时间。</span><br><span class="line">Request sent：请求发送的时间。</span><br><span class="line">Waiting (TTFB)：等待服务端返回数据的时间，这个时间受制于服务端处理性能。</span><br><span class="line">Content Download：浏览器下载资源的时间，这个时间受制于文件大小和带宽。</span><br></pre></td></tr></table></figure>
 
-<p>如何优化，请参看：<a href="http://blog.bjlhx.top/categories/performance-web">http://blog.bjlhx.top/categories/performance-web</a></p>
+<p>如何优化，请参看：<a href="http://blog.bjlhx.top/categories/performance-web" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/performance-web</a></p>
 
     </div>
 
@@ -333,7 +333,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://blog.bjlhx.top/articles/20200213/961373d8.html" title="003-分析Chrome的瀑布流（Waterfall）">https://blog.bjlhx.top/articles/20200213/961373d8.html</a>
+    <a href="https://blog.itag.top/articles/20200213/961373d8.html" title="003-分析Chrome的瀑布流（Waterfall）">https://blog.itag.top/articles/20200213/961373d8.html</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
