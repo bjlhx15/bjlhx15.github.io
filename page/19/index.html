@@ -158,12 +158,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">23</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">96</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -220,7 +220,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200129/12b9aaef.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200203/653046b.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -234,7 +234,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200129/12b9aaef.html" class="post-title-link" itemprop="url">005-模板-NexT-其他优化-页脚、菜单显示数量、代码块</a>
+            <a href="/articles/20200203/653046b.html" class="post-title-link" itemprop="url">002-cmd-hexdump进制文件查看工具</a>
         </h1>
 
         <div class="post-meta">
@@ -244,14 +244,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-29 22:30:06" itemprop="dateCreated datePublished" datetime="2020-01-29T22:30:06+08:00">2020-01-29</time>
+              <time title="创建时间：2020-02-03 22:32:41" itemprop="dateCreated datePublished" datetime="2020-02-03T22:32:41+08:00">2020-02-03</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
+                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -259,8 +259,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
+                  <a href="/categories/linux-shell/" itemprop="url" rel="index">
+                    <span itemprop="name">linux-shell</span>
                   </a>
                 </span>
             </span>
@@ -276,10 +276,192 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>关闭页脚的powered、hexo 首页文章只显示一部分、菜单显示数量、代码块</p>
+          <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>hexdump是Linux下的一个二进制文件查看工具，它可以将二进制文件转换为ASCII、八进制、十进制、十六进制格式进行查看。</p>
+<p>指令所在路径：/usr/bin/hexdump</p>
+<h1 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexdump: [-bcCdovx] [-e fmt] [-f fmt_file] [-n length] [-s skip] [file ...]</span><br></pre></td></tr></table></figure>
+<h1 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h1><p>此命令参数是Red Hat Enterprise Linux Server release 5.7下hexdump命令参数，不同版本Linux的hexdump命令参数有可能不同。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">-b              one-byte octal display           8进制显示</span><br><span class="line">-c              one-byte character display       ASCII显示</span><br><span class="line">-C              canonical hex+ASCII display       十六进制+ASCII显示</span><br><span class="line">-d              two-byte decimal display        两字节计算，显示为10进制方式</span><br><span class="line">-o              two-byte octal display         两字节计算，显示为8进制方式</span><br><span class="line">-x              two-byte hexadecimal display    两字节计算，显示为16进制方式</span><br><span class="line">-e format       format string to be used for displaying data   格式化输出</span><br><span class="line">-f format_file  file that contains format strings</span><br><span class="line">-n length       interpret only length bytes of input    输出多少个bytes的字符长度的内容</span><br><span class="line">-s offset       skip offset bytes from the beginning    输出文件的开始偏移量  【注意：偏移量从0开始的！】</span><br><span class="line">-v              display without squeezing similar lines    </span><br><span class="line">-V              output version information and exit</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><ol>
+<li>帮助<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexdump --<span class="built_in">help</span></span><br></pre></td></tr></table></figure></li>
+<li>案例<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cat &gt;test.txt</span><br><span class="line">ABCDEF    </span><br><span class="line">GHIJKM</span><br><span class="line">123456</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ hexdump -C test.txt</span><br><span class="line">00000000  41 42 43 44 45 46 0a 47  48 49 4a 4b 4d 0a 31 32  |ABCDEF.GHIJKM.12|</span><br><span class="line">00000010  33 34 35 36 0a                                    |3456.|</span><br><span class="line">00000015</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>跳过 7 个取6个</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ hexdump -C -s 7 -n 6 test.txt</span><br><span class="line">00000007  47 48 49 4a 4b 4d                                 |GHIJKM|</span><br><span class="line">0000000d</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200203/d189e05e.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/articles/20200203/d189e05e.html" class="post-title-link" itemprop="url">001-shell-概述与命令行区别</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-02-03 22:27:04" itemprop="dateCreated datePublished" datetime="2020-02-03T22:27:04+08:00">2020-02-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux-shell/" itemprop="url" rel="index">
+                    <span itemprop="name">linux-shell</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="shell"><a href="#shell" class="headerlink" title="shell"></a>shell</h1><p>shell翻译成壳的意思，它是包裹在linux内核外层的，一个可通过一系列的linux命令对操作系统发出相关指令的人机界面。</p>
+<p>shell可以通过其条件语句和循环语句等，把一系列linux命令结合在一起，形成一个相当于面向过程的程序，shell script，来实现一些较为复杂的功能。</p>
+<p>总括，shell是linux命令集的概称，是属于命令行的人机界面。Shell 是一个用C语言编写的程序，它是用户使用Linux的桥梁。<br>Shell既是一种命令语言，又是一种程序设计语言。Shell 是指一种应用程序，这个应用程序提供了一个界面，用户通过这个界面访问操作系统内核的服务。<br>Ken Thompson的sh是第一种Unix Shell，Windows Explorer是一个典型的图形界面Shell。Shell 和Shell Script不是一回事，通常我们说的都是Shell Script。</p>
+<p>由定义可知， shell相当于经过装饰的命令行，和命令行一样，都能操作linux。但是shell是面向过程的，相当于有了一定的逻辑和过程，而命令行只是单一的操作。</p>
+<h1 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h1><ol>
+<li>直接在命令行执行 就是在当前的shell环境下执行 比如涉及到一些环境变量的时候 必须在当前shell环境里执行</li>
+</ol>
+<p>在脚本里执行的话 脚本执行的时候 会fork一个子进程 所有操作都在子进程进行 如果涉及到一些在脚本里设置环境变量的东西 脚本结束了 环境变量也就消失了。 </p>
+<p>这个修改环境变量的话，需要特别注意下。</p>
+<ol start="2">
+<li>shell可以重复执行一些命令。也可以把自己要重复执行的命令写到脚本里面执行。而命令行的话就需要一个一个的输入命令，相对而言麻烦一些。</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200202/12fe7f8a.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/articles/20200202/12fe7f8a.html" class="post-title-link" itemprop="url">06-存储引擎层-innodb框架-表空间-段、区、页与组织结构</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-02-02 09:30:07" itemprop="dateCreated datePublished" datetime="2020-02-02T09:30:07+08:00">2020-02-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql-core</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>摘要：InnoDB表空间文件.ibd文件内部存储单元是页，初始大小为 96K，而InnoDB默认页大小为 16K。当然页大小也可以通过 innodb_page_size 配置为 4K, 8K…64K 等。</p>
+<p>如果用二进制打开，以16K划分一页。在ibd文件中，0-16KB偏移量即为0号数据页，16KB-32KB的为1号数据页，以此类推。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200129/12b9aaef.html#more" rel="contents">
+              <a class="btn" href="/articles/20200202/12fe7f8a.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -303,7 +485,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200129/8ecccc4b.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200202/20b74871.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -317,7 +499,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200129/8ecccc4b.html" class="post-title-link" itemprop="url">004-模板-NexT-菜单、侧栏、头像、阅读量</a>
+            <a href="/articles/20200202/20b74871.html" class="post-title-link" itemprop="url">05-存储引擎层-innodb框架-表空间-ibd</a>
         </h1>
 
         <div class="post-meta">
@@ -327,14 +509,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-29 20:55:26" itemprop="dateCreated datePublished" datetime="2020-01-29T20:55:26+08:00">2020-01-29</time>
+              <time title="创建时间：2020-02-02 08:42:20" itemprop="dateCreated datePublished" datetime="2020-02-02T08:42:20+08:00">2020-02-02</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-31 00:04:19" itemprop="dateModified" datetime="2020-01-31T00:04:19+08:00">2020-01-31</time>
+                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -342,8 +524,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
+                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql-core</span>
                   </a>
                 </span>
             </span>
@@ -359,11 +541,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>Hexo 框架允许我们更换合适的主题，以便于构建不同风格的网站，这里介绍目前最常使用的一款主题之NexT</p>
-<p>设置Scheme、设置动态背景、设置侧栏行为、设置菜单、设置头像、添加社交链接、添加文字统计功能、添加阅读量统计功能</p>
+          <p>摘要：<br>innodb文件系统是由一些log和每个表的ibd（16K的整数倍）等文件组成的。内部结构如下。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200129/8ecccc4b.html#more" rel="contents">
+              <a class="btn" href="/articles/20200202/20b74871.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -387,7 +568,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200129/5c36d9d6.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200202/e9a15921.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -401,7 +582,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200129/5c36d9d6.html" class="post-title-link" itemprop="url">003-模板-scaffolds、permalink永久链接</a>
+            <a href="/articles/20200202/e9a15921.html" class="post-title-link" itemprop="url">04-存储引擎层-innodb框架-磁盘上的结构-表空间</a>
         </h1>
 
         <div class="post-meta">
@@ -411,14 +592,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-29 17:50:49" itemprop="dateCreated datePublished" datetime="2020-01-29T17:50:49+08:00">2020-01-29</time>
+              <time title="创建时间：2020-02-02 07:30:44" itemprop="dateCreated datePublished" datetime="2020-02-02T07:30:44+08:00">2020-02-02</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:51:28" itemprop="dateModified" datetime="2020-01-30T23:51:28+08:00">2020-01-30</time>
+                <time title="修改时间：2020-02-05 16:57:25" itemprop="dateModified" datetime="2020-02-05T16:57:25+08:00">2020-02-05</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -426,8 +607,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
+                  <a href="/categories/db-mysql-core/" itemprop="url" rel="index">
+                    <span itemprop="name">db-mysql-core</span>
                   </a>
                 </span>
             </span>
@@ -443,176 +624,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>模板以scaffolds/post.md为例，对updated、permalink等参数进行说明</p>
+          <p>摘要：<br>物理存储， InnoDB 里的所有表数据，都以索引（聚簇索引+二级索引）的形式存储起来，索引包含了表数据。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200129/5c36d9d6.html#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200129/1a1ce396.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20200129/1a1ce396.html" class="post-title-link" itemprop="url">002-命令new-页面分类标签</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-01-29 17:50:48" itemprop="dateCreated datePublished" datetime="2020-01-29T17:50:48+08:00">2020-01-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>hexo new 命令使用：创建普通页面、创建”分类”选项、创建“标签”选项</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/articles/20200129/1a1ce396.html#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200129/82195907.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20200129/82195907.html" class="post-title-link" itemprop="url">001-命令-服务、生成、部署、清理</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-01-29 17:45:36" itemprop="dateCreated datePublished" datetime="2020-01-29T17:45:36+08:00">2020-01-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/hexo/" itemprop="url" rel="index">
-                    <span itemprop="name">hexo</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>初始化代码库：<code>hexo init</code>；<br>本地服务运行 ：<code>hexo s</code>；生成静态文件：<code>hexo g</code>；部署远程站点：<code>hexo d</code>；清理缓存：<code>hexo clean</code></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/articles/20200129/82195907.html#more" rel="contents">
+              <a class="btn" href="/articles/20200202/e9a15921.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -636,7 +651,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/18/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/18/">18</a><span class="page-number current">19</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/20/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/18/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/18/">18</a><span class="page-number current">19</span><a class="page-number" href="/page/20/">20</a><span class="space">&hellip;</span><a class="page-number" href="/page/22/">22</a><a class="extend next" rel="next" href="/page/20/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -704,14 +719,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">96</span>
+          <span class="site-state-item-count">109</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-count">24</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

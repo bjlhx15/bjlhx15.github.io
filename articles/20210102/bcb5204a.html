@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.itag.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：对象设计过程中，“决定把责任放在哪儿”，即使不是最重要的事儿，也是最重要的事情之一  move field&#x3D;》move method简单的移动对象行为 类往往因为承担过多的责任而变得臃肿不堪。extract class 将一部分责任分离出去。 一个类变得太“不负责任”，inline class将其融入另一个类 一个类使用了另一个类，hide delegate，将这种关系隐藏起来 隐藏委托类，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="007-在对象之间搬移特性">
+<meta property="og:url" content="https://blog.itag.top/articles/20210102/bcb5204a.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：对象设计过程中，“决定把责任放在哪儿”，即使不是最重要的事儿，也是最重要的事情之一  move field&#x3D;》move method简单的移动对象行为 类往往因为承担过多的责任而变得臃肿不堪。extract class 将一部分责任分离出去。 一个类变得太“不负责任”，inline class将其融入另一个类 一个类使用了另一个类，hide delegate，将这种关系隐藏起来 隐藏委托类，">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-01-02T03:06:01.000Z">
+<meta property="article:modified_time" content="2021-01-02T03:17:10.283Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.itag.top/articles/20210102/bcb5204a.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>007-在对象之间搬移特性 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20210102/bcb5204a.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          007-在对象之间搬移特性
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-01-02 11:06:01 / 修改时间：11:17:10" itemprop="dateCreated datePublished" datetime="2021-01-02T11:06:01+08:00">2021-01-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%87%8D%E6%9E%84/" itemprop="url" rel="index">
+                    <span itemprop="name">重构</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：对象设计过程中，“决定把责任放在哪儿”，即使不是最重要的事儿，也是最重要的事情之一</p>
+<ul>
+<li>move field=》move method简单的移动对象行为</li>
+<li>类往往因为承担过多的责任而变得臃肿不堪。extract class 将一部分责任分离出去。</li>
+<li>一个类变得太“不负责任”，inline class将其融入另一个类</li>
+<li>一个类使用了另一个类，hide delegate，将这种关系隐藏起来</li>
+<li>隐藏委托类，导致拥有者的接口经常变化，remove middle man</li>
+<li>当不能访问某个类的源码，又想把其他责任移进这个不可修改的类时，introduce foreign method、introduce local extension；想加入的只是1、2个函数，使用introduce foreign method；否则使用introduce local extension<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="move-method：搬移函数"><a href="#move-method：搬移函数" class="headerlink" title="move method：搬移函数"></a>move method：搬移函数</h1><ul>
+<li>有一个函数与其所驻类之外的另一个类进行更多交流：调用后者，或被后者调用</li>
+<li>在该函数最常引用的类中，建立一个有着类似行为的新函数，将旧函数变成一个单纯的委托函数，或将旧函数完全移除<ul>
+<li>机：</li>
+</ul>
+</li>
+<li>move method：重构理论的支柱。如果一个类有太多行为；一个类与另一个类有太多合作而形成高度耦合</li>
+<li>可使系统中的类更简单，这些类最终也更干净利落地实现系统交付的任务</li>
+<li>迹象：<ul>
+<li>使用另一个类的次数比使用自己所驻对象的次数还多</li>
+<li>一旦移动了一些字段，就该做这样的检查</li>
+<li>一旦发现有可能搬移的函数，就会观察调用它的那一段、它调用的那一段，以及继承体系中它的任何一个重定义函数</li>
+<li>根据“这个函数与哪个对象的交流比较多”，决定其移动路径</li>
+</ul>
+</li>
+<li>如果不能肯定是否应该移动一个函数，就继续观察其他函数。移动其他函数往往会让这项决定变得容易一些。</li>
+<li>做法：<ul>
+<li>检查源类中被源函数所使用的一切特性（包括字段、函数），考虑是否该被搬移</li>
+<li>如果某个特性另被多个函数使用了，可以考虑将使用该特性的所有函数全都一并搬移。有时候，搬移一组函数比逐一搬移简单些</li>
+<li>检查源类的子类、超类，看看是否有该函数的其他声明。如果出现其他声明，获取无法进行搬移，除非目标类也同样表现出多态性</li>
+<li>如果目标函数使用了源类中的特性，需要决定如何从目标函数引用源对象。如果目标类中没有相应的引用机制，将把源对象的引用当作参数，传递给新建立的目标函数</li>
+<li>如果源函数包含异常处理，需判断逻辑上应该由哪个类来处理这一异常。如果应该由源类来负责，就把异常处理留在原地</li>
+<li>决定如何重源函数正确引用目标对象。<ul>
+<li>可能会有一个现成的字段、函数帮助取得目标对象。如果没有，则轻松建立一个这样的函数</li>
+<li>如果不行，在源类中新建一个字段来保存目标对象，可能是一个永久性的修改，也可以是暂时的。因为后继的其他重构可能将新建字段去掉</li>
+</ul>
+</li>
+<li>修改源函数，使之成为一个纯委托函数</li>
+<li>决定是否删除源函数，或将它当作一个委托函数保留下来。如果经常要在源对象中引用目标函数，将源函数作为委托函数保留下来会比较简单</li>
+<li>每修改一个引用点，就编译测试一次，也可以通过一次“查找/替换”改掉所有引用点</li>
+<li>如果源类有多个特性，会将源对象传递给目标函数。如果目标函数需要太多源类特性，就需进一步重构。通常，会分解目标函数，并将其中一部分回源类</li>
+</ul>
+</li>
+</ul>
+<h1 id="move-feild：搬移字段"><a href="#move-feild：搬移字段" class="headerlink" title="move feild：搬移字段"></a>move feild：搬移字段</h1><ul>
+<li>某个字段被其所驻类之外的另一个类更多地用到</li>
+<li>在目标类新建一个字段，修改源字段的所有用户，令它们改用新字段</li>
+<li>动机：<ul>
+<li>在类之间移动状态、行为，是重构过程中必不可少的措施</li>
+<li>随着系统发展，会发现自己需要新的类，并需要将现有的工作责任拖到新的类中。在这个星期看似合理而正确的设计决策，到了下一个星期可能不再正确</li>
+<li>如果发现，对于一个字段，再其所驻类之外的另一个类中有更多函数使用了它，就会考虑搬移这个字段。</li>
+<li>“使用”：可能通过设置/取值函数间接进行的</li>
+<li>也可能移动该字段的用户（某个函数），这取决于是否需要保持接口不受变化。如果这些函数看上去很适合呆在原地，就只搬移字段</li>
+<li>extract class 使，也可能需要搬移字段。先搬移字段，再搬移函数</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>如果字段的访问级别使public，使用encapsulate field将其封装起来。</li>
+<li>如果有可能移动哪些频繁访问该字段的函数；或如果有许多函数访问某个字段。先使用 self encapsulate field</li>
+<li>在目标类中建立与源字段相同的字段，同时建立相应的设值/取值函数</li>
+<li>决定如何在源对象中引用目标函数。<ul>
+<li>首先，看是否有一个现成的字段、函数可以帮助得到目标对象。</li>
+<li>如果没有，就看能否轻易建立这样一个函数。</li>
+<li>如果不行，在源类中新建一个字段来存放目标对象，可能使一个永久性的修改，但也可以是暂时的。后续的重构可能会把这个新建字段除掉</li>
+</ul>
+</li>
+<li>将所有对源字段的引用，替换为对某个目标函数的调用<ul>
+<li>如果需要读取该变量，就把对源字段的引用替换为对目标取值函数的调用</li>
+<li>如果需要对该变量赋值，就把对源字段的引用替换为对设值函数的调用</li>
+<li>如果源字段不是private，就必须在源类的所有子类中查找源字段的引用点，并进行相应替换　</li>
+<li>self encapsulate field使之可以小步前进。如果需要对类做许多处理，保持小步前进是有帮助的<ul>
+<li>使用 self encapsulate field 使我得以更轻松使用move method将函数搬移到目标类中。如果待搬移函数引用了字段的访问函数，那些引用点是无需修改的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="extract-class：提炼类"><a href="#extract-class：提炼类" class="headerlink" title="extract class：提炼类"></a>extract class：提炼类</h1><ul>
+<li>某个类做了应该由两个类做的事</li>
+<li>建立一个新类，将相关的字段、函数从旧类搬移到新类</li>
+<li>动机：<ul>
+<li>一个类应该是一个清楚的抽象，处理一些明确的责任，在实际共迚，类会不断成长、扩展。加入一些功能、数据。-     - 　　给某个类添加一项责任时，会觉得不值得为这项责任分离出一个单独的类。随着责任不断增加，这个类会变得过分复杂。很快，类就会变成一团乱麻</li>
+<li>类中含有大量函数、数据。导致类太大，不易理解。</li>
+<li>需要考虑那些部分可以分离出去，并将其分离到一个单独的类中</li>
+<li>如果某些数据、函数总是一起出现，魔偶写数据经常同时变化，甚至彼此相依，就应该将其分离出去</li>
+<li>？：如果搬移了某些字段、函数，会发生什么？其他字段、函数是否因此变得无意义？开发后期，类的子类化。</li>
+<li>如果发现子类化只影响类的部分特性；某些特性需要以一种方式来子类化，某些特征则需要以另一种方式子类话=》分解原来的类</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>决定如何分解类所负的责任</li>
+<li>建立一个新类，用以表现从旧类中分离出来的责任。如果旧类剩下的责任与旧类名不符，为旧类更名</li>
+<li>建立“从旧类访问新类”的连接关系。有可能需要一个双向连接，但在真正需要它之前，不要建立“从新类通往旧类”的连接</li>
+<li>对搬移的每个字段，运用move field，每次搬移后，编译、测试。</li>
+<li>move method将必要函数搬移到新类。先搬移较低层函数（“被其他函数调用”多余“调用其它函数”者），再搬移较高层函数。每次搬移后，编译、测试</li>
+<li>检查，精简每个类的接口。如果建立的是双向连接，检查是否可将其改为单向连接</li>
+<li>决定是否公开新类。如果需要公开，决定其为引用对象？不可变的值对象？<ul>
+<li>如果选择公开新类，允许任何对象修改新类对象的任何部分。需要考虑公开带来的危险，尤其是set value。新类成为引用对象，应考虑使用change value to reference</li>
+<li>如果不允许任何人不通过源类就修改新类。可将新类设为不可修改的，或为其提供一个不可修改的接口；或者复制一个新类对象，将复制得到的新对象传递给用户。可能会造成一定程度的迷惑，让人误以为可以修改新类对象值（同一个对象被传递给多个用户，可能再用户之间造成别名问题）</li>
+</ul>
+</li>
+<li>extract class，改善并发程序的一种常用技术，可使你为提炼后的两个类分别加锁，如果不需要同时锁定连个对象，就不必这样做。<ul>
+<li>有一定的危险性。如果需要确保两个对象被同时锁定，就面临事务问题，需要使用其他类型的共享锁。这是个复杂领域，比一般情况需要更繁重的机制。</li>
+<li>事务很有实用性，但编写事务管理程序则超出了大多数程序员的职责范围</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="inline-class-将类内联化"><a href="#inline-class-将类内联化" class="headerlink" title="inline class 将类内联化"></a>inline class 将类内联化</h1><ul>
+<li>某个类没有做太多事情</li>
+<li>将这个类的所有特性搬移到另一个类中，然后移除源类</li>
+<li>动机：<ul>
+<li>与extract class相反。</li>
+<li>如果一个类不再承担足够责任，不再有单独存在的理由（通常，此前的重构动作移走了这个类的责任）</li>
+<li>挑选“萎缩类”的最频繁用户，以inline class 手法将“萎缩类”塞进另一个类中</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>再目标类声明源类的public协议，并将其中所有函数委托至源类。如果“以一个独立接口表示源类函数”更合适，就应该再内联之前，先试用extract interface</li>
+<li>修改所有源类引用点，改而引用目标类。将源类声明为private，在斩断包之外的所有引用可能。同时修改源类的名称，可使编译器帮助捕捉到所有对于源类的隐藏引用点</li>
+<li>编译，测试</li>
+<li>move field、move method将源类的特性全部搬移到目标类</li>
+</ul>
+</li>
+</ul>
+<h1 id="hide-delegate：隐藏委托关系"><a href="#hide-delegate：隐藏委托关系" class="headerlink" title="hide delegate：隐藏委托关系"></a>hide delegate：隐藏委托关系</h1><ul>
+<li>客户通过一个委托类来调用另一个对象</li>
+<li>在服务类上建立客户所需的所有函数，用以隐藏委托关系。　</li>
+<li>动机：<ul>
+<li>“封装”，即使不是对象的最关键特征，也是最关键特征之一。<ul>
+<li>意味着：每一个对象都应该尽可能少了解系统的其他部分。</li>
+<li>一旦发生变化，需要了解这一变化的对象就会比较少，会使变化比较容易进行。</li>
+</ul>
+</li>
+<li>字段虽然可以声明为public，但应该隐藏对象的字段</li>
+<li>如果某个客户先通过服务对象的字段得另一个对象，然后调用后者的函数，那么客户就必须知晓这一层委托关系<ul>
+<li>万一委托关系发生变化，客户也得相应变化。</li>
+<li>可以在服务对象上放置一个简单的委托函数，将委托关系隐藏起来，从而去除这种依赖</li>
+<li>即便将来发生委托关系上的变化，变化也将被限制在服务对象中，不会波及客户</li>
+</ul>
+</li>
+<li>对于某些、全部客户，可能有必要先使用extract class。一旦对所有客户都隐藏了委托关系，就不再需要在服务对象的接口中公开被委托的对象</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>对于每一个委托关系中的函数，在服务对象端建立一个简单的委托函数</li>
+<li>调整客户，令其只调用服务对象提供的函数<ul>
+<li>如果使用者、委托服务提供者不在同一包，考虑修改委托函数的访问权限，让客户得以在包之外调用它</li>
+</ul>
+</li>
+<li>如果将来不再有任何客户需要用图7-1的受托类，便可移除服务对象中的相关访问函数</li>
+</ul>
+</li>
+</ul>
+<h1 id="remove-middle-man-：移除中间人"><a href="#remove-middle-man-：移除中间人" class="headerlink" title="remove middle man ：移除中间人"></a>remove middle man ：移除中间人</h1><ul>
+<li>某个类做了过多的简单委托动作。</li>
+<li>让客户直接调用受托类</li>
+<li>动机：<ul>
+<li>封装的代价：每当客户要使用受委托类的新特性时，必须再服务端添加一个简单委托函数。<ul>
+<li>随着受托类的特性（功能）越来越多，这一过程让人痛苦不已</li>
+<li>服务类完全变成了一个“中间人”。此时应该让客户直接调用受托类</li>
+</ul>
+</li>
+<li>很难说什么程度的隐藏才是合适的。<ul>
+<li>hide delegate、remove middle man：可根据系统运行过程中不断进行调整。随着系统的变化，“合适的隐藏程度”这个尺度也在相应改变</li>
+<li>重构的意义在于：永远不必说对不起：只要把出问题的地方修补好就行了。</li>
+</ul>
+</li>
+<li>也可能保留一部分委托关系。<ul>
+<li>可能希望对某些客户隐藏委托关系，并让另一些用户直接使用受托对鞋。</li>
+<li>基于这些原因，一些简单的委托关系（及对应的委托函数），也可能被留在原地</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>建立一个函数，用以获得受委托对象</li>
+<li>对每个受委托函数，在服务类中删除该函数，并让需要调用该函数的客户转为调用受委托对象。 </li>
+</ul>
+</li>
+</ul>
+<h1 id="introduce-foreign-method：引入外加函数"><a href="#introduce-foreign-method：引入外加函数" class="headerlink" title="introduce foreign method：引入外加函数"></a>introduce foreign method：引入外加函数</h1><ul>
+<li>需要为提供服务的类增加一个函数，但无法修改这个类</li>
+<li>在客户类中建立一个函数，并以第一参数的形式传入一个服务类实例</li>
+<li>动机：<ul>
+<li>正在使用一个类，为你提供了需要的所有服务。而后又需要一项新服务，这个类却无法供应。</li>
+<li>可自行添加一个新函数；如果无法添加，则在客户端编码，补足你要的那个函数</li>
+<li>如果客户类的功能只使用一次这项功能一次，那么额外编码工作没什么大不了，甚至可能根本不需要原本提供服务的那个类</li>
+<li>然而，如果需要多次使用这个函数，就得不断重复这些代码。重复代码是软件万恶之源。重复的代码应该被抽出来放进同一个函数中。</li>
+<li>在本项重构时，如果你以外加函数实现一项功能，那就是一个明确的信号：这个函数原本应该在提供服务的类中实现</li>
+<li>如果发现自己为一个服务类建立了大量的外加函数，或者发现许多类都需要同样的外加函数，就不应该再使用本项重构，而应该使用Introduce local extension</li>
+<li>外加函数终归时权宜之计。如果又可能，仍然应该将这些函数搬移到它们的理想家园。</li>
+<li>　　如果由于代码所有权的原因，使你无法做这样的搬移，就把外加函数交给服务类的拥有者，请他帮你再服务类中实现这个函数</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>在客户类中建立一个函数，用来提供你需要的功能。<ul>
+<li>这个函数不应该调用客户类的任何特性。如果需要一个值，把该值当作参数传给它。便于将来迁移函数</li>
+</ul>
+</li>
+<li>以服务类实例作为该函数的第一个参数</li>
+<li>将函数注释为：“外加函数（foreign method），应在服务类实现”<ul>
+<li>这样一来，如果将来有机会将外加函数搬移到服务类中，便可轻松找出这些外加函数</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="introduce-local-extension：引入本地扩展"><a href="#introduce-local-extension：引入本地扩展" class="headerlink" title="introduce local extension：引入本地扩展"></a>introduce local extension：引入本地扩展</h1><ul>
+<li>需要为服务类提供一些额外函数，但无法修改这个类</li>
+<li>建立一个新类，使他包含这些额外函数，让这个扩展成为源类的子类，或包装类</li>
+<li>动机：<ul>
+<li>类的作者无法预知未来，常常没能为你预先准备一些有用的函数。<ul>
+<li>如果可以修改源码，最好的办法使直接加入自己需要的函数</li>
+<li>无法修改源码，如果只需要一两个函数，可以使用introduce foreign method。</li>
+<li>如果需要的额外函数超过两个，外加函数就很难控制它们了。需要将这些函数组织在一起，放到一个恰当的地方</li>
+</ul>
+</li>
+<li>为了达到这个目的，两种标准对象技术：子类化subclassing、包装wrapping。统称为本地扩展。<ul>
+<li>本地扩展：是一个独立的类，但也是被扩展类的子类型。提供源类的一切特性，同时额外添加新特性。</li>
+<li>在任何使用源类的地方都可以使用本地扩展取而代之</li>
+<li>本地扩展，使你得以坚持“函数、数据应该被统一封装”的原则。如果一直把本该放在扩展类中的代码零散地放置于其他类中，最终只会让其他类变得过分复杂，并使得其中的函数难以被复用</li>
+</ul>
+</li>
+<li>在子类、包装类之间做选择，通常首选子类。工作量较少<ul>
+<li>添加子类最大的障碍在于，必须在对象创建期实施。如果可以接管对象创建过程，当然没有问题；但如果想在对象创建之后再使用本地扩展就有问题了</li>
+<li>子类化方案，必须产生一个子类对象。这种情况下，如果有其他对象引用了旧对象，就同时有两个对象保存了原数据。如果原数据是不可修改的，则不会有问题，可以放心复制；如果原数据允许被修改，问题就会出现：一个修改动作无法同时改变两个副本</li>
+<li>使用包装类时，对本地扩展的修改会波及原对象，反之亦然。</li>
+</ul>
+</li>
+<li>包装类有一个特殊问题：如何处理“接受原始类实例为参数”的函数。由于无法改变原始类，只能做到一个方向上的兼容：包装类上的函数可以接受包装类，或原始类；但原始类的函数只能接受原始类对象，不能接受包装类对象<ul>
+<li>覆写的目的时为了向用户隐藏包装类的存在。这是一个好策略，因为包装类的用户的确不应该关心包装类的存在，的确应该可以同样的地对待包装类、原始类</li>
+<li>但是，完全无法隐藏包装类的存在，因为某些系统所提供的函数（例如equals()）会出问题。</li>
+<li>可以在包装类中覆写equals()，但这样做时危险的，尽管达到了我们的目的，但在系统的其他部分都认为equals()符合交换律：包装类实例equals(被包装类实例)，被包装类实例equals(包装类实例)。违反这一规则，容易使人遭受一大堆莫名其妙的错误</li>
+<li>要避免这样的尴尬境地，唯一的办法就是修改被包装类。但如果可以修改，何必进行此项重构</li>
+<li>在这种情况下，只能向用户公开“我进行了包装”这一事实。推荐使用一个新函数equal<strong>()来实现相等性检查。亦可重载equal</strong>()，一个接受被包装实例，一个接受包装实例。就不必检查未知对象的类型了</li>
+<li>子类化方案中就没有这样的问题，只要不覆写原函数就行。如果覆写了原始类中的函数，那么寻找函数时，就会被搞得晕头转向。一般，不建议在扩展类中覆写原始类的函数，只会添加新函数</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>建立一个扩展类，将它作为原始类的子类，或包装类</li>
+<li>在扩展类中加入转型构造函数<ul>
+<li>“转型构造函数”：“接受原对象作为参数”的构造函数。</li>
+<li>如果采用子类化方案，转型构造函数应该调用适当的超类构造函数</li>
+<li>如果采用包装类方案，转型构造函数应该将它得到的传入参数以实例变量的形式保存起来，用作接受委托的原对象</li>
+</ul>
+</li>
+<li>在扩展类中加入新特性</li>
+<li>根据需要，将原对象替换为扩展对象</li>
+<li>将针对原始类定义的所有外加函数搬移到扩展类中</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.itag.top/articles/20210102/bcb5204a.html" title="007-在对象之间搬移特性">https://blog.itag.top/articles/20210102/bcb5204a.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20210102/b2e2e8ae.html" rel="prev" title="006-重构列表、重新组织函数.md">
+      <i class="fa fa-chevron-left"></i> 006-重构列表、重新组织函数.md
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20210102/28ec1893.html" rel="next" title="008-重新组织数据">
+      008-重新组织数据 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#move-method：搬移函数"><span class="nav-number">1.</span> <span class="nav-text">move method：搬移函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#move-feild：搬移字段"><span class="nav-number">2.</span> <span class="nav-text">move feild：搬移字段</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#extract-class：提炼类"><span class="nav-number">3.</span> <span class="nav-text">extract class：提炼类</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#inline-class-将类内联化"><span class="nav-number">4.</span> <span class="nav-text">inline class 将类内联化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hide-delegate：隐藏委托关系"><span class="nav-number">5.</span> <span class="nav-text">hide delegate：隐藏委托关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#remove-middle-man-：移除中间人"><span class="nav-number">6.</span> <span class="nav-text">remove middle man ：移除中间人</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#introduce-foreign-method：引入外加函数"><span class="nav-number">7.</span> <span class="nav-text">introduce foreign method：引入外加函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#introduce-local-extension：引入本地扩展"><span class="nav-number">8.</span> <span class="nav-text">introduce local extension：引入本地扩展</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>

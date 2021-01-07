@@ -1,6 +1,2082 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>002-springboot测试-Mockito服务层测试.md</title>
+    <url>/articles/20210107/350be41e.html</url>
+    <content><![CDATA[<p>摘要：002-springboot测试-Mockito服务层测试</p>
+<ul>
+<li>使用实际真实接口数据测试</li>
+<li>使用Mock接口数据测试</li>
+<li>使用Mock接口数据、以及真实接口测试</li>
+</ul>
+<a id="more"></a>
+
+<h1 id="什么是Mockito"><a href="#什么是Mockito" class="headerlink" title="什么是Mockito"></a>什么是Mockito</h1><pre><code>Mockito是一个java测试框架，它提供mock的创建，验证，打桩。在测试中，可能会依赖外部资源，比如数据库等，mockito可以模拟这些数据，进行测试。</code></pre><h2 id="打桩"><a href="#打桩" class="headerlink" title="打桩"></a>打桩</h2><p>就是模拟一些函数调用的反应。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Mockito.when(list.get(1)).thenReturn(3); &#x2F;&#x2F; 含义遇到 list.get(1) 等于 3 不执行内部</span><br><span class="line">Assert.assertEquals(list.get(1),3);</span><br></pre></td></tr></table></figure>
+<ul>
+<li>可以进行多次打桩，但是以最后一次为准。</li>
+<li>一次打桩，可多次调用</li>
+</ul>
+<h2 id="参数匹配"><a href="#参数匹配" class="headerlink" title="参数匹配"></a>参数匹配</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Mockito.when(list.get(Mockito.anyInt())).thenReturn(&quot;hi&quot;);&#x2F;&#x2F;只要传入任何int，返回hi</span><br><span class="line">Assert.assertEquals(&quot;hi&quot;,list.get(1));&#x2F;&#x2F;hi</span><br><span class="line">Assert.assertEquals(&quot;hi&quot;,list.get(999));&#x2F;&#x2F;hi</span><br><span class="line">Mockito.when(list.contains(Mockito.isA(One.class))).thenReturn(true);&#x2F;&#x2F;只要传入String类型，就返回hello</span><br><span class="line">Assert.assertTrue(list.contains(&quot;hello&quot;));&#x2F;&#x2F;hello</span><br><span class="line">Assert.assertTrue(list.contains(1));&#x2F;&#x2F;发生错误</span><br></pre></td></tr></table></figure>
+
+<p>参数匹配器是为了更加灵活的进行验证和打桩，可以自定义</p>
+<h2 id="Mockito工具常用注解"><a href="#Mockito工具常用注解" class="headerlink" title="Mockito工具常用注解"></a>Mockito工具常用注解</h2><p>有些函数需要处理某个服务的返回结果，而在对函数单元测试的时候，又不能启动那些服务</p>
+<ul>
+<li>@Mock：对函数的调用均执行mock（即虚假函数），不执行真正部分。</li>
+<li>@Spy：对函数的调用均执行真正部分。</li>
+<li>@InjectMocks：创建一个实例，简单的说是这个Mock可以调用真实代码的方法，其余用@Mock（或@Spy）注解创建的mock将被注入到用该实例中。<ul>
+<li>@Mock出的对象会被注入到@InjectMocks对象中</li>
+<li>它会把上下文中你标记为@Spy和@Mock的对象都自动注解进去。相当于把实现类中的私有成员属性给偷梁换柱</li>
+<li>注意当前没有问题了 但是service包含了多个既有真正实现也有mock的需要使用反射注入 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ReflectionTestUtils.setField(service, &quot;departService&quot;, departService);</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+<p>Mockito中的Mock和Spy都可用于拦截那些尚未实现或不期望被真实调用的对象和方法，并为其设置自定义行为。二者的区别在于Mock不真实调用，Spy会真实调用。</p>
+<h1 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h1><h2 id="真实数据"><a href="#真实数据" class="headerlink" title="真实数据"></a>真实数据</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@RunWith</span>(SpringRunner<span class="class">.<span class="keyword">class</span>)//调用<span class="title">Spring</span>单元测试类</span></span><br><span class="line"><span class="class">@<span class="title">SpringBootTest</span>(<span class="title">classes</span> </span>= DemoApplication<span class="class">.<span class="keyword">class</span>) //加载<span class="title">Spring</span>配置文件</span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">UserServiceImplTest01RealData</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> IUserService service;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insertUser</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(<span class="string">"lhx"</span>);</span><br><span class="line">        user.setAge(<span class="number">202</span>);</span><br><span class="line"></span><br><span class="line">        service.insertUser(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="全部mock数据"><a href="#全部mock数据" class="headerlink" title="全部mock数据"></a>全部mock数据</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@RunWith</span>(SpringRunner<span class="class">.<span class="keyword">class</span>)//调用<span class="title">Spring</span>单元测试类</span></span><br><span class="line"><span class="class">@<span class="title">ContextConfiguration</span>(<span class="title">locations</span> </span>= &#123;<span class="string">"classpath*:spring-config-mybatis-jd-dev.xml"</span>&#125;)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImplTest02MockData</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Mock</span></span><br><span class="line">    <span class="keyword">private</span> IDepartService departService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Mock</span></span><br><span class="line">    <span class="keyword">private</span> UserMapper mapper ;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@InjectMocks</span></span><br><span class="line">    <span class="keyword">private</span> UserServiceImpl service;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUp</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        MockitoAnnotations.initMocks(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insertUserAndDepart</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(<span class="string">"lhx"</span>);</span><br><span class="line">        user.setAge(<span class="number">202</span>);</span><br><span class="line">        String userStr = JSON.toJSONString(user);</span><br><span class="line">        when(service.insertUser(user))</span><br><span class="line">                .thenReturn(<span class="number">1</span>);</span><br><span class="line">        when(departService.insert(user))</span><br><span class="line">                .thenReturn(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">int</span> i = service.insertUserAndDepart(user);</span><br><span class="line">        Assert.assertEquals(<span class="number">2</span>,i);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="部分mock数据、部分真实接口"><a href="#部分mock数据、部分真实接口" class="headerlink" title="部分mock数据、部分真实接口"></a>部分mock数据、部分真实接口</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@RunWith</span>(SpringJUnit4ClassRunner<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">@<span class="title">SpringBootTest</span>(<span class="title">classes</span> </span>= DemoApplication<span class="class">.<span class="keyword">class</span>) //加载<span class="title">Spring</span>配置文件</span></span><br><span class="line"><span class="class">@<span class="title">Transactional</span></span></span><br><span class="line"><span class="class">@<span class="title">Rollback</span></span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">UserServiceImplTest03PartMockPartReal</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Mock</span></span><br><span class="line">    <span class="keyword">private</span> IDepartService departService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> UserMapper mapper;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="meta">@InjectMocks</span></span><br><span class="line">    <span class="keyword">private</span> UserServiceImpl service;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUp</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        MockitoAnnotations.initMocks(<span class="keyword">this</span>);</span><br><span class="line">        ReflectionTestUtils.setField(service, <span class="string">"departService"</span>, departService);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insertUserAndDepart</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(<span class="string">"lhx"</span>);</span><br><span class="line">        user.setAge(<span class="number">202</span>);</span><br><span class="line"></span><br><span class="line">        when(departService.insert(user))</span><br><span class="line">                .thenReturn(<span class="number">1</span>);</span><br><span class="line"><span class="comment">//        when(mapper.insert(user))</span></span><br><span class="line"><span class="comment">//                .thenReturn(1);</span></span><br><span class="line">        <span class="keyword">int</span> i = service.insertUserAndDepart(user);</span><br><span class="line">        Assert.assertEquals(<span class="number">2</span>, i);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="常用方法"><a href="#常用方法" class="headerlink" title="常用方法"></a>常用方法</h1><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">方法名	描述</span><br><span class="line">Mockito.mock(classToMock)	模拟对象</span><br><span class="line">Mockito.verify(mock)	验证行为是否发生</span><br><span class="line">Mockito.when(methodCall).thenReturn(value1).thenReturn(value2)	触发时第一次返回value1，第n次都返回value2</span><br><span class="line">Mockito.doThrow(toBeThrown).when(mock).[method]	模拟抛出异常。</span><br><span class="line">Mockito.mock(classToMock,defaultAnswer)	使用默认Answer模拟对象</span><br><span class="line">Mockito.when(methodCall).thenReturn(value)	参数匹配</span><br><span class="line">Mockito.doReturn(toBeReturned).when(mock).[method]	参数匹配（直接执行不判断）</span><br><span class="line">Mockito.when(methodCall).thenAnswer(answer))	预期回调接口生成期望值</span><br><span class="line">Mockito.doAnswer(answer).when(methodCall).[method]	预期回调接口生成期望值（直接执行不判断）</span><br><span class="line">Mockito.spy(Object)	用spy监控真实对象,设置真实对象行为</span><br><span class="line">Mockito.doNothing().when(mock).[method]	不做任何返回</span><br><span class="line">Mockito.doCallRealMethod().when(mock).[method] &#x2F;&#x2F;等价于Mockito.when(mock.[method]).thenCallRealMethod();	调用真实的方法</span><br><span class="line">reset(mock)	重置mock</span><br></pre></td></tr></table></figure>
+
+<h1 id="MockitoJUnitRunner-与-SpringRunner-SpringJUnit4ClassRunner-说明"><a href="#MockitoJUnitRunner-与-SpringRunner-SpringJUnit4ClassRunner-说明" class="headerlink" title="MockitoJUnitRunner 与 SpringRunner(SpringJUnit4ClassRunner)说明"></a>MockitoJUnitRunner 与 SpringRunner(SpringJUnit4ClassRunner)说明</h1><h2 id="MockitoJUnitRunner"><a href="#MockitoJUnitRunner" class="headerlink" title="MockitoJUnitRunner"></a>MockitoJUnitRunner</h2><ul>
+<li>特别适用于Mockito测试框架</li>
+<li>当您希望将测试集中在单个类上并避免在依赖项上调用方法时（而是调用易于配置的模拟/虚拟），Mockito框架可以帮助模拟依赖项。 </li>
+<li>以上是mockito的用途，但有关此运行的更多内容 - 来自文档：“保持测试清洁并改善调试体验”。“Runner是完全可选的 - 还有其他方法可以让@Mock工作”。来源 - <a href="https://static.javadoc.io/org.mockito/mockito-core/2.6.8/org/mockito/junit/MockitoJUnitRunner.html" target="_blank" rel="noopener">https://static.javadoc.io/org.mockito/mockito-core/2.6.8/org/mockito/junit/MockitoJUnitRunner.html</a></li>
+</ul>
+<h2 id="基于SpringJUnit4ClassRunner"><a href="#基于SpringJUnit4ClassRunner" class="headerlink" title="基于SpringJUnit4ClassRunner"></a>基于SpringJUnit4ClassRunner</h2><ul>
+<li>特别适用于弹簧框架</li>
+<li>当需要加载spring上下文（创建spring bean，执行依赖注入等）时，用于集成测试。  </li>
+<li>在集成测试中，您可能无法对依赖项进行尽可能多的模拟，但您可以在同一测试中执行这两项操作。  </li>
+<li>当您想要测试加载弹簧上下文或者可能从服务/高级别一直测试到较低级别（如使用单个测试的数据访问）时，集成测试非常有用。</li>
+</ul>
+<p>在某些情况下，您可能希望同时使用它们 - 比如集成测试，您还希望模拟某些依赖项（可能是它们进行远程调用）。不幸的是你不能使用两个@RunWiths<br>可以参看上述第三种：部分mock数据、部分真实接口</p>
+<h1 id="RunWith-MockitoJUnitRunner-class-vs-MockitoAnnotations-initMocks-this"><a href="#RunWith-MockitoJUnitRunner-class-vs-MockitoAnnotations-initMocks-this" class="headerlink" title="@RunWith(MockitoJUnitRunner.class) vs MockitoAnnotations.initMocks(this)"></a>@RunWith(MockitoJUnitRunner.class) vs MockitoAnnotations.initMocks(this)</h1><p>MockitoJUnitRunner 和 initMocks(this) 都可以为UT提供框架使用的自动验证</p>
+<ul>
+<li>在单元测试中使用@Mock, @Spy, @InjectMocks等注解时，需要进行初始化后才能使用</li>
+<li>若在单元测试类中使用了@RunWith(SpringJUnit4ClassRunner.class) 就不能再使用@RunWith(SpringJUnit4ClassRunner.class)，可以使用 MockitoAnnotations.initMocks(this) 来代替</li>
+<li>MockitoAnnotations.initMocks(this)，其中this就是单元测试所在的类，在initMocks函数中Mockito会根据类中不同的注解（如@Mock, @Spy等）创建不同的mock对象，即初始化工作</li>
+</ul>
+<h1 id="参看文章"><a href="#参看文章" class="headerlink" title="参看文章"></a>参看文章</h1><p><a href="https://blog.csdn.net/gentlezuo/article/details/108293961" target="_blank" rel="noopener">1</a></p>
+]]></content>
+      <categories>
+        <category>java-spring-test</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-springboot测试-MockMvc控制层测试</title>
+    <url>/articles/20210107/4f18d467.html</url>
+    <content><![CDATA[<p>摘要：springboot测试-MockMvc</p>
+<a id="more"></a>
+
+<h1 id="什么是Mock"><a href="#什么是Mock" class="headerlink" title="什么是Mock"></a>什么是Mock</h1><pre><code>在面向对象的程序设计中，模拟对象（英语：mock object）是以可控的方式模拟真实对象行为的假对象。在编程过程中，通常通过模拟一些输入数据，来验证程序是否达到预期结果。</code></pre><h1 id="为什么使用Mock对象"><a href="#为什么使用Mock对象" class="headerlink" title="为什么使用Mock对象"></a>为什么使用Mock对象</h1><p>使用模拟对象，可以模拟复杂的、真实的对象行为。如果在单元测试中无法使用真实对象，可采用模拟对象进行替代。</p>
+<p>在以下情况可以采用模拟对象来替代真实对象：</p>
+<ul>
+<li>真实对象的行为是不确定的（例如，当前的时间或温度）；</li>
+<li>真实对象很难搭建起来；</li>
+<li>真实对象的行为很难触发（例如，网络错误）；</li>
+<li>真实对象速度很慢（例如，一个完整的数据库，在测试之前可能需要初始化）；</li>
+<li>真实的对象是用户界面，或包括用户界面在内；</li>
+<li>真实的对象使用了回调机制；</li>
+<li>真实对象可能还不存在；</li>
+<li>真实对象可能包含不能用作测试（而不是为实际工作）的信息和方法。</li>
+<li>使用Mockito一般分三个步骤：1、模拟测试类所需的外部依赖；2、执行测试代码；3、判断执行结果是否达到预期；</li>
+</ul>
+<h1 id="MockMvc"><a href="#MockMvc" class="headerlink" title="MockMvc"></a>MockMvc</h1><p>MockMvc是由spring-test包提供，实现了对Http请求的模拟，能够直接使用网络的形式，转换到Controller的调用，使得测试速度快、不依赖网络环境。同时提供了一套验证的工具，结果的验证十分方便。</p>
+<p>接口MockMvcBuilder，提供一个唯一的build方法，用来构造MockMvc。主要有两个实现：StandaloneMockMvcBuilder和DefaultMockMvcBuilder，分别对应两种测试方式，即独立安装和集成Web环境测试（并不会集成真正的web环境，而是通过相应的Mock API进行模拟测试，无须启动服务器）。MockMvcBuilders提供了对应的创建方法standaloneSetup方法和webAppContextSetup方法，在使用时直接调用即可。</p>
+<h1 id="SpringBoot中使用"><a href="#SpringBoot中使用" class="headerlink" title="SpringBoot中使用"></a>SpringBoot中使用</h1><h2 id="jar引入"><a href="#jar引入" class="headerlink" title="jar引入"></a>jar引入</h2><figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-test<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h2><p><a href="https://github.com/bjlhx15/common.git" target="_blank" rel="noopener">github地址</a> </p>
+<ul>
+<li>demo简述待测试类</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping</span>(<span class="string">"/user/postjson"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserPostJsonController</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> IUserService userService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@ResponseBody</span></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/insert"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> ResponseEntity <span class="title">insert</span><span class="params">(@RequestBody User record)</span> </span>&#123;</span><br><span class="line">        System.out.println(JSON.toJSONString(record));</span><br><span class="line">        <span class="keyword">return</span> ResponseEntity.ok(userService.insertUser(record));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>编写基础测试</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//SpringBoot1.4版本之前用的是SpringJUnit4ClassRunner.class</span></span><br><span class="line"><span class="meta">@RunWith</span>(SpringRunner<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">//<span class="title">SpringBoot1</span>.4版本之前用的是@<span class="title">SpringApplicationConfiguration</span>(<span class="title">classes</span> </span>= Application<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">//@<span class="title">ContextConfiguration</span>(<span class="title">locations</span> </span>= &#123;<span class="string">"classpath*:spring-*.xml"</span>&#125;)      <span class="comment">//加载Spring配置文件 方式</span></span><br><span class="line"><span class="meta">@SpringBootTest</span>(classes = DemoApplication<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">//测试环境使用，用来表示测试环境使用的<span class="title">ApplicationContext</span>将是<span class="title">WebApplicationContext</span>类型的</span></span><br><span class="line"><span class="class">@<span class="title">WebAppConfiguration</span></span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">UserBaseControllerTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">protected</span> WebApplicationContext context;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> MockMvc mockMvc;        <span class="comment">//SpringMVC提供的Controller测试类</span></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUp</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 实例化方式一、对于controller有依赖的 无法注入</span></span><br><span class="line">        <span class="comment">// mockMvc = MockMvcBuilders.standaloneSetup(new UserPostJsonController()).build();</span></span><br><span class="line">        <span class="comment">// 实例化方式二、对于controller有依赖的 可以注入</span></span><br><span class="line">         mockMvc = MockMvcBuilders.webAppContextSetup(context).build();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insert</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(<span class="string">"lhx"</span>);</span><br><span class="line">        user.setAge(<span class="number">20</span>);</span><br><span class="line">        String userStr = JSON.toJSONString(user);</span><br><span class="line">        mockMvc</span><br><span class="line">                .perform(MockMvcRequestBuilders.post(<span class="string">"/user/postjson/insert"</span>)</span><br><span class="line">                        .contentType(MediaType.APPLICATION_JSON_UTF8)</span><br><span class="line">                        .content(userStr)</span><br><span class="line">                        .accept(MediaType.APPLICATION_JSON))</span><br><span class="line">                .andDo(MockMvcResultHandlers.print())</span><br><span class="line">                .andExpect(MockMvcResultMatchers.status().isOk())</span><br><span class="line">                .andReturn()</span><br><span class="line">                .getResponse().getContentAsString();  <span class="comment">//将相应的数据转换为字符串</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>说明<ul>
+<li>mockMvc.perform   执行一个请求。</li>
+<li>MockMvcRequestBuilders.get(“XXX”) 构造一个请求，post等</li>
+<li>ResultActions.param   添加请求传值<ul>
+<li>请求为 get 可以使用</li>
+<li>请求为 post application/x-www-form-urlencoded 可以使用</li>
+<li>请求为 post application/json 需要使用 ResultActions.contentType(MediaType.APPLICATION_JSON_UTF8) 以及 ResultActions.content(userStr)</li>
+</ul>
+</li>
+<li>ResultActions.accept(MediaType.APPLICATION_JSON))  设置返回类型</li>
+<li>ResultActions.andExpect   添加执行完成后的断言 如是状态码 200 MockMvcResultMatchers.status().isOk()</li>
+<li>ResultActions.andDo       添加一个结果处理器，表示要对结果做点什么事情<ul>
+<li>比如此处使用MockMvcResultHandlers.print()输出整个响应结果信息。</li>
+</ul>
+</li>
+<li>ResultActions.andReturn表示执行完成后返回相应的结果。</li>
+</ul>
+</li>
+</ul>
+<p>注意事项：如果使用DefaultMockMvcBuilder进行MockMvc实例化时需在SpringBoot启动类上添加组件扫描的package的指定，否则会出现404。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">@ComponentScan(basePackages &#x3D; &quot;com.github.bjlhx15&quot;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="常用测试示例"><a href="#常用测试示例" class="headerlink" title="常用测试示例"></a>常用测试示例</h2><ul>
+<li><p>通用头配置</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;@Profile(&#123;&quot;dev&quot;,&quot;dev-fesco&quot;&#125;) &#x2F;&#x2F;环境变量</span><br><span class="line">&#x2F;&#x2F;SpringBoot1.4版本之前用的是SpringJUnit4ClassRunner.class</span><br><span class="line">@RunWith(SpringRunner.class)</span><br><span class="line">&#x2F;&#x2F;SpringBoot1.4版本之前用的是@SpringApplicationConfiguration(classes &#x3D; Application.class)</span><br><span class="line">&#x2F;&#x2F;@ContextConfiguration(locations &#x3D; &#123;&quot;classpath*:spring-*.xml&quot;&#125;)      &#x2F;&#x2F;加载Spring配置文件 方式</span><br><span class="line">@SpringBootTest(classes &#x3D; DemoApplication.class)</span><br><span class="line">&#x2F;&#x2F;测试环境使用，用来表示测试环境使用的ApplicationContext将是WebApplicationContext类型的</span><br><span class="line">@WebAppConfiguration</span><br><span class="line">&#x2F;&#x2F;配置事务的回滚,对数据库的增删改都会回滚, Spring框架中（Spring4.2以后），@TransactionConfiguration已经标注为过时的注解</span><br><span class="line">@Rollback </span><br><span class="line">@Transactional</span><br></pre></td></tr></table></figure></li>
+<li><p>通用初始化构造</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">    @Autowired</span><br><span class="line">    protected WebApplicationContext context;</span><br><span class="line"></span><br><span class="line">    private MockMvc mockMvc;        &#x2F;&#x2F;SpringMVC提供的Controller测试类</span><br><span class="line"></span><br><span class="line">    @Before</span><br><span class="line">    public void setUp() throws Exception &#123;</span><br><span class="line">        &#x2F;&#x2F; 实例化方式一、对于controller有依赖的 无法注入</span><br><span class="line">&#x2F;&#x2F;        mockMvc &#x3D; MockMvcBuilders.standaloneSetup(new UserPostJsonController()).build();</span><br><span class="line">        &#x2F;&#x2F; 实例化方式二、对于controller有依赖的 可以注入</span><br><span class="line">         mockMvc &#x3D; MockMvcBuilders.webAppContextSetup(context).build();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>常规测试</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">.andExpect(model().attributeExists(&quot;user&quot;)) &#x2F;&#x2F;验证存储模型数据  </span><br><span class="line">.andExpect(view().name(&quot;user&#x2F;view&quot;)) &#x2F;&#x2F;验证viewName  </span><br><span class="line">.andExpect(forwardedUrl(&quot;&#x2F;WEB-INF&#x2F;jsp&#x2F;user&#x2F;view.jsp&quot;))&#x2F;&#x2F;验证视图渲染时forward到的jsp  </span><br><span class="line">.andExpect(status().isOk())&#x2F;&#x2F;验证状态码  </span><br><span class="line">.andDo(print()); &#x2F;&#x2F;输出MvcResult到控制台</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>得到MvcResult自定义验证</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">MvcResult result &#x3D; mockMvc.perform(get(&quot;&#x2F;user&#x2F;&#123;id&#125;&quot;, 1))&#x2F;&#x2F;执行请求  </span><br><span class="line">        .andReturn(); &#x2F;&#x2F;返回MvcResult  </span><br><span class="line">Assert.assertNotNull(result.getModelAndView().getModel().get(&quot;user&quot;)); &#x2F;&#x2F;自定义断言</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>验证请求参数绑定到模型数据及Flash属性</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mockMvc.perform(post(&quot;&#x2F;user&quot;).param(&quot;name&quot;, &quot;zhang&quot;)) &#x2F;&#x2F;执行传递参数的POST请求(也可以post(&quot;&#x2F;user?name&#x3D;zhang&quot;))  </span><br><span class="line">            .andExpect(handler().handlerType(UserController.class)) &#x2F;&#x2F;验证执行的控制器类型  </span><br><span class="line">            .andExpect(handler().methodName(&quot;create&quot;)) &#x2F;&#x2F;验证执行的控制器方法名  </span><br><span class="line">            .andExpect(model().hasNoErrors()) &#x2F;&#x2F;验证页面没有错误  </span><br><span class="line">            .andExpect(flash().attributeExists(&quot;success&quot;)) &#x2F;&#x2F;验证存在flash属性  </span><br><span class="line">            .andExpect(view().name(&quot;redirect:&#x2F;user&quot;)); &#x2F;&#x2F;验证视图</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>文件上传</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">byte[] bytes &#x3D; new byte[] &#123;1, 2&#125;;  </span><br><span class="line">mockMvc.perform(fileUpload(&quot;&#x2F;user&#x2F;&#123;id&#125;&#x2F;icon&quot;, 1L).file(&quot;icon&quot;, bytes)) &#x2F;&#x2F;执行文件上传  </span><br><span class="line">        .andExpect(model().attribute(&quot;icon&quot;, bytes)) &#x2F;&#x2F;验证属性相等性  </span><br><span class="line">        .andExpect(view().name(&quot;success&quot;)); &#x2F;&#x2F;验证视图</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>json验证</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mockMvc.perform(post(&quot;&#x2F;user&quot;)  </span><br><span class="line">        .contentType(MediaType.APPLICATION_JSON).content(requestBody)  </span><br><span class="line">        .accept(MediaType.APPLICATION_JSON)) &#x2F;&#x2F;执行请求  </span><br><span class="line">        .andExpect(content().contentType(MediaType.APPLICATION_JSON)) &#x2F;&#x2F;验证响应contentType  </span><br><span class="line">        .andExpect(jsonPath(&quot;$.id&quot;).value(1)); &#x2F;&#x2F;使用Json path验证JSON</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>异步测试</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;Callable  </span><br><span class="line">    MvcResult result &#x3D; mockMvc.perform(get(&quot;&#x2F;user&#x2F;async1?id&#x3D;1&amp;name&#x3D;zhang&quot;)) &#x2F;&#x2F;执行请求  </span><br><span class="line">            .andExpect(request().asyncStarted())  </span><br><span class="line">            .andExpect(request().asyncResult(CoreMatchers.instanceOf(User.class))) &#x2F;&#x2F;默认会等10秒超时  </span><br><span class="line">            .andReturn();  </span><br><span class="line">      </span><br><span class="line">    mockMvc.perform(asyncDispatch(result))  </span><br><span class="line">            .andExpect(status().isOk())  </span><br><span class="line">            .andExpect(content().contentType(MediaType.APPLICATION_JSON))  </span><br><span class="line">            .andExpect(jsonPath(&quot;$.id&quot;).value(1));</span><br></pre></td></tr></table></figure></li>
+<li><p>post json</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">String userStr &#x3D; JSON.toJSONString(user);</span><br><span class="line">mockMvc.perform(MockMvcRequestBuilders.post(&quot;&#x2F;user&#x2F;postjson&#x2F;insert&quot;)</span><br><span class="line">        .contentType(MediaType.APPLICATION_JSON_UTF8)</span><br><span class="line">        .content(userStr)</span><br><span class="line">        .accept(MediaType.APPLICATION_JSON))</span><br><span class="line">        .andDo(MockMvcResultHandlers.print())</span><br><span class="line">        .andExpect(MockMvcResultMatchers.status().isOk())</span><br><span class="line">        .andReturn();</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>post form</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">        mockMvc.perform(MockMvcRequestBuilders.post(&quot;&#x2F;user&#x2F;postform&#x2F;insert&quot;)</span><br><span class="line">                .contentType(MediaType.APPLICATION_FORM_URLENCODED)</span><br><span class="line">&#x2F;&#x2F;                        .content(userStr)   &#x2F;&#x2F;这种无效</span><br><span class="line">                .param(&quot;name&quot;, &quot;lhx&quot;)</span><br><span class="line">                .param(&quot;age&quot;, &quot;30&quot;)</span><br><span class="line">                .accept(MediaType.APPLICATION_JSON))</span><br><span class="line">                .andDo(MockMvcResultHandlers.print())</span><br><span class="line">                .andExpect(MockMvcResultMatchers.status().isOk())</span><br><span class="line">                .andReturn();</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>get</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mockMvc.perform(MockMvcRequestBuilders.get(&quot;&#x2F;user&#x2F;postform&#x2F;insert&quot;)</span><br><span class="line">        .param(&quot;name&quot;, &quot;lhx&quot;)</span><br><span class="line">        .param(&quot;age&quot;, &quot;30&quot;)</span><br><span class="line">        .accept(MediaType.APPLICATION_JSON))</span><br><span class="line">        .andDo(MockMvcResultHandlers.print())</span><br><span class="line">        .andExpect(MockMvcResultMatchers.status().isOk())</span><br><span class="line">        .andReturn();</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>全局配置</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mockMvc &#x3D; webAppContextSetup(wac)  </span><br><span class="line">            .defaultRequest(get(&quot;&#x2F;user&#x2F;1&quot;).requestAttr(&quot;default&quot;, true)) &#x2F;&#x2F;默认请求 如果其是Mergeable类型的，会自动合并的哦mockMvc.perform中的RequestBuilder  </span><br><span class="line">            .alwaysDo(print())  &#x2F;&#x2F;默认每次执行请求后都做的动作  </span><br><span class="line">            .alwaysExpect(request().attribute(&quot;default&quot;, true)) &#x2F;&#x2F;默认每次执行后进行验证的断言  </span><br><span class="line">            .build();  </span><br><span class="line">      </span><br><span class="line">    mockMvc.perform(get(&quot;&#x2F;user&#x2F;1&quot;))  </span><br><span class="line">            .andExpect(model().attributeExists(&quot;user&quot;));</span><br></pre></td></tr></table></figure>
+
+
+
+
+</li>
+</ul>
+<h1 id="参看文章"><a href="#参看文章" class="headerlink" title="参看文章"></a>参看文章</h1><p><a href="https://blog.csdn.net/wo541075754/article/details/88983708" target="_blank" rel="noopener">SpringBoot基础之MockMvc单元测试</a></p>
+]]></content>
+      <categories>
+        <category>java-spring-test</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-java-通过包路径、类型查找接口实现</title>
+    <url>/articles/20210105/7c99785d.html</url>
+    <content><![CDATA[<p>摘要：保存成两个小数</p>
+<a id="more"></a>
+
+<h1 id="几种方式"><a href="#几种方式" class="headerlink" title="几种方式"></a>几种方式</h1><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> roundLong = <span class="number">8710</span>;</span><br><span class="line">System.out.println((roundLong * <span class="number">0.01</span>));</span><br><span class="line">System.out.println((roundLong /<span class="number">100.0</span>));</span><br><span class="line"><span class="comment">// 方式一、DecimalFormat</span></span><br><span class="line">DecimalFormat df = <span class="keyword">new</span> DecimalFormat(<span class="string">".00"</span>);</span><br><span class="line">System.out.println(df.format(roundLong * <span class="number">0.01</span>));</span><br><span class="line"><span class="comment">// 方式二、String.format</span></span><br><span class="line">System.out.println(String.format(<span class="string">"%.2f"</span>, (roundLong * <span class="number">0.01</span>)));</span><br><span class="line"><span class="comment">// 方式三、BigDecimal</span></span><br><span class="line">BigDecimal bg = <span class="keyword">new</span> BigDecimal(roundLong * <span class="number">0.01</span>);</span><br><span class="line"><span class="keyword">double</span> d3 = bg.setScale(<span class="number">2</span>, BigDecimal.ROUND_HALF_UP).doubleValue();</span><br><span class="line">System.out.println(d3);</span><br><span class="line"><span class="comment">// 方式四：通过NumberFormat类实现</span></span><br><span class="line">NumberFormat nf = NumberFormat.getNumberInstance();</span><br><span class="line">nf.setMaximumFractionDigits(<span class="number">2</span>);</span><br><span class="line">System.out.println(nf.format(roundLong * <span class="number">0.01</span>));</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">87.10000000000001</span><br><span class="line">87.1</span><br><span class="line">87.10</span><br><span class="line">87.10</span><br><span class="line">87.1</span><br><span class="line">87.1</span><br></pre></td></tr></table></figure>
+
+<h1 id="浮点类型精度问题"><a href="#浮点类型精度问题" class="headerlink" title="浮点类型精度问题"></a>浮点类型精度问题</h1><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> t2 = <span class="number">8710</span>;</span><br><span class="line">System.out.println((t2 * <span class="number">0.1</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.01</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.001</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.0001</span>));</span><br><span class="line"></span><br><span class="line">t2 = <span class="number">870</span>;</span><br><span class="line">System.out.println((t2 * <span class="number">0.1</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.01</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.001</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.0001</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">double</span> number1 = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">double</span> number2 = <span class="number">20.2</span>;</span><br><span class="line"><span class="keyword">double</span> number3 = <span class="number">300.03</span>;</span><br><span class="line"><span class="keyword">double</span> result = number1 + number2 + number3;</span><br><span class="line">System.out.println(result);</span><br></pre></td></tr></table></figure>
+<p>输出</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">871.0</span><br><span class="line">87.10000000000001</span><br><span class="line">8.71</span><br><span class="line">0.871</span><br><span class="line">87.0</span><br><span class="line">8.700000000000001</span><br><span class="line">0.87</span><br><span class="line">0.08700000000000001</span><br><span class="line">321.22999999999996</span><br></pre></td></tr></table></figure>
+<p>此处涉及，计算机浮点设计问题，详细可查阅资料。<br>float和double只能用来做科学计算或者是工程计算，在商业计算中我们要用 java.math.BigDecimal。<br>主要是说明应用系统设计、数据库设计，商业计算标准金额时，请尽量避开浮点直接运算，推荐 long、BigDecimal等其他方式进行</p>
+]]></content>
+      <categories>
+        <category>java-base</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>012-大型重构</title>
+    <url>/articles/20210102/497fab79.html</url>
+    <content><![CDATA[<p>摘要：“interface”。容易被理解、使用的接口，是开发良好面向对象软件的关键</p>
+<a id="more"></a>
+
+<h1 id=""><a href="#" class="headerlink" title=""></a></h1><p>12.1 Tease Apart Inheritance （梳理并分解继承体系） 362<br>12.2 Convert Procedural Design to Objects （将过程化设计转化为对象设计） 368<br>12.3 Separate Domain from Presentation （将领域和表述/显示分离） 370<br>12.4 Extract Hierarchy （提炼继承体系） 375</p>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>011-处理概括关系</title>
+    <url>/articles/20210102/605a8a20.html</url>
+    <content><![CDATA[<p>摘要：generalization，即集成关系</p>
+<a id="more"></a>
+
+<h1 id="PullUpField（字段上移）"><a href="#PullUpField（字段上移）" class="headerlink" title="PullUpField（字段上移）"></a>PullUpField（字段上移）</h1><ul>
+<li>两个子类具有相同字段，移至超类</li>
+</ul>
+<h1 id="PullUpMethod（函数上移）"><a href="#PullUpMethod（函数上移）" class="headerlink" title="PullUpMethod（函数上移）"></a>PullUpMethod（函数上移）</h1><ul>
+<li>在各个子类产生完全相同结果的函数移至超类</li>
+</ul>
+<h1 id="PullUpConstructorBody（构造函数本体上移）"><a href="#PullUpConstructorBody（构造函数本体上移）" class="headerlink" title="PullUpConstructorBody（构造函数本体上移）"></a>PullUpConstructorBody（构造函数本体上移）</h1><ul>
+<li>子类通用构造函数移至超类</li>
+</ul>
+<h1 id="PushDownMethod（函数下移）"><a href="#PushDownMethod（函数下移）" class="headerlink" title="PushDownMethod（函数下移）"></a>PushDownMethod（函数下移）</h1><ul>
+<li>超类中某个函数至于部分子类有关，将这个函数移到相关的那些子类中</li>
+</ul>
+<h1 id="PushDownField（字段下移）"><a href="#PushDownField（字段下移）" class="headerlink" title="PushDownField（字段下移）"></a>PushDownField（字段下移）</h1><ul>
+<li>超类中某个字段至于部分子类有关，将这个字段移到相关的那些子类中</li>
+</ul>
+<h1 id="ExtractSubclass（提炼子类）"><a href="#ExtractSubclass（提炼子类）" class="headerlink" title="ExtractSubclass（提炼子类）"></a>ExtractSubclass（提炼子类）</h1><ul>
+<li>类中的某些特性只被某些实例用到，新建一个子类，将特性写入新建的子类</li>
+</ul>
+<h1 id="Extract-Superclass-提炼超类"><a href="#Extract-Superclass-提炼超类" class="headerlink" title="Extract Superclass (提炼超类)"></a>Extract Superclass (提炼超类)</h1><ul>
+<li>两个类具有相似特性，为两个雷建立一个超类，将特性移至超类</li>
+</ul>
+<h1 id="Extract-Interface-提炼接口"><a href="#Extract-Interface-提炼接口" class="headerlink" title="Extract Interface (提炼接口)"></a>Extract Interface (提炼接口)</h1><ul>
+<li>若干客户使用类接口中的同一子集，或者两个类的接口有部分相同。将相同的子集提炼到一个独立接口中。</li>
+</ul>
+<h1 id="Collapse-Hierarchy-（折叠继承体系）"><a href="#Collapse-Hierarchy-（折叠继承体系）" class="headerlink" title="Collapse Hierarchy （折叠继承体系）"></a>Collapse Hierarchy （折叠继承体系）</h1><ul>
+<li>超类和子类之之间无太大区别。合成一个。</li>
+</ul>
+<h1 id="FormTemplateMethod（塑造模板函数）"><a href="#FormTemplateMethod（塑造模板函数）" class="headerlink" title="FormTemplateMethod（塑造模板函数）"></a>FormTemplateMethod（塑造模板函数）</h1><ul>
+<li>有一些子类，其中相应的某些函数以相同顺序执行类似的操作，但各个操作细节上有所不同。</li>
+<li>将这些操作分别放进地理函数，并保持他们都有相同的签名，于是原函数也就变得相同了，然后将原函数移至超类</li>
+</ul>
+<h1 id="Replace-Inheritance-with-Delegation（以委托取代继承）"><a href="#Replace-Inheritance-with-Delegation（以委托取代继承）" class="headerlink" title="Replace Inheritance with Delegation（以委托取代继承）"></a>Replace Inheritance with Delegation（以委托取代继承）</h1><ul>
+<li>q:某个子类使用超类接口中的一部分，或者是根本不需要继承而来的数据。</li>
+<li>a:在子类中新建一个字段用以保存超类；调整子类函数，令他改而委托超类；然后去掉两者之间的继承关系</li>
+</ul>
+<h1 id="Replace-Delegation-with-Inheritance-（以继承取代委托）"><a href="#Replace-Delegation-with-Inheritance-（以继承取代委托）" class="headerlink" title="Replace Delegation with Inheritance （以继承取代委托）"></a>Replace Delegation with Inheritance （以继承取代委托）</h1><ul>
+<li>在两个类之间使用委托关系，并经常为整个接口编写许多极简单的委托函数。</li>
+<li>a:让委托类继承受委托类</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>010-简化函数调用</title>
+    <url>/articles/20210102/ad0652f2.html</url>
+    <content><![CDATA[<p>摘要：“interface”。容易被理解、使用的接口，是开发良好面向对象软件的关键</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><ul>
+<li>良好的接口，只向用户展现必须展现的东西。如果一个接口暴露了过多的细节，需要将不必要暴露的东西隐藏起来，从而改进接口的质量</li>
+<li>所有数据都应该隐藏起来。</li>
+<li>所有可以隐藏的函数都应该被隐藏起来。hide method、remove setting method　　</li>
+</ul>
+<p>修改函数名称。最简单、最重要。名称是程序写作者、阅读者交流的关键工具</p>
+<ul>
+<li>只要能理解一段程序的功能，就应该大胆使用rename method，将自己所知道的东西传达给他人</li>
+<li>在适当时机，修改变量名称、类名称</li>
+</ul>
+<p>函数参数：add parameter、remove parameter</p>
+<ul>
+<li>对象技术，可以保持参数列的简短</li>
+<li>preserve whole object：来自同一个对象的多个值被当作参数传递</li>
+<li>introduce parameter object：对象不存在，创建一个参数对象</li>
+<li>replace parameter with method：函数参数来自该函数可获取的一个对象=》避免传递参数</li>
+<li>replace parameter with explicit method：参数被用来在条件表达式中做选择依据</li>
+<li>parameter method：为数个相似函数添加参数，将它们合并到一起</li>
+</ul>
+<p>警告：</p>
+<ul>
+<li><p>并发编程往往需要使用较长的参数列，可以保证传递给函数的参数都是不可修改的。</p>
+<ul>
+<li>例如：内置对象、值对象一定是不可变的</li>
+<li>可以使用不可变对象取代这样的长参数列。但必须对此类重构保持谨慎</li>
+</ul>
+</li>
+<li><p>separate query from modifier：明确地将“修改对象状态”的函数和“查询对象状态”的函数分开设计</p>
+</li>
+<li><p>replace constructor with factory method：不需要知道搞糟函数要创建的对象属于哪个类</p>
+</li>
+<li><p>encapsulate downcast：将向下转型封装隐藏起来，避免让用户做那种动作</p>
+</li>
+<li><p>replace error code with exception：以错误代码表示程序异常</p>
+</li>
+<li><p>replace exception with test：测试</p>
+</li>
+</ul>
+<h2 id="rename-method：修改函数名"><a href="#rename-method：修改函数名" class="headerlink" title="rename method：修改函数名"></a>rename method：修改函数名</h2><ul>
+<li>问题：函数的名称未能揭示函数的用途</li>
+<li>解决：修改函数名称</li>
+<li>动机：</li>
+<li>提倡的编程风格：将复杂的处理过程分解成小函数<ul>
+<li>做不好=》费尽周折，却弄不清楚这些小函数各自的用途</li>
+<li>解决关键：给函数起个好名字。准确表达它的用途（将函数上的注释变成函数名称）</li>
+</ul>
+</li>
+<li>一个函数名称不能很好表达其用途，应该立即修改。<ul>
+<li>代码首先是为人写的，其次才是为计算机而写。而人需要良好命名的函数</li>
+<li>起个好名称并不容易，需要经验。要想成为一个真正的编程高手，起名的水平至关重要，函数签名中的其他部分也同样重要</li>
+</ul>
+</li>
+<li>如果重新安排参数顺序，能够提高代码的清晰度，大胆去做。可运用add parameter、remove parameter</li>
+<li>做法：</li>
+<li>检查函数签名：是否被超类、子类实现过。<ul>
+<li>是：针对每份实现分别进行下列步骤</li>
+</ul>
+</li>
+<li>声明一个新函数，将其命名为新名称。将旧函数的代码复制到新函数中，进行适当调整</li>
+<li>修改旧函数，让其调用新函数</li>
+<li>找出旧函数的所有引用点，改而调用新函数</li>
+<li>删除旧函数<ul>
+<li>如果旧函数是该类public接口的一部分，可能无法安全地删除它。这种情况下，将其保留在原处，并标记为deprecated（不建议使用）</li>
+</ul>
+</li>
+<li>注意：添加、去除某个参数，过程大致相同</li>
+</ul>
+<h2 id="add-parameter：添加参数"><a href="#add-parameter：添加参数" class="headerlink" title="add parameter：添加参数"></a>add parameter：添加参数</h2><ul>
+<li>问题：某个函数需要从调用端得到更多信息</li>
+<li>解决：为此函数添加一个对象参数，让该对象带进函数所需信息</li>
+<li>动机：</li>
+<li>必须修改一个函数，修改后的函数需要一些过去没有的信息=》需要给该函数添加一个参数</li>
+<li>不使用本重构的时机：除了添加参数外，还有其他的选择<ul>
+<li>只要可能，其他选择都比添加参数要好：不会增加参数列的长度</li>
+<li>过长的参数列是bad smell：程序员很难记住这么多参数=》data clumps</li>
+<li>提问：<ul>
+<li>能从已有参数中得到需要的信息？</li>
+<li>能通过某个函数提供所需信息？</li>
+<li>需要将这些信息用于何处？此函数是否应该属于用改该信息的哪个对象所有</li>
+<li>针对现有参数，加入新参数是否合适？是否可以使用intruduce parameter object</li>
+</ul>
+</li>
+<li>并非绝对不要添加参数。但是，在添加参数之前必须要了解其他选项</li>
+</ul>
+</li>
+<li>做法：类似add parameter、remove parameter<ul>
+<li>检查函数签名是否被超类、子类实现过？是：针对每份分别实现下列步骤</li>
+<li>声明一个新函数。名称与原函数同，只是添加新参数；将旧函数的代码复制到新函数中<ul>
+<li>如果需要添加的参数不止一个，将其一次性添加进去比较容易</li>
+</ul>
+</li>
+<li>修改旧函数，令其调用新函数<ul>
+<li>可以给参数提供任意值。一般会给对象参数提供null；给内置型参数提供一个明显非正常值；数值型参数，建议使用0以外的值，这样比较容易将其认出来</li>
+</ul>
+</li>
+<li>找出旧函数的所有引用点，将其修改为对新函数的引用，删除旧函数<ul>
+<li>如果旧函数是该类public接口的一部分，可能无法安全地删除它。这种情况下，将其保留在原处，并标记为deprecated（不建议使用）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="remove-parameter：移除参数"><a href="#remove-parameter：移除参数" class="headerlink" title="remove parameter：移除参数"></a>remove parameter：移除参数</h2><ul>
+<li>问题：函数本体不再需要某个参数</li>
+<li>解决：将该参数去除</li>
+<li>动机：</li>
+<li>可能经常添加参数，却往往不愿意去掉它们：无论如何，多余的参数不会引起任何问题，而且以后可能用得上<ul>
+<li>恶魔的诱惑</li>
+<li>参数代表着函数所需的信息，不同的参数值有不同的意义。</li>
+<li>函数调用者必须为每一个参数操心该传什么东西进去。如果不去掉多余参数，就是让每一位用户多费一份心。很不划算，且“去除参数”是非常简单的一项重构</li>
+</ul>
+</li>
+<li>多态函数，情况有所不同，不能去除原有函数：可能多态函数的另一份（或多份）实现会使用这个参数，此时就不能去除它。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>009-简化条件表达式</title>
+    <url>/articles/20210102/642a4d3f.html</url>
+    <content><![CDATA[<p>摘要：条件逻辑可能十分复杂</p>
+<ul>
+<li>decompose conditional：将一个复杂的条件逻辑分成若干个小块。使得“分支逻辑”、“操作细节”分离</li>
+<li>consolidate conditional expression：代码中多处测试有相同结果</li>
+<li>consolidate duplicate conditional fragment：去掉条件代码中的重复成分</li>
+<li>为了让条件表达式也遵循“单一出口原则”，往往向其中加入控制标记。<ul>
+<li>不特别在意“一个函数一个出口的教条，使用replace nested conditional with cuard clauses标示出那些特殊情况，使用remove control flag去除那些讨厌的限制</li>
+</ul>
+</li>
+<li>面向对象程序的条件表达式通常比较少（较之过程化程序而言）：很多条件行为都被多态机制处理掉了。<ul>
+<li>多态的好处：调用者无需了解条件行为的细节=》条件的扩展更容易</li>
+</ul>
+</li>
+<li>replace conditional with polymorphism：将switch语句替换为多态</li>
+<li>introduce null object：去除对于null值的校验。多态的一种十分有用且鲜为人知的用途<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="decompose-conditional：分解条件表达式"><a href="#decompose-conditional：分解条件表达式" class="headerlink" title="decompose conditional：分解条件表达式"></a>decompose conditional：分解条件表达式</h1><ul>
+<li>问题：有一个复杂的条件语句（if-then-else）</li>
+<li>解决：从if-then-else三个段落中分别提炼出独立的函数</li>
+<li>动机：<ul>
+<li>复杂的条件逻辑：最常导致复杂度上升的地点之一<ul>
+<li>必须编写代码来检查不同的条件分支，根据不同的分支做不同的事情=》导致相当长的函数。</li>
+<li>大型函数自身会使代码的可读性下降+条件逻辑会使代码更难阅读</li>
+</ul>
+</li>
+<li>在带有复杂条件逻辑的函数中，代码（包括检查条件分支的代码、真正实现功能的代码）会告诉你法僧的事情。但是，常常让人弄不清楚为什么会发生这样的事=》代码的可读性的确大大降低了</li>
+<li>任何大块头代码，都可以分解为多个独立函数。根据每一小块代码的用途，为分解而得的新函数命名，更清楚地表达自己的意图</li>
+<li>对于条件逻辑，每个分支条件分解成新函数：突出条件逻辑，更清楚地表明每个分支的作用，突出每个分支的原因</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>将if-then-else中的每一个段落都提炼出来，构成一个独立函数</li>
+<li>如果发现嵌套的条件逻辑，会先观察是否可以使用replace nested conditional with guard clauses。如果不行，才开始分解其中的每一个条件</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>有的分支条件往往非常短，看上去似乎没有提炼分支的必要。</li>
+<li>尽管这些条件往往很短，在代码意图、代码自身之间往往存在不小的差距。提炼分支能够更好地表达自己的用途，提炼出来的函数可读性更高（就像一段注释那样清楚而明白）</li>
+</ul>
+</li>
+</ul>
+<h1 id="consolidate-conditional-expression：合并条件表达式"><a href="#consolidate-conditional-expression：合并条件表达式" class="headerlink" title="consolidate conditional expression：合并条件表达式"></a>consolidate conditional expression：合并条件表达式</h1><ul>
+<li>问题：有一系列条件测试，都得到相同结果</li>
+<li>解决：将这些测试合并为一个条件表达式，并将这个条件表达式提炼成一个独立的函数</li>
+<li>动机：<ul>
+<li>一串条件检查，检查条件各不相同，最终行为却一致<ul>
+<li>立即用“逻辑或”、“逻辑与”将它们合并为一个条件表达式</li>
+</ul>
+</li>
+<li>合并条件表达式的原因：<ul>
+<li>1.合并后的条件代码：“实际上只有一次条件检查，只不过有多个并列条件需要检查而已”=》使这一次检查的用意更清晰<br>  合并前、合并后的代码有着相同的效果，但原先代码传达出的信息：“这里有一些各自独立的条件测试，只是恰好同时发生”</li>
+<li>2.为使用extract method做好准备。将检查条件提炼成一个独立函数，对于理清代码十分有用：把描述“做什么”的语句换成了“为什么这样做”</li>
+</ul>
+</li>
+<li>不要合并的理由：<ul>
+<li>1.如果检查彼此独立，不应该视为同一次检查，就不要使用本重构项。代码已经清楚表达出自己的意义</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>确定这些条件语句没有副作用：有副作用不能使用本项重构</li>
+<li>使用适当的逻辑操作符，将一系列相关条件表达式合并为一个</li>
+<li>对合并后的条件表达式实施“extract method”，提炼成一个独立函数，并以函数名称表达该语句所检查的条件<ul>
+<li>某些情况下，需要同时使用逻辑与、逻辑或、逻辑非，最终得到的条件表达式可能很复杂：先使用extract method将表达式的一部分提炼出来，从而使整个表达式变得简单一些</li>
+<li>如果所观察的部分只是对条件进行检查并返回一个值，就可以使用三元操作符，将这一部分变成一条return语句。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="consolidate-dupulicate-conditional-fragment：合并重复的条件片段"><a href="#consolidate-dupulicate-conditional-fragment：合并重复的条件片段" class="headerlink" title="consolidate dupulicate conditional fragment：合并重复的条件片段"></a>consolidate dupulicate conditional fragment：合并重复的条件片段</h1><ul>
+<li>问题：在条件表达式的每个分支上有着相同的一段代码</li>
+<li>解决：将这段重复代码搬移到条件表达式之外。</li>
+<li>动机：<ul>
+<li>一组体哦阿健表达式的所有分支都执行了相同的某段代码：将这段代码搬移到表达式的外面=》更清楚地表明：那些东西随条件的变化而变化、那些东西保持不变</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>鉴别出“执行方式不随条件变化而变化”的代码</li>
+<li>将共同代码移到条件表达式之外<ul>
+<li>如果这些共同代码位于条件表达式的中断=》观察共同代码之前、之后改变了什么。如果的确有所改变，应该首相将共同代码向前、向后移动，移至条件表达式的起始处、尾端。</li>
+<li>共同代码不止一条，首先使用extract method将共同代码提炼到一个独立函数中</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>可以使用同样的手法来对待异常。如果在try-catch都执行了同一段代码，则将这段重复代码移到final区段</li>
+</ul>
+</li>
+</ul>
+<h1 id="remove-control-flag：移除控制标记"><a href="#remove-control-flag：移除控制标记" class="headerlink" title="remove control flag：移除控制标记"></a>remove control flag：移除控制标记</h1><ul>
+<li>问题：在一系列布尔表达式中，某个变量带有“控制标记control flag”的作用</li>
+<li>解决：用break 、return语句取代控制标记</li>
+<li>动机：<ul>
+<li>条件表达式中，常常看到：判断何时停止条件检查的控制标记</li>
+<li>带来的麻烦&gt;带来的遍历。</li>
+<li>使用control flag的原因：结构话编程原则，每个子程序只能有一个入口、一个出口<ul>
+<li>赞同“单一入口”原则。</li>
+<li>但，“单一出口”原则会在代码中加入讨厌的控制标记，大大降低条件表达式的可读性=》break、continue。用它们跳出复杂的条件语句</li>
+</ul>
+</li>
+<li>去掉control flag：条件语句的真正用途会清晰很多</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>找出跳出这段逻辑的控制标记值</li>
+<li>找出对标记变量赋值的语句，代以恰当的break、congtinue（对control flag最显而易见的方法）</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>未能提供break、continue语句的编程语言中<ul>
+<li>extract method，整段逻辑提炼到一个独立函数中</li>
+<li>找出跳出这段逻辑的控制标记值</li>
+<li>找出对标记变量赋值的语句，代以恰当的return语句</li>
+</ul>
+</li>
+<li>即使在支持break、congtinue语句的编程语言中，通常也优先考虑上述第二个方案。<ul>
+<li>return语句可以非常清楚地表示：不再执行该函数中的其他任何代码</li>
+</ul>
+</li>
+<li>注意标记变量，是否会影响这段逻辑的最后结果。<ul>
+<li>如果有，使用break语句之后还得保留控制标记值。如果已经将这段逻辑提炼成一个独立函数，也可以将控制标记值放在return中返回</li>
+</ul>
+</li>
+<li>既是控制标记，也是运算结果。将与次变量有关的代码，提炼到一个独立函数中，用return取代控制标记变量</li>
+<li>如果以此办法处理带有，有副作用的函数，会出现问题。先以separate query from modifier将函数副作用分离出去</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-nested-conditional-with-guard-clauses：以卫语句取代嵌套条件表达式"><a href="#replace-nested-conditional-with-guard-clauses：以卫语句取代嵌套条件表达式" class="headerlink" title="replace nested conditional with guard clauses：以卫语句取代嵌套条件表达式"></a>replace nested conditional with guard clauses：以卫语句取代嵌套条件表达式</h1><ul>
+<li>问题：函数中的条件逻辑使人难以看清正常的执行路径</li>
+<li>解决：用卫语句表现所有特殊情况</li>
+<li>动机：<ul>
+<li>条件表达式，通常有两种情况：<ul>
+<li>1.所有分支属于正常行为：应该用if-else-的条件表达式</li>
+<li>2.只有一种是正常行为，其他都是不常见的情况。不常见的条件单独检查；为真时，立刻从函数中返回。<ul>
+<li>单独检查，常被称为“卫语句guard clauses”</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>精髓：给某一条分支以特别的重视。<ul>
+<li>if-then-else结构，对if、else的重视时同等的。</li>
+<li>guard clauses：这种情况很罕见，如果真的发生了，请做一些整理工作，然后退出</li>
+</ul>
+</li>
+<li>“每个函数只能有一个入口、一个出口”<ul>
+<li>编程语言会强制，保证每个函数只有一个入口。</li>
+<li>“单一出口”这个规则，没那么有用。保持代码清晰才是关键。如果单一出口能使函数更清楚易读，就使用单一出口；否则，不必这么做<ul>
+<li>嵌套条件代码，往往由那些深心“每个函数只能由一个出口”的程序员写出。此条规则太简单粗暴了。如果对函数剩余部分不再由兴趣，应该立即退出。引导阅读者去看一个没有用的else区段，只会妨碍他们的理解</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>对于每个检查，放进一个guard clauses。卫语句要不从函数中返回，要不就抛出一个异常<ul>
+<li>如果所有卫语句都导致相同的结果，请使用 consolidate conditional expressions</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>常常可以将条件表达式反转，从而实现replace nested conditional with guard clauses。</li>
+<li>推荐在guard clauses内返回一个明确的值，可以一目了然地看到guard clauses返回的失败结果。这是也会考虑使用replace magic number with symbolic constant</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-conditional-with-polymorphism：以多态取代条件表达式"><a href="#replace-conditional-with-polymorphism：以多态取代条件表达式" class="headerlink" title="replace conditional with polymorphism：以多态取代条件表达式"></a>replace conditional with polymorphism：以多态取代条件表达式</h1><ul>
+<li>问题：条件表达式，是根据对象类型的不同，而选择不同的行为</li>
+<li>解决：将这个条件表达式的每个分支放进一个子类内的覆写函数中，然后将原始函数声明为抽象函数</li>
+<li>动机：<ul>
+<li>多态的好处：根据需要对象的不同类型，而采取不同的行为。多态，使你不必编写明显的条件表达式<ul>
+<li>类型码的switch语句、基于类型名称的if-then-else语句，在面向对象程序中很少出现</li>
+</ul>
+</li>
+<li>同一组条件条件表达式在程序许多地点出现，那使用多态的收益是最大的<ul>
+<li>使用条件表达式时，如果项添加一种新类型，就必须查找并更新所有条件表达式。</li>
+<li>如果改用多态，只需建立一个新的子类，并在其中提供适当的函数就行了。</li>
+<li>类的用户不需要了解这个子类，就大大降低了系统各部分之间的依赖，使系统升级更容易</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>使用replace conditional with polymorphism之前，首先必须由一个继承结构。</li>
+<li>建立继承结构由两种选择：<ul>
+<li>replace type code with subclasses：简单，应尽可能使用这一种</li>
+<li>replace type code with state/strategy：对象创建之后修改类型码；或者，要重构的类已经有了子类</li>
+<li>如果若干switch语句针对的是同一个类型码，只需针对这个类型码建立一个继承结构就行了</li>
+</ul>
+</li>
+<li>如果要处理的条件表达式是一个更大函数中的一部分。首先，对条件表达式进行分析，然后使用extract method将其提炼到一个独立函数去</li>
+<li>如果由必要，使用move method、将条件表达式放置到继承结构的顶端</li>
+<li>任选一个子类，在其中建立一个函数，使之覆写超类中容纳条件表达式的那个函数。将与该子类相关的条件表达式分支复制到新建函数中，并对其进行适当调整<ul>
+<li>可能需要将超类中某些private字段声明为protected</li>
+</ul>
+</li>
+<li>超类中删掉条件表达式内被复制了的分支</li>
+<li>将超类中容纳条件表达式的函数声明为抽象函数</li>
+</ul>
+</li>
+</ul>
+<h1 id="intruduce-null-object：引入null对象"><a href="#intruduce-null-object：引入null对象" class="headerlink" title="intruduce null object：引入null对象"></a>intruduce null object：引入null对象</h1><ul>
+<li>问题：需要再三检查某对象是否为null </li>
+<li>解决：将null值替换为null对象</li>
+<li>动机：</li>
+<li>多态的最根本好处：不必再向对象询问“你是什么类型”。而后根据得到的答案调用对象的某个行为。只管调用该行为就是了，其他的一切，多态机制会为你安排妥当</li>
+<li>当某个字段内容为null时，多态可扮演另一个较不直观，亦较不为人所知的用途<ul>
+<li>解决：每次向一个对象发送一个消息之前，总是要检查对象是否存在。此类检查出现很多次，造成大量的重复代码</li>
+<li>null object==miss object。不让实例变量被设为null，而是插入各式各样的空对象，都知道如何正确的显示自己=》拜托大量过程化的代码<ul>
+<li>mock test object：使用此原理。便于模块化开发、测试。</li>
+<li>missing bin：虚构的箱仓。自己不带任何数据，总值为0.<ul>
+<li>箱仓：指集合，用来保存某些资薪值，并常常需要对各个资薪值进行加和、遍历</li>
+</ul>
+</li>
+<li>系统几乎从来不会因为空对象而被破坏。null object对所有外界请求的相应和真实对象一样=》系统行为总是正常的</li>
+<li>并非总是好事儿。有时会造成问题侦测、查找上的困难。因为从来没有任何东西被破坏。<ul>
+<li>只要认真检查，就会发现空对象有时出现在不该出现的地方</li>
+</ul>
+</li>
+<li>空对象一定是常量，它们的任何成分都不会发生变化。可以使用singleton模式来实现=》任何时候，只要请求一个miss<strong>对象，得到的一定是miss</strong>的唯一实例</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>为源类建立一个子类，使其行为就像是源类的null版本。在源类、null子类中都加上isnull（），前者返回false，后者返回true。<ul>
+<li>有帮助的做法：建立一个nullable接口，将isnull（）放入其中，让源类实现这个接口：昭告大家，这里使用了空对象</li>
+<li>也可以创建一个测试接口，专门用来检查对象是否为null：无法修改null对象的</li>
+<li>工厂函数：专门用来创建null**对象=》用户不必知道空对象的存在</li>
+</ul>
+</li>
+<li>找出所有“索求对象却获得一个null”的地方。修改这些地方，使其获得一个null对象</li>
+<li>找出所有“将源对象与null作比较”的地方。修改这些地方，使其调用isnull（）<ul>
+<li>每次只处理一个源对象、其客户程序，编译、测试后，再处理另一个源对象</li>
+<li>可以在“不该出现null”的地方放上一些断言，确保null不再出现</li>
+<li>大多数情况，需要做大量的替换工作（视null对象的使用频率来决定），很凌乱、恼人</li>
+<li>实现nullable接口的对象：（aCustomer is null）来判断</li>
+</ul>
+</li>
+<li>找出这样的程序点：如果对象不是null，做A动作，否则做B动作<ul>
+<li>在null类中覆写A动作，使其行为和B动作相同</li>
+<li>使用被覆写的动作，删除“对象是否等于null”的条件测试</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>只有当大多数（不是所有）客户代码，都要求空对象做出相同响应时，这样的行为搬移才有意义。<ul>
+<li>任何用户如果需要空对象做出不同相应，仍然可以使用isnull（）函数来测试，只要大多数客户端都要求空对象做出相同响应，就可以调用默认的null行为，自己也就受益匪浅了</li>
+</ul>
+</li>
+<li>使用本项重构时，可以有几种不同的空对象（例如：没有顾客、不知顾客名的顾客），针对不同情况建立不同的空对象类。<ul>
+<li>有时候空对象也可以携带数据：不知名顾客的使用记录……，查出顾客姓名后，将账单寄给他</li>
+<li>本质上是特例模式special case：比null object模式更大的模式。<ul>
+<li>某个类的特殊情况，有着特殊行为</li>
+<li>例如：浮点数：有“正无穷大”、“负无穷大”、“NaN”……</li>
+<li>价值：可以降低“错误处理”开销。NaN做浮点运算，结果是个NaN。与“空对象的访问函数通常返回另一个空对象”同   理</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="intruduce-assertion：引入断言"><a href="#intruduce-assertion：引入断言" class="headerlink" title="intruduce assertion：引入断言"></a>intruduce assertion：引入断言</h1><ul>
+<li>问题：某一段代码需要对程序状态做出某种假设</li>
+<li>解决：以断言明确某种假设</li>
+<li>动机：<ul>
+<li>只有当某个条件为真时，该段代码才能正常运行。例如：平方根计算只对正值才能进行……</li>
+<li>这样的假设通常并没有在代码中明确表现出来，必须阅读整个算法才能看出。有时会以注释写出这样的假设=》更好的技术：使用断言，明确表明这些假设</li>
+<li>断言是一个条件表达式，应该总为真。如果失败，表示程序员犯了错误<ul>
+<li>断言的失败应该导致一个非受控异常unchecked exception。</li>
+<li>断言绝对不能被系统的其他部分使用。</li>
+<li>实际上，程序最后的成品，往往将断言统统删除=》标记“某些东西是断言”，很重要</li>
+</ul>
+</li>
+<li>断言，可以作为交流、调试的辅助。<ul>
+<li>交流角度上，断言可以帮助程序阅读者，理解代码所做的假设（代码正确运行的必要条件）</li>
+<li>调试角度上，断言可以在距离bug最近的地方抓住它们</li>
+<li>=》编写自我测试代码时，断言在调试方面的帮助变得不那么重要了。但，仍要非常看重断言在交流方面的价值</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>如果程序不犯错，断言就应该不会对系统运行造成任何影响=》加入断言，不会影响程序的行为<ul>
+<li>如果反写代码假设某个条件始终为真。就加入一个断言，明确说明这种情况</li>
+<li>可以新建一个Assert类，用于处理各种情况下的断言</li>
+</ul>
+</li>
+<li>不要滥用断言。不要使用它来检查“你认为应该为真”的条件，请只用它来检查“一定必须为真”的条件<ul>
+<li>滥用断言，可能会造成难以维护的重复逻辑。</li>
+<li>在一段逻辑中加入断言是有好处的：迫使你重新考虑这段代码的约束条件</li>
+<li>如果不满足这些约束条件，程序也可以正常运行=》断言不会带来任何帮助，只会把代码变得混乱，可能妨碍以后的修改</li>
+</ul>
+</li>
+<li>应该常常问自己：如果断言所只是的约束条件不能满足，代码是否仍能正常运行？如果可以，将断言删掉</li>
+<li>断言中的重复代码。和其他任何的地方的重复diamagnetic一样不好闻，大胆使用extract method（去重、更清楚说明函数用途）去掉那些重复代码。</li>
+</ul>
+</li>
+<li>注意：</li>
+<li>断言可以被轻松拿掉=》不可能影响最终成品的性能。</li>
+<li>编写一个辅助类（例如：Assert类）是有帮助的。<ul>
+<li>缺点：断言参数中的任何表达式不论什么情况，都一定会被执行一遍。</li>
+<li>阻止它的唯一办法：如果Assert.ON是个常量，编译器就会对其进行检查。如果==false，就不会再执行表达式后半段代码<ul>
+<li>加此语句有些丑陋，嗯对程序源宁可仅仅使用Assert.isTrue()函数。在项目结束前，过滤掉使用断言的每一行diamagnetic</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Assert类应该有很对个函数，函数名称应该帮助程序员理解其功用。<ul>
+<li>isTrue()、equals()、shouldNeverReachHere()……</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>008-重新组织数据</title>
+    <url>/articles/20210102/28ec1893.html</url>
+    <content><![CDATA[<p>摘要：对象应该直接访问其中的数据，还是通过访问函数来访问？  </p>
+<ul>
+<li>常选择“直接访问”方式，任何时候进行这项重构（self encapsulate field）都是很简单的</li>
+<li>eplace value with object:将“哑”数据变成善表达的对象</li>
+<li>hange value to reference：有太多地方需要这一类对象，可用此方法将其变为引用对象</li>
+<li>eplace array with object：看到一个数组的行为方式很像一个数据结构。将数组变成对象，从而使这个数据结构更清晰地显露出来。move method，为这个对象加入相应行为，真正的好处才得以体现</li>
+<li>eplace magic number with symbolic constant：处理魔法数（带有特殊含义的数字）</li>
+<li>hange unidirectional association to bidirectional：将对象之间的单向关联变成双向关联</li>
+<li>hange bidirectional association to undirectional：将双向关联变成单向关联</li>
+<li>uplicate Observed data：GUI类处理不该其处理的业务：将处理业务逻辑的行为移到合适的领域类去，需要在领域类中保存这些逻辑的相关数据。一般，不喜欢重复数据，但这是一个意外，这里的重复数据不可避免</li>
+<li>ncapsulate field：封装类中公开的数据</li>
+<li>ncapsulate collection：封装类中公开的集合。集合有其特殊协议</li>
+<li>eplace recorde with data class：如果一整条记录都被裸露在外</li>
+<li>ype code：类型码，特殊数值。“与实例所属之类型相关的某些东西”。通常以枚举形式出现。通常以static final 整数实现。</li>
+<li>eplace type code with class：应用于：用来表现某种信息，且不会改变所属类型的行为。可以提供更好的类型检查和更好的平台(在未来方便地将相关的行为添加进去)</li>
+<li>eplace type code with subclasses :如果当前类型的行为受到类型码的影响</li>
+<li>eplace type code with state/strategy:更复杂的情况<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="self-encapsulate-field：自封装字段"><a href="#self-encapsulate-field：自封装字段" class="headerlink" title="self encapsulate field：自封装字段"></a>self encapsulate field：自封装字段</h1><ul>
+<li>问题：直接访问一个字段，但是字段之间的耦合关系逐渐变得笨拙</li>
+<li>解决：为这个字段建立取值、设值函数，并且只以这些函数来访问字段</li>
+<li>动机：<ul>
+<li>“间接访问变量”。好处：子类可以通过覆写一个函数，改变获取数据的途径；支持更灵活的数据管理方式（延迟初始化）</li>
+<li>“直接访问变量”。好处：代码比较容易阅读。</li>
+<li>通常，先使用直接访问方式，直到这种方式会带来麻烦，接着转而使用间接访问方式。重构给了改变主意的自由</li>
+<li>使用 self encapsulate field：<ul>
+<li>想访问超类中的一个字段，却又想在子类中将这个变量的访问改为一个计算后的值</li>
+<li>“字段的自我封装” 只是第一步。完成自我封装之后，可以在子类中根据自己的需要随意覆写set/get函数</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>可以暂时将字段改名，让编译器帮助查找引用点</li>
+<li>将字段声明为private</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-data-value-with-object-以对象取代数据值"><a href="#replace-data-value-with-object-以对象取代数据值" class="headerlink" title="replace data value with object:以对象取代数据值"></a>replace data value with object:以对象取代数据值</h1><ul>
+<li>问题：有一个数据项，需要与其他数据、行为一起使用才有意义</li>
+<li>解决：将数据项变成对象</li>
+<li></li>
+<li>动机：<ul>
+<li>开发初期，往往决定以简单的数据项表示简单的情况。随着开发的进行，发现这些简单数据项不再简单。散发duplicate code/feature envy的代码坏味道，则需要将数据值变成对象</li>
+<li>例：开始，用字符串表示“电话号码”。随后，电话号码需要“格式化”、“抽取区号”之类的特殊行为。</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>为待替换数值新建一个类，在其中声明一个final字段，类型和源类中的待替换数据类型一样；在新类中加入这个字段的取值函数；新类中加上一个接受此字段为参数的构造函数</li>
+<li>将源类中的待替换数值字段的类型改为新建的类</li>
+<li>修改源类的该字段的取值函数，令其调用新类的取值函数</li>
+<li>如果源类构造函数中用到这个待替换字段（多半是赋值动作），就修改构造函数，令其改用新类的构造函数来对字段进行赋值</li>
+<li>修改源类中的待替换字段的设值函数，令其为新类创建一个实例（值对象应该是不可修改的内容。可以避免一些讨厌的别名问题）</li>
+<li>可能需要对新类使用change value to reference</li>
+</ul>
+</li>
+</ul>
+<h1 id="change-value-to-reference-将值对象改为引用对象"><a href="#change-value-to-reference-将值对象改为引用对象" class="headerlink" title="change value to reference:将值对象改为引用对象"></a>change value to reference:将值对象改为引用对象</h1><ul>
+<li>问题：从一个类衍生出许多彼此相等的实例，希望将它们替换为同一个对象</li>
+<li>解决：将这个值对象变为引用对象</li>
+<li>动机：<ul>
+<li>引用对象：可以直接==，来验证对象同一性</li>
+<li>值对象：覆写equal()、hashCode()</li>
+<li>应用：确保对任何一个对象的修改，都能影响到所有引用此对象的地方。需要将此对象变成一个引用对象</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>使用replace constructor with factory method</li>
+<li>决定由什么对象负责提供访问新对象的途径<ul>
+<li>可能是一个静态字典，或一个注册表对象</li>
+<li>可以使用多个对象作为新对象的访问点</li>
+</ul>
+</li>
+<li>决定这些引用对象应该预先创建好，还是应该动态创建<ul>
+<li>如果引用对象是预先创建好的，且必须从内存中将其读取出来。就需确保它们在被需要的时候能够被及时加载</li>
+</ul>
+</li>
+<li>修改工厂函数，令它返回引用对象<ul>
+<li>如果对象是预先创建好的，需要考虑：万一有人索取一个其实并不存在的对象，要如何处理错误</li>
+<li>可能希望对工厂函数使用rename method，使其传达：它返回的是一个既存对象</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="change-reference-to-value：将引用对象改为值对象"><a href="#change-reference-to-value：将引用对象改为值对象" class="headerlink" title="change reference to value：将引用对象改为值对象"></a>change reference to value：将引用对象改为值对象</h1><ul>
+<li>问题：一个引用对象，很小，且不可变，且不易管理</li>
+<li>解决：将其变成一个值对象</li>
+<li>动机：<ul>
+<li>引用对象开始变得难以使用。<ul>
+<li>引用对象必须被某种方式控制，总是必须向其控制者请求适当的引用对象</li>
+<li>可能造成内存区域之间错综复杂的关联</li>
+<li>在分步系统、并发系统中，不可变的值对象特别有用，无需考虑它们的同步问题</li>
+</ul>
+</li>
+<li>值对象的一个非常重要的特性：不可变<ul>
+<li>保证了，可以放心地以多个对象表示同一事物</li>
+<li>不代表不能改变。如果要改变，需要用新的对象来取代现有对象，而不是在现有对象上修改。值对象自身不能修改，但是可以修改其他对象与值对象之间的关系</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>检查重构目标是否为不可变对象，或是否可修改为不可变对象<ul>
+<li>如果改对象目前还不是不可变的，使用remove setting method，直到其成为不可变的为止</li>
+<li>如果无法将对象修改为不可变的，就放弃使用本项重构</li>
+</ul>
+</li>
+<li>建立equal()、hashcode()。这两个函数的修改必须同时进行，负责依赖hash的任何集合对象（hashtable、hashset、hashmap……）都可能产生意外行为</li>
+<li>考虑是否可以删除工厂函数，并将构造函数声明为public</li>
+</ul>
+</li>
+<li>注意：要把一个引用对象变成值对象，关键动作：检查是否不可变。<ul>
+<li>如果不是，就不能使用本项重构。</li>
+<li>可变的值对象会造成烦人的别名问题</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-array-with-object：以对象取代数值"><a href="#replace-array-with-object：以对象取代数值" class="headerlink" title="replace array with object：以对象取代数值"></a>replace array with object：以对象取代数值</h1><ul>
+<li>问题：由一个数值，各元素各自代表不同的东西、</li>
+<li>解决：以对象替换数组。对于数组中的每个元素，以一个字段来表示</li>
+</ul>
+<h1 id="change-unidirectional-association-to-bidirectional将单向关联改为双向关联"><a href="#change-unidirectional-association-to-bidirectional将单向关联改为双向关联" class="headerlink" title="change unidirectional association to bidirectional将单向关联改为双向关联"></a>change unidirectional association to bidirectional将单向关联改为双向关联</h1><ul>
+<li>场合：两个类·····都需要使用双方特性，但其间只有一条单向连接</li>
+<li>方式：添加一个反向指针，并使修改函数能够同时更新两条连接</li>
+<li>动机：<ul>
+<li>开发初期，可能会在两个类之间建立一条单向连接，使其中一个类可以引用另一个类。随着时间推移，引用类需要得到其引用者，以便进行某些处理。即需要一个反向指针</li>
+<li>指针是一种单向连接，不可能反向操作。可以绕道而行，耗费一些计算时间，成本还算合理，然后在被引用类中建立一个函数专门负责此行为</li>
+<li>有时候绕过这个问题并不容易，此时需要建立双向引用关系，即反向指针</li>
+<li>如果使用不当，反向指针很容易造成混乱；但只要习惯了这种手法，其实并不复杂</li>
+<li>反向指针，不好实现。在熟练运用前，应该有相应的测试。</li>
+<li>通常不会花心思测试访问函数，因为普通访问函数的风险没有高到需要测试的地步。但本重构要求测试访问函数，是极少数需要添加测试的重构手法之一</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>在被引用类中增加一个字段，用以保存反向指针</li>
+<li>决定由哪个类：引用端？被引用端？ 控制关联关系<ul>
+<li>如果两者都是引用对象，而其间的关联是“一对多”关系。那么就由“拥有单一引用”的那一方（N）承担“控制者”角色。</li>
+<li>如果某个对象是组成另一对象的不见，那么由后者负责控制关联关系</li>
+<li>如果两者都是引用对象，而关联关系是“多对多”关系，那么随便其中一个对象来控制关联关系都无所谓</li>
+</ul>
+</li>
+<li>在被控端建立一个辅助函数，其命名应该清楚指出它的有限用途。<ul>
+<li>尽量降低可见程度：最小范围内可见</li>
+</ul>
+</li>
+<li>如果既有的修改函数在控制端，让它负责更新反向指针</li>
+<li>如果既有的修改函数在被控端，就在控制端及那里一个控制函数，并让既有的修改函数调用这个新建的控制函数<ul>
+<li>基本形式：先让对方删除指向你的指针，再将你的指针指向一个新对象，最后让那个新对象把它的指针指向你</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="change-bidirectional-association-to-unidirectional将双向关联改为单向关联"><a href="#change-bidirectional-association-to-unidirectional将双向关联改为单向关联" class="headerlink" title="change bidirectional association to unidirectional将双向关联改为单向关联"></a>change bidirectional association to unidirectional将双向关联改为单向关联</h1><ul>
+<li>场合：两个类之间有双向关联，但其中一个类如今不再需要另一个类的特性</li>
+<li>方式：去除不必要的关联</li>
+<li>动机：<ul>
+<li>双向关联很有用，但是必须为其付出代价。维护双向关联；确保对象被正确创建、删除而增加的复杂度；很多程序员并不习惯使用双向关联，往往成为错误之源</li>
+<li>大量的双向连接也很容易造成“僵尸对象”：某个对象本来应该已经死亡，却仍然保留在系统中，因为对其的引用还没有完全清除</li>
+<li>双向关联迫使两个类直接有了依赖：对其中任一个类的任何修改，都可能引发另一个类的变化。如果两个类位于不同的包，这种依赖就是包与包之间的相依。过多的跨包依赖会造成紧耦合系统，使得任何一点小小改动都可能造成许多无法预知的后果</li>
+<li>只有真正需要双向关联的时候，才应该使用它，如果发现双向关联不再存在价值，就应该去掉其中不必要的一条关联</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>找出“想去除的指针”的字段，检查它的每一个用户，判断时候可以去除改指针<ul>
+<li>不但要检查直接访问点，也要检查调用这些直接访问点的函数</li>
+<li>考虑有无可能不通过指针取得被引用的对象。如果有可能，就可以对取值函数使用substitute algorithm，从而让客户在没有指针的情况先也可以使用改取值函数</li>
+<li>对于使用该字段的所有函数，考虑将被引用对象作为参数传进去</li>
+</ul>
+</li>
+<li>如果客户使用了取值函数，先运用self encapsulate field将待删除字段自我封装起来，然后使用substitute algorithm对付取值函数，令它不再使用该字段</li>
+<li>如果客户并未使用取值函数，直接修改待删除字段的所有被引用点，改以其他途径获得该字段所保存的对象</li>
+<li>如果已经没有任何函数使用待删除字段，移除所有对该字段的更新逻辑，然后移除该字段<ul>
+<li>如果有许多地方对次字段赋值，先运用self encapsulate field使这些地点改用同一赋值函数。而后将这个设值函数的本体清空。接着就可将此字段、设值函数、及其所有调用全部移除</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>最困呐的地方：检查可行性。如果知道本重构是安全的，则重构手法自身十分简单。</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-magic-number-with-symbolic-constant：以字面常量取代魔法值"><a href="#replace-magic-number-with-symbolic-constant：以字面常量取代魔法值" class="headerlink" title="replace magic number with symbolic constant：以字面常量取代魔法值"></a>replace magic number with symbolic constant：以字面常量取代魔法值</h1><h1 id="encapsualte-collection-封装集合"><a href="#encapsualte-collection-封装集合" class="headerlink" title="encapsualte collection 封装集合"></a>encapsualte collection 封装集合</h1><ul>
+<li>场合：有一个函数返回一个集合</li>
+<li>方式：让这个函数返回该集合的一个只读副本，并在这个类中提供添加、移除集合元素的函数</li>
+<li>动机：<ul>
+<li>集合的处理方式应该和其他种类的数据略有不同。</li>
+<li>取值函数不该返回集合本身：这将会让用户得以修改集合内容，而集合拥有者却一无所知；对用户暴露过多对象内部的数据接口信息</li>
+<li>如果一个取值函数确实需要返回多个值，应该避免用户直接操作对象内所保存的集合，并隐藏对象内与用户无关的数据结构。</li>
+<li>不应该为整个集合提供一个设值函数，但应该为集合加上添加、移除元素的函数。集合拥有者可以控制集合元素的添加、移除</li>
+<li>降低集合拥有者、用户间的耦合度<br>做法：</li>
+</ul>
+</li>
+<li>为集合加上添加、移除元素的函数</li>
+<li>将保存集合的字段初始化为一个空集合</li>
+<li>找出集合设值函数的所有调用者。修改那个设值函数，使其使用上述新建立的“添加、移除元素”的函数；也可以直接修改调用端，让其使用上述新建立的“添加、移除元素”的函数<ul>
+<li>两种情况下，需要用到集合设值函数：1、集合为空；2、准备将原有集合替换为另一个集合时</li>
+<li>也能用rename method，为集合设值函数改名，从set<strong><em>()改为initialize</em></strong>()或replace***()</li>
+</ul>
+</li>
+<li>找出所有“通过取值函数，获得集合，并修改其内容的函数”，逐一修改这些函数，改用述新建立的“添加、移除元素”的函数</li>
+<li>修改取值函数本身，使其返回该集合的一个只读副本</li>
+<li>找出取值函数的所有用户，找出应该存在与集合所属对象内的代码。用extract method、remove method将代码移到宿主对象去</li>
+<li>修改现有取值函数的名字，添加一个新的取值函数，使其返回一个枚举。找出旧取值函数的所有被使用点，改用新取值函数<ul>
+<li>跨步过大，可使用rename method修改原有取值函数的名称；再建立一个新取值函数，用以返回枚举；最后再修改所有调用者，使其调用新取值函数。<h1 id="replace-type-code-with-subclasses：以子类取代类型码"><a href="#replace-type-code-with-subclasses：以子类取代类型码" class="headerlink" title="replace type code with subclasses：以子类取代类型码"></a>replace type code with subclasses：以子类取代类型码</h1></li>
+</ul>
+</li>
+<li>问题：有一个不可变的类型码，会影响类的行为</li>
+<li>解决：以子类取代这个类型码</li>
+<li>动机：<ul>
+<li>面对的类型码不会影响宿主类的行为，使用replace type code with class来处理。</li>
+<li>如果类型码会影响宿主类的行为，最好的办法是借助多态来处理变化行为<ul>
+<li>一般，这种情况的标志就是向switch这样的表达式、if-then-else结构……检查类型码的值，根据不同的值执行不同的动作。应该以replace conditional with polymorphism进行重构。</li>
+<li>为了能够顺利进行那样的重构，首先应该将类型码替换为可拥有多态行为的继承体系。这样的一个继承体系应该以类型码的宿主类为基类，并针对每一种类型码各建立一个子类</li>
+</ul>
+</li>
+<li>为了建立这样的一个继承体系，最简单的方法：replace type code with subclasses。以类型码的宿主类为基类，针对每种类型码建立相应的子类</li>
+<li>以下情况不能这么做：1.类型码值在对象创建之后发生了改变；2.由于某些原因，类型码宿主类已经有了子类。<ul>
+<li>使用replace type code with state/stragegy</li>
+</ul>
+</li>
+<li>replace type code with subclasses：主要作用是搭建一个舞台，让replace conditional with polymorphism得以一展身手。</li>
+<li>如果宿主类中并美哟出现条件表达式，replace type code with class 更合适，风险更低</li>
+<li>使用replace type code with subclasses另一个原因：宿主类中出现了“只与具备特定类型码之对象有关”的特性。可以使用push down method、push down field将这些特性推到合适的子类去，以彰显只与特定情况相关这一事实</li>
+<li>replace type code with subclasses好处：把“对不同行为的了解”从类用户那儿转移到了类自身。如果需要再加入新的行为变化，只需添加一个子类就行了。如果没有多态机制，就必须找到所有条件表达式，并逐一修改它们=》如果未来还有可能加入新行为，这项重构将特别有价值</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>使用self encapsulate field将类型码自我封装起来<ul>
+<li>如果类型码被传递给构造函数，就需要将构造函数换成工厂函数</li>
+</ul>
+</li>
+<li>为类型码的每一个数值建立一个相应的子类。在每个子类中覆写类型码的取值函数，使其返回相应的类型码值<ul>
+<li>这个值被硬编码于return中（例如：return 1）.看起来很肮脏，但只是权益之计，当所有case子句都被替换后，问题就解决了</li>
+</ul>
+</li>
+<li>每建立一个新的子类，编译并测试</li>
+<li>从超类中删掉保存类型码的字段，将类型码访问函数声明为抽象函数</li>
+<li>注意：避免使用switch语句。这里只有一处用到switch语句，并且只用于决定创建何种对象，这样的switch语句是可以接受的</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-type-code-with-state-strategy"><a href="#replace-type-code-with-state-strategy" class="headerlink" title="replace type code with state/strategy"></a>replace type code with state/strategy</h1><ul>
+<li>问题：有一个类型码，会影响类的行为，但无法通过继承手法消除它</li>
+<li>解决：以状态对象取代类型码</li>
+<li>动机：<ul>
+<li>与replace type code with subclasses很相似。但如果“类型码值在对象生命周期中发生变化”或“其他原因使得宿主类不能被继承”，可以使用本重构（使用state模式、strategy模式）</li>
+<li>state模式、strategy模式非常相似，无论选择其中哪一个，重构过程都是相同的。“选择哪一个模式”并非问题关键所在，只需要选择更合适特定情境的模式就行了<ul>
+<li>strategy模式适合：在本项重构之后再以replace conditional with polymorphism简化一个算法</li>
+<li>state模式适合：搬移与状态相关的数据，而且把新建对象视为一种变迁状态</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>selfe encapsulate field将类型码自我封装起来</li>
+<li>新建一个类，根据类型码的用途为它命名，就是一个状态对象</li>
+<li>为这个新类添加子类，每个子类对应一种类型码<ul>
+<li>比起逐一添加，一次性加入所有必要的子类可能更简单写</li>
+</ul>
+</li>
+<li>在超类中建议一个抽象的查询函数，用以返回类型码。在每个子类中覆写该函数，返回确切的类型码</li>
+<li>在源类中建立一个字段，用以保存新建的状态对象</li>
+<li>调整源类中负责铲鲟类型码的函数，将查询动作状态转发给状态对象</li>
+<li>调整源类中为类型码设值的函数，将一个恰当的状态对象子类赋值给“保存状态对象”的那个字段</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-subclass-with-field：以字段取代子类"><a href="#replace-subclass-with-field：以字段取代子类" class="headerlink" title="replace subclass with field：以字段取代子类"></a>replace subclass with field：以字段取代子类</h1><ul>
+<li>问题：各个子类的唯一差别，只在“返回常量数据”的函数身上</li>
+<li>解决：修改这些函数，使其返回超类中的某个（新增）字段，然后销毁子类</li>
+<li>动机：<ul>
+<li>建立子类的目的：为了增加新特性、变化其行为。</li>
+<li>有一种变化行为被称为“常量函数”constant method，会返回一个硬编码的值。<ul>
+<li>有其用途，可以让不同的子类中的同一个访问函数返回不同的值。可以在超类中将访问函数声明为抽象函数，并在不同的子类中让它返回不同的值</li>
+</ul>
+</li>
+<li>尽管常量函数有其用途，但若子类中只有常量函数，实在没有足够的存在价值。可以在超类中设计一个与常量函数返回值相应的字段，从而完全去除这样的子类=》避免因继承而带来的额外的复杂性</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>对所有子类使用replace constructor with factory method</li>
+<li>如果有任何代码直接引用子类，令它改而引用超类</li>
+<li>针对每个常量函数，在超类中声明一个final 字段</li>
+<li>为超类声明一个protected构造函数，用以初始化这些新增字段</li>
+<li>新建、修改子类构造函数，使其调用超类的新增构造函数</li>
+<li>在超类中实现所有常量函数，令其返回相应字段值，然后将函数从子类中删掉</li>
+<li>inline method将子类构造函数内联到超类的工厂函数中</li>
+<li>删除子类</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>007-在对象之间搬移特性</title>
+    <url>/articles/20210102/bcb5204a.html</url>
+    <content><![CDATA[<p>摘要：对象设计过程中，“决定把责任放在哪儿”，即使不是最重要的事儿，也是最重要的事情之一</p>
+<ul>
+<li>move field=》move method简单的移动对象行为</li>
+<li>类往往因为承担过多的责任而变得臃肿不堪。extract class 将一部分责任分离出去。</li>
+<li>一个类变得太“不负责任”，inline class将其融入另一个类</li>
+<li>一个类使用了另一个类，hide delegate，将这种关系隐藏起来</li>
+<li>隐藏委托类，导致拥有者的接口经常变化，remove middle man</li>
+<li>当不能访问某个类的源码，又想把其他责任移进这个不可修改的类时，introduce foreign method、introduce local extension；想加入的只是1、2个函数，使用introduce foreign method；否则使用introduce local extension<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="move-method：搬移函数"><a href="#move-method：搬移函数" class="headerlink" title="move method：搬移函数"></a>move method：搬移函数</h1><ul>
+<li>有一个函数与其所驻类之外的另一个类进行更多交流：调用后者，或被后者调用</li>
+<li>在该函数最常引用的类中，建立一个有着类似行为的新函数，将旧函数变成一个单纯的委托函数，或将旧函数完全移除<ul>
+<li>机：</li>
+</ul>
+</li>
+<li>move method：重构理论的支柱。如果一个类有太多行为；一个类与另一个类有太多合作而形成高度耦合</li>
+<li>可使系统中的类更简单，这些类最终也更干净利落地实现系统交付的任务</li>
+<li>迹象：<ul>
+<li>使用另一个类的次数比使用自己所驻对象的次数还多</li>
+<li>一旦移动了一些字段，就该做这样的检查</li>
+<li>一旦发现有可能搬移的函数，就会观察调用它的那一段、它调用的那一段，以及继承体系中它的任何一个重定义函数</li>
+<li>根据“这个函数与哪个对象的交流比较多”，决定其移动路径</li>
+</ul>
+</li>
+<li>如果不能肯定是否应该移动一个函数，就继续观察其他函数。移动其他函数往往会让这项决定变得容易一些。</li>
+<li>做法：<ul>
+<li>检查源类中被源函数所使用的一切特性（包括字段、函数），考虑是否该被搬移</li>
+<li>如果某个特性另被多个函数使用了，可以考虑将使用该特性的所有函数全都一并搬移。有时候，搬移一组函数比逐一搬移简单些</li>
+<li>检查源类的子类、超类，看看是否有该函数的其他声明。如果出现其他声明，获取无法进行搬移，除非目标类也同样表现出多态性</li>
+<li>如果目标函数使用了源类中的特性，需要决定如何从目标函数引用源对象。如果目标类中没有相应的引用机制，将把源对象的引用当作参数，传递给新建立的目标函数</li>
+<li>如果源函数包含异常处理，需判断逻辑上应该由哪个类来处理这一异常。如果应该由源类来负责，就把异常处理留在原地</li>
+<li>决定如何重源函数正确引用目标对象。<ul>
+<li>可能会有一个现成的字段、函数帮助取得目标对象。如果没有，则轻松建立一个这样的函数</li>
+<li>如果不行，在源类中新建一个字段来保存目标对象，可能是一个永久性的修改，也可以是暂时的。因为后继的其他重构可能将新建字段去掉</li>
+</ul>
+</li>
+<li>修改源函数，使之成为一个纯委托函数</li>
+<li>决定是否删除源函数，或将它当作一个委托函数保留下来。如果经常要在源对象中引用目标函数，将源函数作为委托函数保留下来会比较简单</li>
+<li>每修改一个引用点，就编译测试一次，也可以通过一次“查找/替换”改掉所有引用点</li>
+<li>如果源类有多个特性，会将源对象传递给目标函数。如果目标函数需要太多源类特性，就需进一步重构。通常，会分解目标函数，并将其中一部分回源类</li>
+</ul>
+</li>
+</ul>
+<h1 id="move-feild：搬移字段"><a href="#move-feild：搬移字段" class="headerlink" title="move feild：搬移字段"></a>move feild：搬移字段</h1><ul>
+<li>某个字段被其所驻类之外的另一个类更多地用到</li>
+<li>在目标类新建一个字段，修改源字段的所有用户，令它们改用新字段</li>
+<li>动机：<ul>
+<li>在类之间移动状态、行为，是重构过程中必不可少的措施</li>
+<li>随着系统发展，会发现自己需要新的类，并需要将现有的工作责任拖到新的类中。在这个星期看似合理而正确的设计决策，到了下一个星期可能不再正确</li>
+<li>如果发现，对于一个字段，再其所驻类之外的另一个类中有更多函数使用了它，就会考虑搬移这个字段。</li>
+<li>“使用”：可能通过设置/取值函数间接进行的</li>
+<li>也可能移动该字段的用户（某个函数），这取决于是否需要保持接口不受变化。如果这些函数看上去很适合呆在原地，就只搬移字段</li>
+<li>extract class 使，也可能需要搬移字段。先搬移字段，再搬移函数</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>如果字段的访问级别使public，使用encapsulate field将其封装起来。</li>
+<li>如果有可能移动哪些频繁访问该字段的函数；或如果有许多函数访问某个字段。先使用 self encapsulate field</li>
+<li>在目标类中建立与源字段相同的字段，同时建立相应的设值/取值函数</li>
+<li>决定如何在源对象中引用目标函数。<ul>
+<li>首先，看是否有一个现成的字段、函数可以帮助得到目标对象。</li>
+<li>如果没有，就看能否轻易建立这样一个函数。</li>
+<li>如果不行，在源类中新建一个字段来存放目标对象，可能使一个永久性的修改，但也可以是暂时的。后续的重构可能会把这个新建字段除掉</li>
+</ul>
+</li>
+<li>将所有对源字段的引用，替换为对某个目标函数的调用<ul>
+<li>如果需要读取该变量，就把对源字段的引用替换为对目标取值函数的调用</li>
+<li>如果需要对该变量赋值，就把对源字段的引用替换为对设值函数的调用</li>
+<li>如果源字段不是private，就必须在源类的所有子类中查找源字段的引用点，并进行相应替换　</li>
+<li>self encapsulate field使之可以小步前进。如果需要对类做许多处理，保持小步前进是有帮助的<ul>
+<li>使用 self encapsulate field 使我得以更轻松使用move method将函数搬移到目标类中。如果待搬移函数引用了字段的访问函数，那些引用点是无需修改的</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="extract-class：提炼类"><a href="#extract-class：提炼类" class="headerlink" title="extract class：提炼类"></a>extract class：提炼类</h1><ul>
+<li>某个类做了应该由两个类做的事</li>
+<li>建立一个新类，将相关的字段、函数从旧类搬移到新类</li>
+<li>动机：<ul>
+<li>一个类应该是一个清楚的抽象，处理一些明确的责任，在实际共迚，类会不断成长、扩展。加入一些功能、数据。-     - 　　给某个类添加一项责任时，会觉得不值得为这项责任分离出一个单独的类。随着责任不断增加，这个类会变得过分复杂。很快，类就会变成一团乱麻</li>
+<li>类中含有大量函数、数据。导致类太大，不易理解。</li>
+<li>需要考虑那些部分可以分离出去，并将其分离到一个单独的类中</li>
+<li>如果某些数据、函数总是一起出现，魔偶写数据经常同时变化，甚至彼此相依，就应该将其分离出去</li>
+<li>？：如果搬移了某些字段、函数，会发生什么？其他字段、函数是否因此变得无意义？开发后期，类的子类化。</li>
+<li>如果发现子类化只影响类的部分特性；某些特性需要以一种方式来子类化，某些特征则需要以另一种方式子类话=》分解原来的类</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>决定如何分解类所负的责任</li>
+<li>建立一个新类，用以表现从旧类中分离出来的责任。如果旧类剩下的责任与旧类名不符，为旧类更名</li>
+<li>建立“从旧类访问新类”的连接关系。有可能需要一个双向连接，但在真正需要它之前，不要建立“从新类通往旧类”的连接</li>
+<li>对搬移的每个字段，运用move field，每次搬移后，编译、测试。</li>
+<li>move method将必要函数搬移到新类。先搬移较低层函数（“被其他函数调用”多余“调用其它函数”者），再搬移较高层函数。每次搬移后，编译、测试</li>
+<li>检查，精简每个类的接口。如果建立的是双向连接，检查是否可将其改为单向连接</li>
+<li>决定是否公开新类。如果需要公开，决定其为引用对象？不可变的值对象？<ul>
+<li>如果选择公开新类，允许任何对象修改新类对象的任何部分。需要考虑公开带来的危险，尤其是set value。新类成为引用对象，应考虑使用change value to reference</li>
+<li>如果不允许任何人不通过源类就修改新类。可将新类设为不可修改的，或为其提供一个不可修改的接口；或者复制一个新类对象，将复制得到的新对象传递给用户。可能会造成一定程度的迷惑，让人误以为可以修改新类对象值（同一个对象被传递给多个用户，可能再用户之间造成别名问题）</li>
+</ul>
+</li>
+<li>extract class，改善并发程序的一种常用技术，可使你为提炼后的两个类分别加锁，如果不需要同时锁定连个对象，就不必这样做。<ul>
+<li>有一定的危险性。如果需要确保两个对象被同时锁定，就面临事务问题，需要使用其他类型的共享锁。这是个复杂领域，比一般情况需要更繁重的机制。</li>
+<li>事务很有实用性，但编写事务管理程序则超出了大多数程序员的职责范围</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="inline-class-将类内联化"><a href="#inline-class-将类内联化" class="headerlink" title="inline class 将类内联化"></a>inline class 将类内联化</h1><ul>
+<li>某个类没有做太多事情</li>
+<li>将这个类的所有特性搬移到另一个类中，然后移除源类</li>
+<li>动机：<ul>
+<li>与extract class相反。</li>
+<li>如果一个类不再承担足够责任，不再有单独存在的理由（通常，此前的重构动作移走了这个类的责任）</li>
+<li>挑选“萎缩类”的最频繁用户，以inline class 手法将“萎缩类”塞进另一个类中</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>再目标类声明源类的public协议，并将其中所有函数委托至源类。如果“以一个独立接口表示源类函数”更合适，就应该再内联之前，先试用extract interface</li>
+<li>修改所有源类引用点，改而引用目标类。将源类声明为private，在斩断包之外的所有引用可能。同时修改源类的名称，可使编译器帮助捕捉到所有对于源类的隐藏引用点</li>
+<li>编译，测试</li>
+<li>move field、move method将源类的特性全部搬移到目标类</li>
+</ul>
+</li>
+</ul>
+<h1 id="hide-delegate：隐藏委托关系"><a href="#hide-delegate：隐藏委托关系" class="headerlink" title="hide delegate：隐藏委托关系"></a>hide delegate：隐藏委托关系</h1><ul>
+<li>客户通过一个委托类来调用另一个对象</li>
+<li>在服务类上建立客户所需的所有函数，用以隐藏委托关系。　</li>
+<li>动机：<ul>
+<li>“封装”，即使不是对象的最关键特征，也是最关键特征之一。<ul>
+<li>意味着：每一个对象都应该尽可能少了解系统的其他部分。</li>
+<li>一旦发生变化，需要了解这一变化的对象就会比较少，会使变化比较容易进行。</li>
+</ul>
+</li>
+<li>字段虽然可以声明为public，但应该隐藏对象的字段</li>
+<li>如果某个客户先通过服务对象的字段得另一个对象，然后调用后者的函数，那么客户就必须知晓这一层委托关系<ul>
+<li>万一委托关系发生变化，客户也得相应变化。</li>
+<li>可以在服务对象上放置一个简单的委托函数，将委托关系隐藏起来，从而去除这种依赖</li>
+<li>即便将来发生委托关系上的变化，变化也将被限制在服务对象中，不会波及客户</li>
+</ul>
+</li>
+<li>对于某些、全部客户，可能有必要先使用extract class。一旦对所有客户都隐藏了委托关系，就不再需要在服务对象的接口中公开被委托的对象</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>对于每一个委托关系中的函数，在服务对象端建立一个简单的委托函数</li>
+<li>调整客户，令其只调用服务对象提供的函数<ul>
+<li>如果使用者、委托服务提供者不在同一包，考虑修改委托函数的访问权限，让客户得以在包之外调用它</li>
+</ul>
+</li>
+<li>如果将来不再有任何客户需要用图7-1的受托类，便可移除服务对象中的相关访问函数</li>
+</ul>
+</li>
+</ul>
+<h1 id="remove-middle-man-：移除中间人"><a href="#remove-middle-man-：移除中间人" class="headerlink" title="remove middle man ：移除中间人"></a>remove middle man ：移除中间人</h1><ul>
+<li>某个类做了过多的简单委托动作。</li>
+<li>让客户直接调用受托类</li>
+<li>动机：<ul>
+<li>封装的代价：每当客户要使用受委托类的新特性时，必须再服务端添加一个简单委托函数。<ul>
+<li>随着受托类的特性（功能）越来越多，这一过程让人痛苦不已</li>
+<li>服务类完全变成了一个“中间人”。此时应该让客户直接调用受托类</li>
+</ul>
+</li>
+<li>很难说什么程度的隐藏才是合适的。<ul>
+<li>hide delegate、remove middle man：可根据系统运行过程中不断进行调整。随着系统的变化，“合适的隐藏程度”这个尺度也在相应改变</li>
+<li>重构的意义在于：永远不必说对不起：只要把出问题的地方修补好就行了。</li>
+</ul>
+</li>
+<li>也可能保留一部分委托关系。<ul>
+<li>可能希望对某些客户隐藏委托关系，并让另一些用户直接使用受托对鞋。</li>
+<li>基于这些原因，一些简单的委托关系（及对应的委托函数），也可能被留在原地</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>建立一个函数，用以获得受委托对象</li>
+<li>对每个受委托函数，在服务类中删除该函数，并让需要调用该函数的客户转为调用受委托对象。 </li>
+</ul>
+</li>
+</ul>
+<h1 id="introduce-foreign-method：引入外加函数"><a href="#introduce-foreign-method：引入外加函数" class="headerlink" title="introduce foreign method：引入外加函数"></a>introduce foreign method：引入外加函数</h1><ul>
+<li>需要为提供服务的类增加一个函数，但无法修改这个类</li>
+<li>在客户类中建立一个函数，并以第一参数的形式传入一个服务类实例</li>
+<li>动机：<ul>
+<li>正在使用一个类，为你提供了需要的所有服务。而后又需要一项新服务，这个类却无法供应。</li>
+<li>可自行添加一个新函数；如果无法添加，则在客户端编码，补足你要的那个函数</li>
+<li>如果客户类的功能只使用一次这项功能一次，那么额外编码工作没什么大不了，甚至可能根本不需要原本提供服务的那个类</li>
+<li>然而，如果需要多次使用这个函数，就得不断重复这些代码。重复代码是软件万恶之源。重复的代码应该被抽出来放进同一个函数中。</li>
+<li>在本项重构时，如果你以外加函数实现一项功能，那就是一个明确的信号：这个函数原本应该在提供服务的类中实现</li>
+<li>如果发现自己为一个服务类建立了大量的外加函数，或者发现许多类都需要同样的外加函数，就不应该再使用本项重构，而应该使用Introduce local extension</li>
+<li>外加函数终归时权宜之计。如果又可能，仍然应该将这些函数搬移到它们的理想家园。</li>
+<li>　　如果由于代码所有权的原因，使你无法做这样的搬移，就把外加函数交给服务类的拥有者，请他帮你再服务类中实现这个函数</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>在客户类中建立一个函数，用来提供你需要的功能。<ul>
+<li>这个函数不应该调用客户类的任何特性。如果需要一个值，把该值当作参数传给它。便于将来迁移函数</li>
+</ul>
+</li>
+<li>以服务类实例作为该函数的第一个参数</li>
+<li>将函数注释为：“外加函数（foreign method），应在服务类实现”<ul>
+<li>这样一来，如果将来有机会将外加函数搬移到服务类中，便可轻松找出这些外加函数</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="introduce-local-extension：引入本地扩展"><a href="#introduce-local-extension：引入本地扩展" class="headerlink" title="introduce local extension：引入本地扩展"></a>introduce local extension：引入本地扩展</h1><ul>
+<li>需要为服务类提供一些额外函数，但无法修改这个类</li>
+<li>建立一个新类，使他包含这些额外函数，让这个扩展成为源类的子类，或包装类</li>
+<li>动机：<ul>
+<li>类的作者无法预知未来，常常没能为你预先准备一些有用的函数。<ul>
+<li>如果可以修改源码，最好的办法使直接加入自己需要的函数</li>
+<li>无法修改源码，如果只需要一两个函数，可以使用introduce foreign method。</li>
+<li>如果需要的额外函数超过两个，外加函数就很难控制它们了。需要将这些函数组织在一起，放到一个恰当的地方</li>
+</ul>
+</li>
+<li>为了达到这个目的，两种标准对象技术：子类化subclassing、包装wrapping。统称为本地扩展。<ul>
+<li>本地扩展：是一个独立的类，但也是被扩展类的子类型。提供源类的一切特性，同时额外添加新特性。</li>
+<li>在任何使用源类的地方都可以使用本地扩展取而代之</li>
+<li>本地扩展，使你得以坚持“函数、数据应该被统一封装”的原则。如果一直把本该放在扩展类中的代码零散地放置于其他类中，最终只会让其他类变得过分复杂，并使得其中的函数难以被复用</li>
+</ul>
+</li>
+<li>在子类、包装类之间做选择，通常首选子类。工作量较少<ul>
+<li>添加子类最大的障碍在于，必须在对象创建期实施。如果可以接管对象创建过程，当然没有问题；但如果想在对象创建之后再使用本地扩展就有问题了</li>
+<li>子类化方案，必须产生一个子类对象。这种情况下，如果有其他对象引用了旧对象，就同时有两个对象保存了原数据。如果原数据是不可修改的，则不会有问题，可以放心复制；如果原数据允许被修改，问题就会出现：一个修改动作无法同时改变两个副本</li>
+<li>使用包装类时，对本地扩展的修改会波及原对象，反之亦然。</li>
+</ul>
+</li>
+<li>包装类有一个特殊问题：如何处理“接受原始类实例为参数”的函数。由于无法改变原始类，只能做到一个方向上的兼容：包装类上的函数可以接受包装类，或原始类；但原始类的函数只能接受原始类对象，不能接受包装类对象<ul>
+<li>覆写的目的时为了向用户隐藏包装类的存在。这是一个好策略，因为包装类的用户的确不应该关心包装类的存在，的确应该可以同样的地对待包装类、原始类</li>
+<li>但是，完全无法隐藏包装类的存在，因为某些系统所提供的函数（例如equals()）会出问题。</li>
+<li>可以在包装类中覆写equals()，但这样做时危险的，尽管达到了我们的目的，但在系统的其他部分都认为equals()符合交换律：包装类实例equals(被包装类实例)，被包装类实例equals(包装类实例)。违反这一规则，容易使人遭受一大堆莫名其妙的错误</li>
+<li>要避免这样的尴尬境地，唯一的办法就是修改被包装类。但如果可以修改，何必进行此项重构</li>
+<li>在这种情况下，只能向用户公开“我进行了包装”这一事实。推荐使用一个新函数equal<strong>()来实现相等性检查。亦可重载equal</strong>()，一个接受被包装实例，一个接受包装实例。就不必检查未知对象的类型了</li>
+<li>子类化方案中就没有这样的问题，只要不覆写原函数就行。如果覆写了原始类中的函数，那么寻找函数时，就会被搞得晕头转向。一般，不建议在扩展类中覆写原始类的函数，只会添加新函数</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>建立一个扩展类，将它作为原始类的子类，或包装类</li>
+<li>在扩展类中加入转型构造函数<ul>
+<li>“转型构造函数”：“接受原对象作为参数”的构造函数。</li>
+<li>如果采用子类化方案，转型构造函数应该调用适当的超类构造函数</li>
+<li>如果采用包装类方案，转型构造函数应该将它得到的传入参数以实例变量的形式保存起来，用作接受委托的原对象</li>
+</ul>
+</li>
+<li>在扩展类中加入新特性</li>
+<li>根据需要，将原对象替换为扩展对象</li>
+<li>将针对原始类定义的所有外加函数搬移到扩展类中</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>006-重构列表、重新组织函数.md</title>
+    <url>/articles/20210102/b2e2e8ae.html</url>
+    <content><![CDATA[<p>摘要：重构列表、重新组织函数</p>
+<a id="more"></a>
+
+<h1 id="重构列表"><a href="#重构列表" class="headerlink" title="重构列表"></a>重构列表</h1><h2 id="寻找引用点"><a href="#寻找引用点" class="headerlink" title="寻找引用点"></a>寻找引用点</h2><ul>
+<li>盲目查找、替换，出错机会高。不同类中使用相同的函数名称；同一个类中使用名称相同、签名不同的函数。</li>
+<li>直接删除旧的部分，让编译器帮你找出引用点。好处：编译器会找到所有引用点。</li>
+<li>问题：<ul>
+<li>被删除部分在继承体系张声明不止一次，编译器也会被迷惑（覆写多次的函数）。如果在一个继承体系中，先利用文本查找工具，检查是否由其他类声明了你正在处理的哪个函数</li>
+<li>编译器可能太慢，使工作失去效率。先用文本查找工具，编译器可复查：先观察这一部分运用情况</li>
+<li>编译器无法找到通过反射机制而得到的引用点。小心使用反射。使用文本查找工具，测试分量加重；通常建议只编译，不测试，因为编译器通常会捕捉到可能的错误；使用反射，所有的便利都没有了，必须为许多编译搭配测试。</li>
+<li>某些Java开发环境，可使用菜单选项来查找引用点，而不是使用文本查找工具，因为这些开发环境并不以文本文件保存代码，而是使用一个内置数据库。</li>
+</ul>
+</li>
+</ul>
+<h2 id="重构成熟度"><a href="#重构成熟度" class="headerlink" title="重构成熟度"></a>重构成熟度</h2><ul>
+<li>基本技巧：小步前进，频繁测试</li>
+<li>让重构手法适应你自己的情况。“使用某个重构手法”不同于“将它浓缩成可重复的做法步骤”</li>
+<li>前提：单进程软件。<ul>
+<li>单进程：永远不必操心频繁调用某个函数，因为函数的调用成本很低</li>
+<li>分布式：函数往返必须被减至最低限度。</li>
+</ul>
+</li>
+<li>引入设计模式，设计模式为重构行为提供了目标，模式和重构之间有着一种与生俱来的关系。<ul>
+<li>例如：replace type code with state/strategy、form template method </li>
+<li>模式：希望到达的目标；重构：到达之路</li>
+</ul>
+</li>
+<li>重构仅仅是一个起点，尽管不完美，但是有用</li>
+<li>发展属于自己的重构手法，使用自己的创造力</li>
+</ul>
+<h1 id="重新组织函数"><a href="#重新组织函数" class="headerlink" title="重新组织函数"></a>重新组织函数</h1><h2 id="问题源于：long-method"><a href="#问题源于：long-method" class="headerlink" title="问题源于：long method"></a>问题源于：long method</h2><ul>
+<li>包含太多信息，而信息又被函数错综复杂的逻辑掩盖，不易鉴别。</li>
+<li>解决：</li>
+<li>extract method：一段代码提取出来，放进一个单独函数中<ul>
+<li>最大困难：处理局部遍历。临时变量则是其中一个主要的困难源头</li>
+<li>解决：<ul>
+<li>repalce temp with query：去掉所有可去掉的临时变量</li>
+<li>split temporary variable：使临时变量变得比较容易替换</li>
+<li>replace method with method object:临时变量太混乱，可分解哪怕最混乱的函数，代价则是引入一个新的类</li>
+<li>remove assignments to parameters：在函数内赋值给参数</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>inline method：相反，将一个函数调用动作替换为该函数本体。</li>
+<li>substitute algorithm：引入更清晰的算法</li>
+</ul>
+<h2 id="extract-method：提炼函数"><a href="#extract-method：提炼函数" class="headerlink" title="extract method：提炼函数"></a>extract method：提炼函数</h2><p>一段代码可以被组织在一起并独立出来</p>
+<ul>
+<li>针对：<ul>
+<li>一个过长的函数</li>
+<li>一段需要注释，才能让人理解用途的代码</li>
+</ul>
+</li>
+<li>简短、命名良好的函数：<ul>
+<li>函数粒度小，被复用机会大</li>
+<li>高层函数读起来就像一系列注释</li>
+<li>函数的细粒度，覆写也更容易。</li>
+<li>只有能给小型函数很好地命名时，它们才能真正起作用=》需要在函数名称上下点功夫。</li>
+</ul>
+</li>
+<li>函数的长度：关键在于函数名称、函数本体之间的语义距离。<ul>
+<li>如果提炼可以强化代码的清晰度，那就去做。就算函数名称比提炼出来的代码还长，也无所谓。</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>创造一个新函数，根据函数的意图来命名：以“做什么”来命名，而不是以“怎样做”命名。</li>
+<li>即使想要提炼的代码非常简单（一条消息，一个函数调用），只要新函数的名称能够以更好方式昭示代码意图，也应该提炼它。如果想不出一个更有意义的名称，就别动</li>
+<li>将提炼出的代码从源函数复制到新建的目标函数中</li>
+<li>仔细检查提炼出的代码，看是否引用了“作用域限于源函数”的变量，包括局部变量、源函数参数</li>
+<li>检查被提炼的代码段，看看是否有任何局部变量的值被它改变。<ul>
+<li>如果一个临时变量值被修改了，看是否可以将被提炼的代码段处理为一个查询，并将结果赋值给相关变量</li>
+<li>如果很难这样做，或被修改的变量不止一个，就不能仅仅将这段代码原封不动地提炼出来。使用 split temporary variable,再尝试提炼；或使用 replace temp with query 将临时变量消灭掉</li>
+</ul>
+</li>
+<li>将被提炼代码段中需要读取的局部变量，当作参数传给目标函数</li>
+<li>处理完所有局部变量之后，进行编译</li>
+<li>在源函数中，将被提炼代码段替换为对目标函数的调试<ul>
+<li>如果将任何临时变量移到目标函数中，请检查它们原本的声明式是否在被提炼代码段的外围。如果是，则可以删除这些声明式了</li>
+</ul>
+</li>
+<li>编译、测试</li>
+</ul>
+</li>
+</ul>
+<h2 id="inline-method：内联函数"><a href="#inline-method：内联函数" class="headerlink" title="inline method：内联函数"></a>inline method：内联函数</h2><h2 id="inline-temp：内联临时变量"><a href="#inline-temp：内联临时变量" class="headerlink" title="inline temp：内联临时变量"></a>inline temp：内联临时变量</h2><ul>
+<li>有一个临时变量，只被一个简单表达式赋值一次，妨碍了其他重构手法。</li>
+<li>解决：将所有对该变量的引用动作，替换为对它赋值的那个表达式自身</li>
+<li>情境：<ul>
+<li>多半作为replace temp with query的一部分使用，所以真正的动机出现在后者那儿</li>
+<li>唯一单独使用inline temp，发现某个临时变量被赋予某个函数调用的返回值。一般这样的临时变量不会有任何危害，可以放心地把它留在那儿。如果这个临时变量妨碍了其他的重构手法，可以使用extract method内联化。</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>检查给临时变量赋值的语句，确保等号右边的表达式没有副作用</li>
+<li>如果临时变量未被声明为final，就将它声明为final，然后编译。（可以检查该临时变量是否真的只被赋值一次）</li>
+<li>找到该临时变量的所有引用点，将其替换为“为临时变量赋值”的表达式</li>
+<li>每次修改后，编译并测试</li>
+<li>修改完所有的引用点之后，删除该临时变量的声明、赋值语句</li>
+<li>编译、测试</li>
+</ul>
+</li>
+</ul>
+<h2 id="replace-temp-with-query：以查询取代临时变量"><a href="#replace-temp-with-query：以查询取代临时变量" class="headerlink" title="replace temp with query：以查询取代临时变量"></a>replace temp with query：以查询取代临时变量</h2><ul>
+<li>以一个临时变量保存某一表达式的运算结果</li>
+<li>解决：将这个表达式提炼到一个独立函数中。将这个临时变量的所有引用点替换为对新函数的调用。此后，新函数就可被其他函数使用</li>
+<li>动机：<ul>
+<li>临时变量的问题：它们是暂时的，而且只能在所属函数内使用。</li>
+<li>由于临时变量只在所属函数内可见，会驱使你写出更长的函数。</li>
+<li>如果将临时变量替换为一个查询，那么同一个类中的所有函数都将获得这份信息。有助于为此类编写更为清晰的代码</li>
+<li>replace temp with query 往往是运用extract method之前必不可少的一个步骤。局部变量会使代码难以被提炼，应尽可能将其替换为查询式</li>
+<li>简单：临时变量只被赋值一次，或赋值给临时变量的表达式不受其他条件影响</li>
+<li>复杂：需要先运用split temporary variable、separate query from modifier使情况变得简单一些，然后再替换临时变量。</li>
+<li>如果想替换的临时变量是用来收集结果的，需要将某些程序逻辑复制到查询函数去</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>如果某个临时变量被赋值超过一次，使用split temporary variable将其分割成多个变量</li>
+<li>确保提炼出的函数无副作用。即函数并不修改任何对象内容，如果有副作用，进行seperate query from modifler</li>
+<li>性能：不要担心性能问题，9/10不会有任何影响。真有影响，可以再优化时期解决。代码组织良好，往往可以发现更有效的优化方案，如果没有进行重构，好的优化方案就可能与你失之交臂。如果性能实在太糟，将临时变量放回去也是很容易的</li>
+</ul>
+</li>
+</ul>
+<h2 id="introduce-explaining-variable：引入解释性变量"><a href="#introduce-explaining-variable：引入解释性变量" class="headerlink" title="introduce explaining variable：引入解释性变量"></a>introduce explaining variable：引入解释性变量</h2><ul>
+<li>有一个复杂的表达式</li>
+<li>将该表达式（或其中一部分）的结果放进一个临时变量，以此临时变量名称来解释表达式用途</li>
+<li>动机：<ul>
+<li>表达式非常复杂，难以阅读。临时变量可以帮助将表达式分解为较为容易管理的形式</li>
+<li>条件逻辑中，特别有价值：将每个条件子句提炼出来，用良好命名的临时变量来解释对应条件子句的意义</li>
+<li>较长的算法中，用临时变量来解释每一步运算的意义</li>
+<li>不常用，尽量使用extract method来解释一段代码的意义。临时变量只有再所处的那个函数中才有意义，局限性较大，函数则可以在对象的整个声明周期都有用，且可被其他对象使用</li>
+<li>当局部变量使用extract method难以进行时，使用introduce explaining variable</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>如果被替换的这一部分在代码中重复出现，可以每一次一个，逐一替换</li>
+</ul>
+</li>
+</ul>
+<h2 id="split-temporary-variable：分解临时变量"><a href="#split-temporary-variable：分解临时变量" class="headerlink" title="split temporary variable：分解临时变量"></a>split temporary variable：分解临时变量</h2><ul>
+<li>某个临时变量被赋值超过一次，既不是循环变量，也不被用于收集计算结果。</li>
+<li>解决：针对每次赋值，创造一个独立、应对的临时变量</li>
+<li>动机：<ul>
+<li>临时变量有各种不同用途，某些用途会很自然地导致临时变量被多次赋值。“循环变量”、“结果收集变量”</li>
+<li>临时变量用于保存一段冗长代码的运算结果，以便稍后使用。这种临时变量应只被赋值一次。对超过一次，意味着在函数中承担了一个以上的责任。</li>
+<li>如果临时变量承担了多个责任，应该被替换、分解为多个临时变量，每个变量只承担一个责任。否则会令代码阅读者糊涂</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>如果稍后的赋值语句【i=i+某表达式】。意味着是个“结果收集变量”=&gt;不要分解它。“结果收集变量”的作用通常是累加、字符串接合、写入流、向集合添加元素</li>
+</ul>
+</li>
+</ul>
+<h2 id="remove-assignments-to-parameters：移除对参数的赋值"><a href="#remove-assignments-to-parameters：移除对参数的赋值" class="headerlink" title="remove assignments to parameters：移除对参数的赋值"></a>remove assignments to parameters：移除对参数的赋值</h2><ul>
+<li>代码对一个参数进行赋值。</li>
+<li>以一个临时变量取代该参数的位置。</li>
+<li>动机：<ul>
+<li>对参数赋值，意味着改变参数，使其指向另一个对象的引用。</li>
+<li>如果在“被传入对象”身上进行操作，则不是问题</li>
+<li>使用“out 参数”的，可以不必遵循这条规则。但应尽力避免</li>
+</ul>
+</li>
+<li>缺点：<ul>
+<li>降低了代码的清晰度，混用了按值传递、按引用传递，这两种参数传递方式。</li>
+<li>按值传递，对参数的任何修改，不会对调用端造成任何影响；按引用传递，会产生影响</li>
+<li>在函数本体内，只以参数表示：被传递进来的东西，代码会清晰很多。此用法在所有语言中都表现出相同语义</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>不要对参数赋值：可使用remove assignments to parameters来避免</li>
+<li>如果代码是“按引用传递”的，请在调用端检查调用后是否还使用了这个参数</li>
+<li>要检查有多少个按引用传递的参数被赋值后又被使用</li>
+<li>请尽量以return方式返回一个值。如果需返回的值不止一个，看是否可把需返回的大堆数据变成一个单一对象，或干脆为每个返回值设计对应的一个独立函数</li>
+<li>可为参数加上final关键词，使之遵循“不对参数赋值”，这一惯例。</li>
+<li>不建议使用，对于提高函数清晰度没有太大的帮助。</li>
+<li>通常用在较长的函数中，帮助检查参数是否被修改</li>
+</ul>
+</li>
+</ul>
+<h2 id="replace-method-with-method-object：以函数对象取代函数"><a href="#replace-method-with-method-object：以函数对象取代函数" class="headerlink" title="replace method with method object：以函数对象取代函数"></a>replace method with method object：以函数对象取代函数</h2><ul>
+<li>有一个大型函数，其中对局部变量的使用，使人无法采用extract method</li>
+<li>做法：<ul>
+<li>将这个函数放进一个单独对象中，这样局部变量就成了对象内的字段。然后可以在同一个对象中，将这个大型函数分解为多个小型函数</li>
+</ul>
+</li>
+<li>动机：<ul>
+<li>小型函数优美动人。只要将相对对立的代码从大型函数中提炼出来，可以大大提高代码的可读性</li>
+<li>局部变量的存在会增加函数的分解难度。如果一个函数中局部变量泛滥成灾，想分解这个函数是非常困难的</li>
+<li>replace temp with query 可以帮助减轻这一负担。但有时候会发现根本无法拆解一个需要拆解的函数</li>
+<li>replace method with method object 将所有局部变量都变成函数对象的字段=》对这个新对象使用extract method 创造出新函数，从而将原来的大型函数拆解变短</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>建立一个新类，根据待处理函数的用途为此类命名</li>
+<li>在新类中建立一个final字段，用以保存原先大型函数所在的对象。即“源对象”。针对源函数的每个临时变量，每个参数在新类中建立一个对应的字段保存</li>
+<li>在新类中建立一个构造函数，接受源对象、源函数的所有参数作为参数</li>
+<li>在新类中建立一个compute()函数</li>
+<li>将原函数中的代码赋值到compute()函数，对需要调用源对象的任何函数，通过源对象字段调用</li>
+<li>编译</li>
+<li>将旧函数的函数本体替换为这样一条语句“创建上述新类的一个新对象，而后调用其中的compute()函数”</li>
+<li>所有的局部变量都变成了字段，可以任意分解这个大型函数，不必传递任何参数</li>
+</ul>
+</li>
+</ul>
+<h2 id="substitute-algorithm：替换算法"><a href="#substitute-algorithm：替换算法" class="headerlink" title="substitute algorithm：替换算法"></a>substitute algorithm：替换算法</h2><ul>
+<li>把某个算法替换为另一个更清晰的算法</li>
+<li>将函数本体替换为另一个算法</li>
+<li>动机：<ul>
+<li>解决问题有好几种方法，某些方法会比另一些简单，算法也是如此</li>
+<li>如果做一件事儿，可以有更清晰的方式，应该以比较清晰的方式取代复杂的方式　　</li>
+<li>随着对问题有更多理解，往往发现在原先的做法之外，有更简单的解决方案，就需要改变原先的算法</li>
+<li>如果开始使用程序库，而其中提供的某些功能、特性与你自己的代码重复，则需要改变原先的算法</li>
+<li>“重构”可以将一些复杂的东西分解为较简单的小块，但有时必须壮士断腕，删掉整个算法，代之以较为简单的算法</li>
+<li>有时想要修改原先的算法，让其做一件与原先略有差异的事。可以先把原先的算法替换为一个较易修改的算法，后续的修改会轻松许多</li>
+<li>使用此项重构手法之前，先确定自己已经尽可能分解了原先函数。替换一个巨大、复杂的算法是非常困难的，只有先将它分解为较简单的小型函数，然后才可很有把握的进行算法替换工作</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>对于每个测试用例，分别以新旧两种算法执行，并观察两者结果是否相同。可以帮助看到哪个测试用例出现麻烦，以及出现了怎样的麻烦</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>005-构筑测试体系</title>
+    <url>/articles/20210102/3c568e55.html</url>
+    <content><![CDATA[<p>摘要：编写优良的测试程序，可以极大提高编程速度，即使不进行重构也一样。<br>请构筑一个良好的bug检测器，并经常运行它，对任何开发工作都大有裨益，这是重构的前提。</p>
+<a id="more"></a>
+
+<h1 id="自测试代码的价值"><a href="#自测试代码的价值" class="headerlink" title="自测试代码的价值"></a>自测试代码的价值</h1><ul>
+<li>类应该包含自己的测试代码。每个类都应该有一个测试函数，用来测试自己这个类</li>
+<li>确保所有测试都完全自动化，让它们检查自己的测试结果：将所期望的输出放进测试代码中，然后做出一个比较，可避免人工检测</li>
+<li>可以在每次编译之后都进行测试，可以大大提高生产性能</li>
+<li>构筑的类能够自我测试&amp;&amp;可频繁运行测试</li>
+<li>编写测试代码的时机：<ul>
+<li>最有用：在开始编程之前，当需要添加特性的时候，先写相应测试代码<ul>
+<li>编写测试代码，就是回答此功能需要做些什么</li>
+<li>使你把注意力集中于接口而非实现</li>
+<li>为工作安上一个明确的结束标志，一旦测试代码正常运行，工作就结束了</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>极限编程：频繁测试是其重要一环。极限编程者都是十分专注的测试者。它们希望尽可能快速开发软件，也知道测试可让他们尽可能快速地前进</li>
+<li>重构：必须编写测试代码。</li>
+<li>方式：<ul>
+<li>testing main：惯用手法。每个类都应该有一个用于测试的main()。这是一个合理的习惯，但可能不好操控。问题：很难轻松运行多个测试</li>
+<li>建立一个独立类用于测试，并在一个框架中运行它，使测试工作更轻松</li>
+</ul>
+</li>
+</ul>
+<h1 id="junit测试框架"><a href="#junit测试框架" class="headerlink" title="junit测试框架"></a>junit测试框架</h1><ul>
+<li>框架简单，却可以让你进行测试所需的所有事情</li>
+<li>assert():扮演自动测试角色</li>
+<li>建议：<ul>
+<li>频繁运行测试。每次编译，请将测试也考虑进去，每天至少执行每个测试一次</li>
+<li>重构过程中，可以只运行少数几项测试，主要用来检查当下正在开发、整理的代码</li>
+</ul>
+</li>
+<li>测试机制可以运行，的确测试了它该测试的东西（断言的合理使用）</li>
+<li>功能：捕捉失败&amp;&amp;捕捉错误异常。出现形式不同，排除过程也不同</li>
+</ul>
+<h1 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h1><ul>
+<li>目的：提高程序员的生产率</li>
+<li>高度局部化的东西，每个测试类都隶属于单一包</li>
+<li>能够测试其他包的接口。除此以外，将假设其他包一切正常</li>
+<li>重构时，更多地依赖单元测试</li>
+</ul>
+<h1 id="功能测试"><a href="#功能测试" class="headerlink" title="功能测试"></a>功能测试</h1><ul>
+<li>保证软件能正常运作。</li>
+<li>从客户角度保证质量，并不关心程序员的生产力。</li>
+<li>应该由一个喜欢寻找bug的独立团队开发，且应使用重量级工具、技术来帮助自己开发良好的功能测试</li>
+<li>一般，尽可能将整个系统当作一个黑箱。只观察特定输入导致的数据变化</li>
+<li>功能测试，往往以其他工具辅助进行</li>
+<li>一旦发现错误：<ul>
+<li>修改代码，排除错误</li>
+<li>添加一个单元测试，暴露bug</li>
+</ul>
+</li>
+<li>每当收到bug报告，都应先编写一个单元测试，使bug浮现出来。如果出现其他相关失败，编写更多的测试。用单元测试来盯住bug，并确保单元测试不会由漏网之鱼</li>
+</ul>
+<h1 id="添加更多测试"><a href="#添加更多测试" class="headerlink" title="添加更多测试"></a>添加更多测试</h1><ul>
+<li>观察类该做的所有事情，针对任何一项功能的任何一种可能失败的情况，进行测试。不仅仅是测试所有public函数</li>
+<li>测试是一种风险驱动的行为。测试的目的是希望找出现在、未来可能出现的错误。=》不会去测试那些仅仅读、写一个字段的访问函数，太简单，不太可能出错</li>
+<li>注意：撰写过多测试，结果往往测试量反而不够。</li>
+<li>哪怕只做一点点测试，你也可从中受益</li>
+<li>测试要诀：测试你最担心出错的部分，才能从测试工作中得到最大利益。<ul>
+<li>编写未臻完善的测试并运行，好过对完美测试的无尽等待</li>
+</ul>
+</li>
+<li>测试技巧：<ul>
+<li>寻找边界条件<ul>
+<li>考虑可能出错的边界条件，将测试火力集中在那儿</li>
+<li>包括寻找特殊的、可能导致测试失败的情况。文件相关的：第一个字符、最后一个字符、空文件……</li>
+</ul>
+</li>
+<li>测试扮演“程序公敌”的角色。积极思考如何破坏代码。这种思考可以提高生产力。</li>
+<li>检查预期的错误是否如期出现。例如，关闭文件流后，再次读取。<ul>
+<li>当事情被认为应该出错时，别忘记检查是否抛出了预期的异常。</li>
+</ul>
+</li>
+<li>测试类愈来愈多，可以生成另外一个类，专门包含由其他测试类所组成的测试套件，以便拥有一个主控的“测试类</li>
+</ul>
+</li>
+<li>任何测试都不能证明一个程序没有bug。但一旦重构，可以更好地理解整个程序，从而找出更多bug<ul>
+<li>不要因为测试无法不着所有bug就不写测试，测试的确可以捕捉大多数bug</li>
+</ul>
+</li>
+<li>测试可以提高编程速度。其目的都是保证你能够测试所有情况的一切组合</li>
+<li>应该把测试集中在可能出错的地方。观察代码，看哪儿复杂？观察函数，看哪儿可能出错？<ul>
+<li>当测试数量到达一定程度之后，继续增加测试带来的效益会曾宪递减事态，而非持续递增；如果试图编写太多测试，可能会因工作量太大而气馁，最后什么也写不成；</li>
+</ul>
+</li>
+</ul>
+<h1 id="面向对象的测试"><a href="#面向对象的测试" class="headerlink" title="面向对象的测试"></a>面向对象的测试</h1><ul>
+<li>继承、多态会让测试变得比较困难。=》将有很多组合需要测试</li>
+<li>不总时测试所有可能组合。尽量测试每个类，可以大大减少各种组合所造成的风险。</li>
+<li>“花合理的时间抓出大多数bug”，好过“穷尽一生抓出所有bug”　　</li>
+</ul>
+<h1 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h1><ul>
+<li>与产品代码之间的区别：可以放心复制、编辑测试代码</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>004-代码的坏味道-不健康代码</title>
+    <url>/articles/20210102/c4155470.html</url>
+    <content><![CDATA[<p>摘要：何为不健康的代码</p>
+<a id="more"></a>
+
+<h1 id="DuplicatedCode（重复代码）"><a href="#DuplicatedCode（重复代码）" class="headerlink" title="DuplicatedCode（重复代码）"></a>DuplicatedCode（重复代码）</h1><ul>
+<li>一个以上地点看到相同的程序结构：提炼新函数</li>
+<li>同一个类的两个函数含有相同的表达式：：提炼新函数</li>
+<li>两个互为兄弟的子类内含有相同表达式：分别提炼代码，推入超类。不完全相同的，将相似部分和差异部分分割</li>
+<li>两个毫不相关的类：考虑方法提取、继承</li>
+</ul>
+<h1 id="LongMethod（过长函数）"><a href="#LongMethod（过长函数）" class="headerlink" title="LongMethod（过长函数）"></a>LongMethod（过长函数）</h1><ul>
+<li>活的好，活的长</li>
+<li>程序愈长愈难以理解</li>
+<li>“间接层”所能带来的全部利益：解释能力、共享能力、选择能力，都是由小型函数支持的</li>
+<li>让小函数容易理解的真正关键在于一个好名字</li>
+<li>更积极地分解函数</li>
+<li>原则：<ul>
+<li>当需要以注释来说明点儿什么的时候，将需要说明的东西写进一个独立函数中，并以用途（非实现手法）来命名</li>
+<li>可以对一组甚至一行代码做这件事儿，哪怕替换后的函数调用动作比函数自身还长，只要函数名称能够解释其用途，也该毫不犹豫地这么做</li>
+<li>关键不在于函数的长度，而在于函数“做什么”和“如何做”之间的语义距离</li>
+<li>99%的场合里，要把函数变小，只需使用方法提取：找到函数中适合集中在一起的部分，将它们提炼出来，形成一个新的函数</li>
+<li>如果函数内有大量的参数、临时变量，会对函数提炼形成阻碍。</li>
+<li>避免将许多参数、临时变量当作参数传递给被提炼出来的新函数，导致可读性几乎没有任何提升</li>
+<li>运用replace temp with query来消除这些临时元素</li>
+<li>introduce parameter object和preserve whole object,则可将过长的参数变得简洁</li>
+<li>如果还是有太多临时变量、参数，则使用杀手锏：replace method with method object</li>
+<li>如何确定该提炼哪一段代码？<ul>
+<li>寻找注释：<ul>
+<li>可以指出代码用途、实现手法之间的语义距离。</li>
+<li>注释是在提醒你，可将这段代码替换成一个函数，且可以在注释的基础上为这个函数命名</li>
+<li>就算只有一行代码，如果需要以注释来说明，也值得将其提炼到独立函数去</li>
+</ul>
+</li>
+<li>条件表达式、循环：<ul>
+<li>使用decompose conditional处理条件表达式</li>
+<li>循环，将循环和其内的代码提炼到一个独立函数中</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="large-class-过大的类"><a href="#large-class-过大的类" class="headerlink" title="large class 过大的类"></a>large class 过大的类</h1><ul>
+<li>缺点：拥有太多实例变量、拥有太多代码</li>
+<li>解决：<ul>
+<li>extract class：将几个变量一起提炼至新类内。提炼时，应该选择类内彼此相关的变量。通常，如果类内的数个变量有着相同的前缀、字尾，一位着有机会把它们提炼到某个组件内。</li>
+<li>extract subclass：同理，适合作为一个子类。</li>
+<li>提炼方法：代码重复、混乱</li>
+<li>extract interface：确定客户端如何使用它们，为每一种方式提炼出一个接口</li>
+<li>独立领域对象：如果是个GUI类，可能需要把数据、行为移到一个独立的领域对象去</li>
+<li>duplicate observe data：两边各保留一些重复数据，并保持两边同步。</li>
+</ul>
+</li>
+</ul>
+<h1 id="long-parameter-list-过长参数列"><a href="#long-parameter-list-过长参数列" class="headerlink" title="long parameter list 过长参数列"></a>long parameter list 过长参数列</h1><ul>
+<li>把函数所需的所有东西，都以参数传递进去。除此之外只能选择全局数据，而全局数据是邪恶的东西</li>
+<li>对象技术改变了这一情况：如果手上没有所需的东西，总可以叫另一个对象给你</li>
+<li>有了对象，只需要给它足够的、让函数能从中获得自己所需的东西就行了。</li>
+<li>函数需要的东西多半可以在函数的宿主类中找到。</li>
+<li>面向对象中的函数，参数列通常比在传统程序中短很多</li>
+<li>缺点：<ul>
+<li>难以理解，太多参数会造成前后不一致，不易使用；</li>
+<li>一旦需要更多数据，不得不修改它。如果将对象传递给函数，大多数修改都没有必要。</li>
+</ul>
+</li>
+<li>解决：<ul>
+<li>replace parameter with method：如果向已有对象发出一条请求就可以取代一个参数。已有对象：可能是类内的一个字段，也可能是另一个参数</li>
+<li>preserve whole object：将来自同一对象的一堆数据收集起来，并以改对象替换它们</li>
+<li>introduce parameter object：如果某些数据缺乏合理的对象归属，为它们制造一个“参数对象”</li>
+<li>例外：不希望造成”被调用对象“与”较大对象“间的某种依赖关系，这时将数据从对象中拆解出来，单独作为参数也很合理。但需注意其所引发的代价。如果参数列太长、变化太频繁，就需要重新考虑自己的依赖结构了</li>
+</ul>
+</li>
+</ul>
+<h1 id="divergent-change-发散式变化"><a href="#divergent-change-发散式变化" class="headerlink" title="divergent change 发散式变化"></a>divergent change 发散式变化</h1><ul>
+<li>易修改，相关性尽量减少</li>
+<li>一个类受多种变化的影响</li>
+<li>解决：<ul>
+<li>divergent change：某个类因为不同的原因在不同的方向上发生变化。</li>
+<li>extract class：针对某一外界变化的所有相应修改，都只应发生在单一类中，而这个新类内的所有内容都应反应此变化。应该找出某特定原因而造成的所有变化</li>
+</ul>
+</li>
+<li>目的：使“外界变化”与“需要修改的类”趋于一一对应</li>
+</ul>
+<h1 id="shotgun-surgery-散弹式修改"><a href="#shotgun-surgery-散弹式修改" class="headerlink" title="shotgun surgery 散弹式修改"></a>shotgun surgery 散弹式修改</h1><ul>
+<li>如果每遇到某种变化，都必须在许多不同的类内做出许多小的修改</li>
+<li>需要修改的代码散步四处，不但很难找到它们，也很容易忘记某个重要的修改。</li>
+<li>一种变化引发多个类相应修改</li>
+<li>解决：<ul>
+<li>move method、move field：将所有需要修改的代码放进同一个类。</li>
+<li>inline class：把一系列相关行为放进同一个类，可能会造成少量divergent change，但可以轻易处理</li>
+</ul>
+</li>
+<li>目的：使“外界变化”与“需要修改的类”趋于一一对应</li>
+</ul>
+<h1 id="feature-envy-依恋情节"><a href="#feature-envy-依恋情节" class="headerlink" title="feature envy 依恋情节"></a>feature envy 依恋情节</h1><ul>
+<li>将数据、对数据的操作行为，包装在一起</li>
+<li>解释：函数对某个类的兴趣搞过对自己所处类的兴趣，数据依恋</li>
+<li>解决：<ul>
+<li>move method：将函数移到应该去的地方</li>
+<li>extract method + move method：函数中有一部分受依恋之苦</li>
+<li>一个函数往往会用到几个类的功能，究竟该被置于何处？判断哪个类拥有最多被此函数使用的数据。可先用extract method将函数分解为数个较小函数，并分别置于不同地点</li>
+</ul>
+</li>
+<li>根本原则：<ul>
+<li>将总是一起变化的东西放在一起。</li>
+<li>数据和引用这些数据的行为总是一起变化的，也有例外</li>
+<li>如果例外出现，就搬移那些行为，保持变化只在一地发生</li>
+</ul>
+</li>
+</ul>
+<h1 id="data-clumps-数据泥团"><a href="#data-clumps-数据泥团" class="headerlink" title="data clumps 数据泥团"></a>data clumps 数据泥团</h1><ul>
+<li>很多地方看到相同的三四项数据：两个类中相同的字段；许多函数签名中相同的参数</li>
+<li>绑定在一起出现的数据，应该拥有数据它们自己的对象</li>
+<li>解决：<ul>
+<li>extract class：将一起出现的数据，提炼到一个独立对象中</li>
+<li>introduce parameter object、preserve whole object：将注意力转移到函数签名上。将很多参数列缩短，简化函数调用</li>
+<li>不必在意Data clumps上只用上新对象的一部分字段，只要以新对象取代两个、更多字段，就值回票价。</li>
+<li>判断依据：删掉众多数据中的一项，其他数据没有因而失去意义。如果它们不再有意义，则是明确信号，应该为它们产生一个新对象。</li>
+</ul>
+</li>
+<li>好处：<ul>
+<li>减少字段、参数个数</li>
+<li>一旦拥有新对象，就可以着手找寻feature envy，帮你指出能够移至新类中的种种程序行为</li>
+</ul>
+</li>
+</ul>
+<h1 id="primitive-obsession-基本类型偏执"><a href="#primitive-obsession-基本类型偏执" class="headerlink" title="primitive obsession 基本类型偏执"></a>primitive obsession 基本类型偏执</h1><ul>
+<li>结构类型数据：将数据组织成有意义的形式</li>
+<li>基本类型数据：构成结构类型的积木块</li>
+<li>结构总会带来额外的开销，可能代表着数据库中的表，如果只为做一两件事而创建结构类型也可能显得麻烦。</li>
+<li>对象的最大价值：模糊了横亘于基本数据、体积较大的类之间的界限。可以轻松编写出与语言基本类型无异的小型类</li>
+<li>新手通常不愿意在小任务上运用小对象</li>
+<li>解决：<ul>
+<li>replace data value with object：将原本单独存在的数据值替换为对象，从而走出传统的窟窿，进入炙手可热的对象世界<ul>
+<li>例如：结合数值和币种的money 类；由起始值、结束值组成的range类；电话号码或邮政编码……特殊字符串</li>
+</ul>
+</li>
+<li>replace type code with class、replace type code with state/strategy：有与类型码相关的条件表达式</li>
+<li>extract class：有一组总是被放在一起的字段</li>
+<li>intruduce parameter object:参数列看到基本型数据</li>
+<li>replace array  with object：从数组中挑选数据</li>
+</ul>
+</li>
+</ul>
+<h1 id="switch-statements-switch代码块"><a href="#switch-statements-switch代码块" class="headerlink" title="switch statements switch代码块"></a>switch statements switch代码块</h1><ul>
+<li>少用switch、case语句。本质上都是在重复</li>
+<li>可用多态来优雅解决</li>
+<li>switch语句长根据类型码进行选择，要的是“与该类型码相关的函数、类”</li>
+<li>解决：<ul>
+<li>多态</li>
+</ul>
+</li>
+</ul>
+<h1 id="parallel-inheritance-hierarchies-平行继承体系"><a href="#parallel-inheritance-hierarchies-平行继承体系" class="headerlink" title="parallel inheritance hierarchies 平行继承体系"></a>parallel inheritance hierarchies 平行继承体系</h1><ul>
+<li>特殊的shotgun surgery</li>
+<li>每当为某个类增加一个子类，必须为另一个类相应增加一个子类</li>
+<li>特征：某个继承体系的类名称前缀与另一个继承体系的类名称前缀完全相同</li>
+<li>解决：<ul>
+<li>让一个继承体系的实例引用另一个继承体系的实例&amp;&amp;move method、move field。将引用端的继承体系消弭于无形</li>
+</ul>
+</li>
+</ul>
+<h1 id="lazy-class-冗赘类"><a href="#lazy-class-冗赘类" class="headerlink" title="lazy class 冗赘类"></a>lazy class 冗赘类</h1><ul>
+<li>所创建的每一个类都需要有人去理解它，维护它，这些工作都是要花钱的</li>
+<li>如果一个类的所得不值其身价，就应该消失</li>
+<li>场景：<ul>
+<li>某个类原本对得起自己的身价，但重构使其缩水，不再承担那么多的责任</li>
+<li>开发者事前规划了某些变化，并添加一个类来应付这些变化，但变化实际没有发生</li>
+</ul>
+</li>
+<li>解决：<ul>
+<li>collapse hierarchy：如果某些子类没有足够的工作</li>
+<li>inline class：几乎没用的组件</li>
+</ul>
+</li>
+</ul>
+<h1 id="speculative-generality-夸夸其他未来性"><a href="#speculative-generality-夸夸其他未来性" class="headerlink" title="speculative generality 夸夸其他未来性"></a>speculative generality 夸夸其他未来性</h1><ul>
+<li>“我想总有一天需要做这事儿”。企图以各式各样的钩子、特殊情况来处理一些非必要的事情。</li>
+<li>造成系统更难理解、维护</li>
+<li>如果所有装置会被用到，就值得这么做；如果用不到，就不值得。用不上的装置只会挡你的路，所以，把它搬开吧</li>
+<li>解决：<ul>
+<li>collapse hierarchy：某个抽象类没有太大作用</li>
+<li>inline class：除去不必要的委托</li>
+<li>remove parameter：函数的某些参数未被用上</li>
+<li>rename method：函数名称带有多余的抽象意味</li>
+<li>测试用例：如果函数、类的唯一用户是测试用例，则为speculative generality。如果发现这样的函数、类，请把它们连同测试用例一并删除。但如果它们的用途是帮助测试用例检测正当功能，必定刀下留人。</li>
+</ul>
+</li>
+</ul>
+<h1 id="temporary-field-令人迷惑的暂时字段"><a href="#temporary-field-令人迷惑的暂时字段" class="headerlink" title="temporary field 令人迷惑的暂时字段"></a>temporary field 令人迷惑的暂时字段</h1><ul>
+<li>某个实例变量仅为某种特定情况而设。</li>
+<li>这样的代码让人不易理解。通常认为对象在所有时候都需要它的所有变量</li>
+<li>在变量未被使用的情况下，猜测当初的设置目的，会让人发疯的</li>
+<li>解决：<ul>
+<li>extract class：把所有和这个变量相关的代码，都放进这个新家<ul>
+<li>如果类中有一个复杂算法，需要好几个变量，往往导致temporary field的出现。</li>
+<li>由于实现者不希望传递一长串参数，所以将这些参数都放进字段中。</li>
+<li>但这些字段只有使用改算法时才有效，其他情况只会让人迷惑</li>
+<li>extract class：将这些变量和其相关函数提炼到一个独立类中，提炼后的新对象将是一个函数对象</li>
+</ul>
+</li>
+<li>intruduce null objec：变量不合法的情况下，创建一个null对象，避免写出条件式代码</li>
+</ul>
+</li>
+</ul>
+<h1 id="message-chains-过度耦合的消息链"><a href="#message-chains-过度耦合的消息链" class="headerlink" title="message chains 过度耦合的消息链"></a>message chains 过度耦合的消息链</h1><ul>
+<li>消息链：对象传递性请求</li>
+<li>特征：代码中可能是一长串的getthis{}或一长串的临时变量</li>
+<li>意味着客户代码将于查找过程中的导航结构紧密耦合。一旦对象间的关系发生任何变化，客户端就不得不做出相应的修改</li>
+<li>解决：<ul>
+<li>hide delegate：在消息链的不同位置进行这种重构手法。<ul>
+<li>理论上，可以重构消息链上的任何一个对象，但这么做往往会把一系列对象intermediate object都变成middle man</li>
+<li>通常，更好的选择是，先观察消息链最终得到的对象是用来干什么的，看看能否使用extract method把使用该对象的代码提炼到一个独立函数中，再运用move method将这个函数推入消息链</li>
+<li>如果这条链上的某个对象有多位用户打算添加此消息链的一部分，就加一个函数来做这件事</li>
+</ul>
+</li>
+<li>注意：不是任何函数链都是坏味道</li>
+</ul>
+</li>
+</ul>
+<h1 id="middle-man-中间人"><a href="#middle-man-中间人" class="headerlink" title="middle man 中间人"></a>middle man 中间人</h1><ul>
+<li>过度运用委托：某个类有一半的函数都委托给其他类</li>
+<li>解决：<ul>
+<li>remove middle man：直接和真正负责的对象打交道</li>
+<li>inline method：如果这样“不干实事”的函数只有少数几个，将其放进调用端。</li>
+<li>replace delegation with inheritance：如果middle man 还有其他行为，将其变成实责对象。即可扩展原对象的行为，又不必负担那么多的委托动作</li>
+</ul>
+</li>
+</ul>
+<h1 id="inappropriate-intimacy-过度亲密"><a href="#inappropriate-intimacy-过度亲密" class="headerlink" title="inappropriate intimacy 过度亲密"></a>inappropriate intimacy 过度亲密</h1><ul>
+<li>两个类过于亲密，花费太多时间去探究彼此的private成分。</li>
+<li>对于类，希望尽量保持独立</li>
+<li>继承往往造成过度亲密：子类对超类的了解总是超过超类的主观愿望</li>
+<li>解决：<ul>
+<li>move method、move field：划清界限，减少亲密度</li>
+<li>change bidirectional association to unidirectional：让其中一个类脱离另一个类</li>
+<li>extract class：将两者共同点提炼到一个安全地点，并使用新类</li>
+<li>hide delegate：让另一个类来传递关系</li>
+<li>replace inheritance with delegation：继承造成的过度亲密，让子类独自生活，离开继承体系</li>
+</ul>
+</li>
+</ul>
+<h1 id="alternative-classes-with-different-interfaces-异曲同工的类"><a href="#alternative-classes-with-different-interfaces-异曲同工的类" class="headerlink" title="alternative classes with different interfaces 异曲同工的类"></a>alternative classes with different interfaces 异曲同工的类</h1><ul>
+<li>解决：<ul>
+<li>rename method：两个函数做着同一件事，有着不同的签名。根据用途为其重新命名</li>
+<li>remove method：将某些行为移入类，直到两者的函数功能不同为止</li>
+<li>extract superclass：防止重复而冗余的移入代码</li>
+</ul>
+</li>
+</ul>
+<h1 id="incomplete-library-class-不完美的类库"><a href="#incomplete-library-class-不完美的类库" class="headerlink" title="incomplete library class 不完美的类库"></a>incomplete library class 不完美的类库</h1><ul>
+<li>库作者没有未卜先知的能力&amp;&amp;需求不明确，导致库往往构造的不够好，往往不可能让我们修改其中的类来完成我们希望完成的工作。</li>
+<li>解决：<ul>
+<li>introduce foreign method：如果只想修改库类的一两个函数</li>
+<li>intruduce local extension：想要添加一大堆额外的行为</li>
+</ul>
+</li>
+</ul>
+<h1 id="data-class-纯粹的数据类"><a href="#data-class-纯粹的数据类" class="headerlink" title="data class 纯粹的数据类"></a>data class 纯粹的数据类</h1><ul>
+<li>拥有一些字段，以及用于访问（读写）一些字段的函数。除此之外，一无是处</li>
+<li>这样的类，只是一种不会说话的数据容器，几乎一定被其他类过分细碎地操控着</li>
+<li>data class就像一个小孩子，起点很好，但若要让它们像成熟的对象那样参与整个系统的工作，它们就必须承担一定责任</li>
+<li>解决：<ul>
+<li>encapsulate field：类中早期拥有public字段。在别人注意之前将其封装起来</li>
+<li>encapsulate collection：如果类内含容器类字段，且没有得到恰当的封装</li>
+<li>remove setting method：对于不该被其他类修改的字段</li>
+<li>move method：找出取值、设值函数被其他类运用的地点，将调用行为搬移到data class 中</li>
+<li>extract method：无法搬移整个函数，则残生一个可搬移的函数。</li>
+<li>hide method：将取值、设值函数隐藏起来</li>
+</ul>
+</li>
+</ul>
+<h1 id="refused-bequest-被拒绝的继承"><a href="#refused-bequest-被拒绝的继承" class="headerlink" title="refused bequest 被拒绝的继承"></a>refused bequest 被拒绝的继承</h1><ul>
+<li>子类应该继承超类的函数、数据。</li>
+<li>如果子类不想、不需要继承所有的函数、数据，仅需要其中的一部分？</li>
+<li>不建议的传统做法：（起码不建议每次都这么做）<ul>
+<li>为子类新建一个兄弟类</li>
+<li>push down mehtod、push down field 把所有用不到的函数下推给那个兄弟</li>
+<li>最终，超类只持有子类共享的东西。达到“所有的超类，应该是抽象的”</li>
+</ul>
+</li>
+<li>经常利用继承来复用一些行为，并发现可以很好地应用于日常工作。但这也是一种坏味道，但气味通常不那么强烈</li>
+<li>建议：<ul>
+<li>如果refused bequest引起困惑。问题，请遵循传统忠告，但不必每次都这么做。十有八九这种坏味道很淡，</li>
+<li>如果子类复用了超类的行为（实现），却不愿意支持超类的接口，refused bequest的坏味道就会变得浓烈。</li>
+<li>拒绝继承超类的实现，可以不介意；但如果拒绝继承超类的接口，必须重视。</li>
+<li>replace inheritance with delegation：即使不愿意继承接口，也不要胡乱修改继承体系。</li>
+</ul>
+</li>
+</ul>
+<h1 id="comments-过多的注释"><a href="#comments-过多的注释" class="headerlink" title="comments 过多的注释"></a>comments 过多的注释</h1><ul>
+<li>comments不是一种坏味道，是一种好味道</li>
+<li>但，人们常用Comments来作为除臭剂。</li>
+<li>常见情境：一段代码，有长长的注释。而注释之所以存在，是因为代码很糟糕。</li>
+<li>comments可以带我们找到上面所提到的各种坏味道。找到坏味道之后，用各种重构手法去除坏味道。完成之后，常发现：注释已经变得多余了，因为代码已经说清楚说明了一切</li>
+<li>解决：<ul>
+<li>extract method：注释来解释一块代码做了什么</li>
+<li>rename method：如果函数已经提炼出来，但还是需要注释来解释其行为</li>
+<li>introduce assertion：如果需要注释说明某些系统的需求规格</li>
+</ul>
+</li>
+<li>建议：<ul>
+<li>当感觉需要撰写注释时，请先尝试重构，试着让所有的注释都变得多余</li>
+</ul>
+</li>
+<li>注释的良好运用情境：（信息可以帮助将来的修改者，尤其是那些健忘的人）<ul>
+<li>不知道该做什么：用来记录将来的打算</li>
+<li>标记并无十足把握的区域</li>
+<li>写下自己“为什么做某某事”</li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-重构原则</title>
+    <url>/articles/20210102/1d5fb0cc.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<ul>
+<li>何谓重构</li>
+<li>为何重构</li>
+<li>何时重构</li>
+<li>怎么对经理说</li>
+<li>重构的难题</li>
+<li>重构与设计</li>
+<li>重构与性能</li>
+<li>重构起源何处<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><h2 id="何为重构"><a href="#何为重构" class="headerlink" title="何为重构"></a>何为重构</h2><ul>
+<li>名词定义1：对软件内部结构的一种调整，目的是爱不改变软件可观察行为的前提下，提高其可理解性，降低其修改成本</li>
+<li>动词定义：使用一系列重构手法，在不改变软件可观察行为的前提下，调整其结构</li>
+</ul>
+<h2 id="为何重构"><a href="#为何重构" class="headerlink" title="为何重构"></a>为何重构</h2><ul>
+<li>改进软件设计</li>
+<li>使软件更容易理解</li>
+<li>帮助找到Bug</li>
+<li>提高编程速度</li>
+</ul>
+<h2 id="何时重构"><a href="#何时重构" class="headerlink" title="何时重构"></a>何时重构</h2><ul>
+<li>三次法则：事不过三，三则重构</li>
+<li>添加功能时重构：帮助理解需要修改的代码，理清代码结构；新特性的添加会更快速、流畅</li>
+<li>修补错误：代码更具可读性；没清晰到让人一眼看出bug</li>
+<li>复审代码：开发团队中传播知识，传递经验，获得建议；和团队进行设计复审：UML示意图展示设计，CRC卡展示软件情节；和单个开发者进行代码复审</li>
+</ul>
+<h2 id="需要重构的代码"><a href="#需要重构的代码" class="headerlink" title="需要重构的代码"></a>需要重构的代码</h2><ul>
+<li>难以阅读的</li>
+<li>逻辑重复的</li>
+<li>添加新行为使需要修改已有代码的</li>
+<li>带复杂逻辑条件的</li>
+</ul>
+<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><ul>
+<li>易阅读</li>
+<li>易修改</li>
+<li>所有逻辑在唯一地点指定</li>
+<li>新的改动不会危机现有行为</li>
+<li>尽可能简单表达逻辑条件</li>
+</ul>
+<h2 id="间接层是一把双刃剑"><a href="#间接层是一把双刃剑" class="headerlink" title="间接层是一把双刃剑"></a>间接层是一把双刃剑</h2><ul>
+<li>将大型对象拆成多个小型对象，将大型函数拆成多个小型函数</li>
+<li>缺点：一个东西分两份，增加管理难度；<ul>
+<li>多个委托依次依赖，程序难以阅读</li>
+</ul>
+</li>
+<li>优点：<ul>
+<li>父类、子类：允许逻辑共享</li>
+<li>分开解释意图和实现</li>
+<li>隔离变化</li>
+<li>封装条件逻辑：多态消息</li>
+</ul>
+</li>
+</ul>
+<h2 id="数据库"><a href="#数据库" class="headerlink" title="数据库"></a>数据库</h2><h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><ul>
+<li>程序与数据库结构紧密耦合</li>
+<li>数据迁移：数据库结构改变</li>
+<li>数据库模型复杂，难以控制<h3 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h3></li>
+<li>对象模型和数据库模型间插入一个分割层，隔离两个模型各自的变化。<ul>
+<li>缺点：增加系统复杂性</li>
+<li>优点：带来很大的灵活性</li>
+</ul>
+</li>
+<li>面向对象数据库：提供不同版本的对象间的自动迁移宫娥能</li>
+</ul>
+<h2 id="修改接口"><a href="#修改接口" class="headerlink" title="修改接口"></a>修改接口</h2><ul>
+<li>接口，修改要特别谨慎。一旦被修改，任何事情都有可能发生</li>
+<li>对象，可以允许分开修改软件模块的实现和接口，可以安全地修改对象内部实现而不影响他人</li>
+<li>影响：被“找不到，或找到不能修改”的代码使用，会成为问题。即，已发布的接口</li>
+<li>已发布的接口修改：旧接口调用新接口，并标记为deprecated</li>
+<li>尽量少发布接口，不要公开太多的接口。在强调代码所有权上做出适当让步</li>
+<li>发布接口有代价，除非真的有必要</li>
+<li>不要过早发布接口</li>
+<li>在throw子句中增加一个异常</li>
+</ul>
+<h2 id="何时不该重构"><a href="#何时不该重构" class="headerlink" title="何时不该重构"></a>何时不该重构</h2><ul>
+<li>代码太混乱，不如重写一个来的简单：代码无法正常运作，或无法稳定运作</li>
+<li>折中办法：“大块头软件”重构封装为良好的小型组件，逐一对组件做出“重构、重建”的决定</li>
+<li>项目接近最后期限，避免重构。为时已晚。</li>
+<li>重构确实可以提高生产力。如果最后没有足够的时间，通常表示应早该进行重构</li>
+</ul>
+<h2 id="重构与设计"><a href="#重构与设计" class="headerlink" title="重构与设计"></a>重构与设计</h2><ul>
+<li>互补关系</li>
+<li>预先设计，避免返工成本</li>
+<li>重构改变了预先设计的角色，不必确保预先设计一定是正确无误的，只需要一个足够合理的解决方案即可</li>
+<li>重构让日后的修改成本不在高昂</li>
+<li>软件设计得以简化。足够灵活、可靠的解决方案，成本难以估算；所有可能变化的地点都建立灵活性，会使整个系统的复杂度大大提高；最后可能这些灵活性毫无必要</li>
+<li>重构是另一途径，来应付变化的风险。只需考虑：将一个简单的解决方案重构成一个灵活方案的难度？一般都“相当容易”</li>
+<li>重构：更简单的设计，不损失灵活性，降低设计过程的难度和压力</li>
+</ul>
+<h2 id="重构与性能"><a href="#重构与性能" class="headerlink" title="重构与性能"></a>重构与性能</h2><ul>
+<li>不赞成为了提高设计的纯洁性而忽视性能，不将性能寄托在更快的硬件上</li>
+<li>重构，可能使软件运行更慢，也可使软件的性能优化更容易</li>
+<li>除了对性能有严格要求的实时系统，其他任何情况下“编写快速软件”的秘密就是：首先写出可调的软件，然后调整他以求获得足够的速度</li>
+<li>编写快速软件的方法：</li>
+</ul>
+<ol>
+<li>时间预算法。<ul>
+<li>多用于性能要求极高的实时系统。</li>
+<li>分解设计时做好预算，给每个组件预先分配一定的资源（包括时间和执行轨迹），每个组件绝对不能超过自己的预算，就算拥有组件之间调度预配时间的机制也不行。</li>
+<li>此方法，高度重视性能</li>
+</ul>
+</li>
+<li>持续关注法。<ul>
+<li>要求任何程序员在任何时间做任何事，都设法保持系统的高性能</li>
+<li>通常没有太大作用，视角通常太狭隘。</li>
+<li>修改只是为了提高性能，通常会使程序难以维护，继而减缓开发速度</li>
+<li>一视同仁的优化所有代码。90%的优化都是白费劲，代码很少被执行，没达到应有的效果。需要对程序有清楚的认识</li>
+</ul>
+</li>
+<li>90%统计数据<ul>
+<li>编写构造良好的程序，不能对性能投以特别的关注，直至进入性能优化阶段（通常在开发后期）</li>
+<li>首先，用一个度量工具来监控程序的运行，得到哪些地方消耗大量的时间、空间，找出性能热点所在的代码</li>
+<li>注意力集中在性能热点上，较少的工作量可得到较好的成果</li>
+<li>保持谨慎，应小幅度进行修改，每一步都需编译、测试、再次度量。如果性能没有提高，则撤销此次修改</li>
+<li>保持“发现热点，去除热点”，直至得到满意的性能</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li>构造良好的程序的帮助</li>
+</ul>
+<ol>
+<li>较充裕的时间进行性能调整。构造良好的代码，可帮助更快速地添加功能，有更多的时间用在性能问题上（准确的度量则保证将时间投资在恰当的地方）</li>
+<li>构造良好的程序，在性能分析时有更细的粒度。度量工具将你带到范围较小的程序段落中，性能调整更容易些。代码更加清晰，则帮助理解自己的选择，更清楚那些调整起关键作用。</li>
+</ol>
+<ul>
+<li>短期看，重构可能使软件变慢，但优化阶段的软件性能调整容易，最终更易得到较好的效果。</li>
+</ul>
+<h2 id="重构缘起何处"><a href="#重构缘起何处" class="headerlink" title="重构缘起何处"></a>重构缘起何处</h2><ul>
+<li>优秀的程序员肯定至少会花一些时间来清理自己的代码。</li>
+<li>简洁的代码比杂乱无章的代码更容易修改</li>
+<li>知道自己几乎无法一开始就写出简洁的代码</li>
+<li>重构可以提高生产力，对于开发灵活高效的框架很有帮助</li>
+<li>重构使一门非常重要的技术，对生产性能、产品质量带来很大的影响</li>
+</ul>
+]]></content>
+      <categories>
+        <category>重构</category>
+      </categories>
+  </entry>
+  <entry>
     <title>006-mysql-如何使用MySQL一个表中的字段更新另一个表中字段</title>
     <url>/articles/20210101/f669f815.html</url>
     <content><![CDATA[<p>摘要：006-mysql-如何使用MySQL一个表中的字段更新另一个表中字段</p>
@@ -18,8 +2094,11 @@
   </entry>
   <entry>
     <title>002-重构入门案例</title>
-    <url>/articles/20201228/3fe3f9a6.html</url>
-    <content><![CDATA[<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>示例：影片出租店应用程序，计算每一位顾客的消费金额并打印详单。操作者告诉程序：顾客租客哪些影片、租期多长，程序便根据租赁时间和影片类型计算出费用。</p>
+    <url>/articles/20210101/3fe3f9a6.html</url>
+    <content><![CDATA[<p>摘要：重构入门案例</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>示例：影片出租店应用程序，计算每一位顾客的消费金额并打印详单。操作者告诉程序：顾客租客哪些影片、租期多长，程序便根据租赁时间和影片类型计算出费用。</p>
 <p>影片分为三类：普通片、儿童片、新片。除了计算费用还要为常客计算积分，积分会根据足片种类是否为新片而有不同。</p>
 <h1 id="Ver01-示例-简单逻辑思维，没有扩展"><a href="#Ver01-示例-简单逻辑思维，没有扩展" class="headerlink" title="Ver01 示例-简单逻辑思维，没有扩展"></a>Ver01 示例-简单逻辑思维，没有扩展</h1><ol>
 <li>使用几个类表达上述<ul>
@@ -122,7 +2201,7 @@
 <h1 id="重新分析，抽象模型"><a href="#重新分析，抽象模型" class="headerlink" title="重新分析，抽象模型"></a>重新分析，抽象模型</h1><ol>
 <li><p>抽象过程一、</p>
 <ul>
-<li>影片实体：抽象类Movie,子类：普通片、儿童片、新片.每个子类有各自计费方法实现。常见操作是抽象功能接口</li>
+<li>影片实体：抽象类Movie,子类：普通片、儿童片、新片.每个子类有各自计费方法实现。常见操作是抽象功能接口<br>影片可能会根据不同的类型有不同的收费规则，所以影片可以根据类型有不同的子类，但是有个问题，影片如果换了类型，但是class是不能换的，所以可以考虑影片没有子类，但是影片包含一个Price的类，这个类可以根据不同类型有不同子类。Movie有一个Price类的引用，不同的类型对应不同的Price子类，调用Price类的方法来计算收费。</li>
 </ul>
 <p>参看：<a href="'https://github.com/bjlhx15/refactoring.git'">github ver03</a></p>
 </li>
@@ -134,10 +2213,19 @@
   </entry>
   <entry>
     <title>001-概述</title>
-    <url>/articles/20201228/35a24dd9.html</url>
-    <content><![CDATA[<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>重构（refactoring）：是一个过程：在不改变代码外在行为的前提下，对代码做出修改，已改进程序的内部结构。</p>
+    <url>/articles/20210101/35a24dd9.html</url>
+    <content><![CDATA[<p>摘要：重构基础以及目录</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>重构（refactoring）：是一个过程：在不改变代码外在行为的前提下，对代码做出修改，已改进程序的内部结构。</p>
 <p>本质上，重构就是在代码写好之后改进他的设计。</p>
-<h1 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h1><ol>
+<h1 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h1><ul>
+<li>更改变量名是绝对值得的行为，好的代码应该清楚表达出自己的功能，变量名是代码清晰的关键。任何一个傻瓜都能写出计算机可以理解的代码。唯有写出人类容易理解的代码，才是优秀的程序员 。</li>
+<li>绝大多数情况下，函数应该放在它所使用的数据的所属对象内。</li>
+<li>重构的前提是需要有测试工具和测试用例，每次重构一小部分代码就进行测试，保证在不改变代码行为的前提下重构。</li>
+<li>不要对另一个对象的属性用switch，如果要用switch，也应该在自己的属性上用，这样可以解耦，别的对象的修改也影响不到你。</li>
+</ul>
+<ol>
 <li>示例</li>
 </ol>
 ]]></content>
@@ -775,6 +2863,23 @@
       </categories>
   </entry>
   <entry>
+    <title>009-特征提取算法-BRIEF-检测斑点</title>
+    <url>/articles/20200229/6944d2af.html</url>
+    <content><![CDATA[<p>摘要：009-特征提取算法-BRIEF-检测斑点</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>并不是特征检测算法，它是一个描述符。关键点描述符是图像的一种表示，因为可以比较两个图像的关键点描述符，并找到他们的共同之处，因此可以作为特征匹配的一种方法。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># -*- coding: UTF-8 -*-</span></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">a</span><span class="params">(imgPath)</span>:</span></span><br><span class="line">    img = cv2.imread(imgPath)</span><br><span class="line">    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)</span><br><span class="line">    gray = np.float32(gray)</span><br><span class="line">    dst = cv2.cornerHarris(gray,<span class="number">2</span>,<span class="number">3</span>,<span class="number">0.04</span>)</span><br><span class="line">    dst = cv2.dilate(dst,<span class="literal">None</span>)</span><br><span class="line">    img[dst&gt;<span class="number">0.01</span> * dst.max()] = [<span class="number">0</span>,<span class="number">0</span>,<span class="number">255</span>]</span><br><span class="line">    cv2.imshow(<span class="string">'corners'</span>,img)</span><br><span class="line">    cv2.imwrite(<span class="string">'corners.png'</span>,img)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">0</span>) &amp; <span class="number">0xff</span> == <span class="number">27</span>:</span><br><span class="line">        cv2.destroyALLWindows()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="keyword">print</span> (<span class="string">'---------检测角点------------'</span>)</span><br><span class="line">    a(<span class="string">"/Users/lihongxu6/IdeaProjectsGit/python-algorithm/tests/feature/a.jpg"</span>)</span><br></pre></td></tr></table></figure>
+
+
+
+
+]]></content>
+      <categories>
+        <category>python-algorithm</category>
+      </categories>
+  </entry>
+  <entry>
     <title>011-特征提取算法-边缘检测</title>
     <url>/articles/20200229/d3acbf6a.html</url>
     <content><![CDATA[<p>摘要：011-特征提取算法-边缘检测</p>
@@ -799,23 +2904,6 @@
 <li>二值化图像输出结果</li>
 </ul>
 <p>“””<br>cv2.Canny(image,            # 输入原图（必须为单通道图）<br>          threshold1,<br>          threshold2,       # 较大的阈值2用于检测图像中明显的边缘<br>          [, edges[,<br>          apertureSize[,    # apertureSize：Sobel算子的大小<br>          L2gradient ]]])   # 参数(布尔值)：<br>                              true： 使用更精确的L2范数进行计算（即两个方向的倒数的平方和再开放），<br>                              false：使用L1范数（直接将两个方向导数的绝对值相加）。<br>“””</p>
-]]></content>
-      <categories>
-        <category>python-algorithm</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>009-特征提取算法-BRIEF-检测斑点</title>
-    <url>/articles/20200229/6944d2af.html</url>
-    <content><![CDATA[<p>摘要：009-特征提取算法-BRIEF-检测斑点</p>
-<a id="more"></a>
-
-<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>并不是特征检测算法，它是一个描述符。关键点描述符是图像的一种表示，因为可以比较两个图像的关键点描述符，并找到他们的共同之处，因此可以作为特征匹配的一种方法。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># -*- coding: UTF-8 -*-</span></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">a</span><span class="params">(imgPath)</span>:</span></span><br><span class="line">    img = cv2.imread(imgPath)</span><br><span class="line">    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)</span><br><span class="line">    gray = np.float32(gray)</span><br><span class="line">    dst = cv2.cornerHarris(gray,<span class="number">2</span>,<span class="number">3</span>,<span class="number">0.04</span>)</span><br><span class="line">    dst = cv2.dilate(dst,<span class="literal">None</span>)</span><br><span class="line">    img[dst&gt;<span class="number">0.01</span> * dst.max()] = [<span class="number">0</span>,<span class="number">0</span>,<span class="number">255</span>]</span><br><span class="line">    cv2.imshow(<span class="string">'corners'</span>,img)</span><br><span class="line">    cv2.imwrite(<span class="string">'corners.png'</span>,img)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">0</span>) &amp; <span class="number">0xff</span> == <span class="number">27</span>:</span><br><span class="line">        cv2.destroyALLWindows()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="keyword">print</span> (<span class="string">'---------检测角点------------'</span>)</span><br><span class="line">    a(<span class="string">"/Users/lihongxu6/IdeaProjectsGit/python-algorithm/tests/feature/a.jpg"</span>)</span><br></pre></td></tr></table></figure>
-
-
-
-
 ]]></content>
       <categories>
         <category>python-algorithm</category>
@@ -1842,37 +3930,6 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
       </categories>
   </entry>
   <entry>
-    <title>004-数据类型</title>
-    <url>/articles/20200219/56a0d34f.html</url>
-    <content><![CDATA[<p>摘要：事务</p>
-<a id="more"></a>
-
-<h1 id="整数类型-括号内数值含义"><a href="#整数类型-括号内数值含义" class="headerlink" title="整数类型-括号内数值含义"></a>整数类型-括号内数值含义</h1><p>包括TINYINT、SMALLINT、MEDIUMINT、INT、BIGINT，分别表示1字节、2字节、3字节、4字节、8字节整数。任何整数类型都可以加上UNSIGNED属性，表示数据是无符号的，即非负整数。</p>
-<h1 id="类型后的括号"><a href="#类型后的括号" class="headerlink" title="类型后的括号"></a>类型后的括号</h1><p>是展示长度含义：整数类型可以被指定长度，例如：INT(11)表示长度为11的INT类型。长度在大多数场景是没有意义的，它不会限制值的合法范围，只会影响显示字符的个数，而且需要和UNSIGNED ZEROFILL属性配合使用才有意义。</p>
-<p>例子，假定类型设定为INT(5)，属性为UNSIGNED ZEROFILL，如果用户插入的数据为12的话，那么数据库实际存储数据为00012。</p>
-<h1 id="varchar和char有什么区别"><a href="#varchar和char有什么区别" class="headerlink" title="varchar和char有什么区别"></a>varchar和char有什么区别</h1><p>char是一个定长字段,假如申请了char(10)的空间,那么无论实际存储多少内容.该字段都占用10个字符</p>
-<p>varchar是变长的,也就是说申请的只是最大长度,占用的空间为实际字符长度+1,最后一个字符存储使用了多长的空间.<br>在行数数据存储的时候，varchar 实际长度是需要记录到页结构中的 infimum和supermum record</p>
-<p>在检索效率上来讲,char &gt; varchar,因此在使用中,如果确定某个字段的值的长度,可以使用char,否则按照设计应该使用varchar.</p>
-<h1 id="varchar-10-和int-10-代表什么含义"><a href="#varchar-10-和int-10-代表什么含义" class="headerlink" title="varchar(10)和int(10)代表什么含义?"></a>varchar(10)和int(10)代表什么含义?</h1><ul>
-<li>varchar的10代表了申请的空间长度,也是可以存储的数据的最大长度</li>
-<li>int的10只是代表了展示的长度,不足10位以0填充.即,int(1)和int(10)所能存储的数字大小以及占用的空间都是相同的,只是在展示时按照长度展示.</li>
-</ul>
-<h1 id="日期和时间类型"><a href="#日期和时间类型" class="headerlink" title="日期和时间类型"></a>日期和时间类型</h1><p>尽量使用timestamp，空间效率高于datetime,但是 注意存储范围</p>
-<p>用整数保存时间戳通常不方便处理。如果需要存储微秒，可以使用bigint存储。</p>
-<h1 id="列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？"><a href="#列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？" class="headerlink" title="列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？"></a>列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？</h1><p>它会停止递增，任何进一步的插入都将产生错误，因为密钥已被使用。</p>
-<p>怎样才能找出最后一次插入时分配了哪个自动增量？</p>
-<p>LAST_INSERT_ID将返回由Auto_increment分配的最后一个值，并且不需要指定表名称。</p>
-<h1 id="段为什么要求定义为not-null"><a href="#段为什么要求定义为not-null" class="headerlink" title="段为什么要求定义为not null?"></a>段为什么要求定义为not null?</h1><p>MySQL官网这样介绍:</p>
-<blockquote>
-<p>NULL columns require additional space in the rowto record whether their values are NULL. For MyISAM tables, each NULL columntakes one bit extra, rounded up to the nearest byte.</p>
-</blockquote>
-<p>null值会占用更多的字节,且会在程序中造成很多与预期不符的情况.不利于索引</p>
-]]></content>
-      <categories>
-        <category>db-mysql-qa</category>
-      </categories>
-  </entry>
-  <entry>
     <title>003-事务、锁总结</title>
     <url>/articles/20200219/6fd41f87.html</url>
     <content><![CDATA[<p>摘要：事务</p>
@@ -1925,6 +3982,37 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <li>页面锁：开销和加锁时间界于表锁和行锁之间；会出现死锁；锁定粒度界于表锁和行锁之间，并发度一般。<br>他们的加锁开销从大到小,并发能力也是从大到小.</li>
 </ul>
 <h1 id="锁作用"><a href="#锁作用" class="headerlink" title="锁作用"></a>锁作用</h1><p>加锁是实现数据库并发控制的一个非常重要的技术。当事务在对某个数据对象进行操作前，先向系统发出请求，对其加锁。加锁后事务就对该数据对象有了一定的控制，在该事务释放锁之前，其他的事务不能对此数据对象进行更新操作。</p>
+]]></content>
+      <categories>
+        <category>db-mysql-qa</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>004-数据类型</title>
+    <url>/articles/20200219/56a0d34f.html</url>
+    <content><![CDATA[<p>摘要：事务</p>
+<a id="more"></a>
+
+<h1 id="整数类型-括号内数值含义"><a href="#整数类型-括号内数值含义" class="headerlink" title="整数类型-括号内数值含义"></a>整数类型-括号内数值含义</h1><p>包括TINYINT、SMALLINT、MEDIUMINT、INT、BIGINT，分别表示1字节、2字节、3字节、4字节、8字节整数。任何整数类型都可以加上UNSIGNED属性，表示数据是无符号的，即非负整数。</p>
+<h1 id="类型后的括号"><a href="#类型后的括号" class="headerlink" title="类型后的括号"></a>类型后的括号</h1><p>是展示长度含义：整数类型可以被指定长度，例如：INT(11)表示长度为11的INT类型。长度在大多数场景是没有意义的，它不会限制值的合法范围，只会影响显示字符的个数，而且需要和UNSIGNED ZEROFILL属性配合使用才有意义。</p>
+<p>例子，假定类型设定为INT(5)，属性为UNSIGNED ZEROFILL，如果用户插入的数据为12的话，那么数据库实际存储数据为00012。</p>
+<h1 id="varchar和char有什么区别"><a href="#varchar和char有什么区别" class="headerlink" title="varchar和char有什么区别"></a>varchar和char有什么区别</h1><p>char是一个定长字段,假如申请了char(10)的空间,那么无论实际存储多少内容.该字段都占用10个字符</p>
+<p>varchar是变长的,也就是说申请的只是最大长度,占用的空间为实际字符长度+1,最后一个字符存储使用了多长的空间.<br>在行数数据存储的时候，varchar 实际长度是需要记录到页结构中的 infimum和supermum record</p>
+<p>在检索效率上来讲,char &gt; varchar,因此在使用中,如果确定某个字段的值的长度,可以使用char,否则按照设计应该使用varchar.</p>
+<h1 id="varchar-10-和int-10-代表什么含义"><a href="#varchar-10-和int-10-代表什么含义" class="headerlink" title="varchar(10)和int(10)代表什么含义?"></a>varchar(10)和int(10)代表什么含义?</h1><ul>
+<li>varchar的10代表了申请的空间长度,也是可以存储的数据的最大长度</li>
+<li>int的10只是代表了展示的长度,不足10位以0填充.即,int(1)和int(10)所能存储的数字大小以及占用的空间都是相同的,只是在展示时按照长度展示.</li>
+</ul>
+<h1 id="日期和时间类型"><a href="#日期和时间类型" class="headerlink" title="日期和时间类型"></a>日期和时间类型</h1><p>尽量使用timestamp，空间效率高于datetime,但是 注意存储范围</p>
+<p>用整数保存时间戳通常不方便处理。如果需要存储微秒，可以使用bigint存储。</p>
+<h1 id="列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？"><a href="#列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？" class="headerlink" title="列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？"></a>列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？</h1><p>它会停止递增，任何进一步的插入都将产生错误，因为密钥已被使用。</p>
+<p>怎样才能找出最后一次插入时分配了哪个自动增量？</p>
+<p>LAST_INSERT_ID将返回由Auto_increment分配的最后一个值，并且不需要指定表名称。</p>
+<h1 id="段为什么要求定义为not-null"><a href="#段为什么要求定义为not-null" class="headerlink" title="段为什么要求定义为not null?"></a>段为什么要求定义为not null?</h1><p>MySQL官网这样介绍:</p>
+<blockquote>
+<p>NULL columns require additional space in the rowto record whether their values are NULL. For MyISAM tables, each NULL columntakes one bit extra, rounded up to the nearest byte.</p>
+</blockquote>
+<p>null值会占用更多的字节,且会在程序中造成很多与预期不符的情况.不利于索引</p>
 ]]></content>
       <categories>
         <category>db-mysql-qa</category>
@@ -2080,6 +4168,27 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
       </categories>
   </entry>
   <entry>
+    <title>005-高性能网站建设笔记-07避免CSS表达式、08使用外部的js和css</title>
+    <url>/articles/20200213/ac31f31.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="07避免CSS表达式"><a href="#07避免CSS表达式" class="headerlink" title="07避免CSS表达式"></a>07避免CSS表达式</h1><p>浏览器兼容，大部分不支持css表达式</p>
+<h1 id="08使用外部的js和css"><a href="#08使用外部的js和css" class="headerlink" title="08使用外部的js和css"></a>08使用外部的js和css</h1><h2 id="内联和外置"><a href="#内联和外置" class="headerlink" title="内联和外置"></a>内联和外置</h2><ul>
+<li>内联：默认的script 引入</li>
+<li>外置：动态加载 脚本<br>切割公共部分，适当选择使用外部js和css<figure class="highlight js"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">doOnload</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">  setTimeout(<span class="string">"downloadComponents()"</span>,<span class="number">10</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">window</span>.onload=doOnload;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">doenloadComponents</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">  downloadJS(<span class="string">"ss"</span>);</span><br><span class="line">  downloadCSS(<span class="string">"aaa"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">downloadJS</span>(<span class="params">url</span>)</span>&#123;</span><br><span class="line">  <span class="keyword">var</span> elem = <span class="built_in">document</span>.createElement(<span class="string">"script"</span>);</span><br><span class="line">  elem.src = url;</span><br><span class="line">  <span class="built_in">document</span>.body.appendChild(elem);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">downloadCSS</span>(<span class="params">url</span>)</span>&#123;</span><br><span class="line">  <span class="keyword">var</span> elem = <span class="built_in">document</span>.createElement(<span class="string">"link"</span>);</span><br><span class="line">  elem.rel = <span class="string">"stylesheet"</span>;</span><br><span class="line">  elem.type = <span class="string">"text/css"</span>;</span><br><span class="line">  elem.href = url;</span><br><span class="line">  <span class="built_in">document</span>.body.appendChild(elem);</span><br><span class="line">&#125;</span><br><span class="line">&lt;<span class="regexp">/script&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
     <title>004-高性能网站建设笔记-05样式表放在顶部、06脚本放在底部</title>
     <url>/articles/20200213/372b80cc.html</url>
     <content><![CDATA[<p>摘要：</p>
@@ -2096,27 +4205,6 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>增加了带宽以及cpu的使用</p>
 <h2 id="脚本阻塞下载"><a href="#脚本阻塞下载" class="headerlink" title="脚本阻塞下载"></a>脚本阻塞下载</h2><p>并行下载组件的优点多多，但是，在下载脚本时并行下载实际上是被禁用的–即使用了不同的主机名，浏览器也不会启动其他的下载。<br>原因：<br>1、脚本可能使用了document.write来修改页面内容，因此浏览器会等待，以确保页面能够恰当的布局。<br>2、为了保证脚本能够按照正确的顺序执行。</p>
 <p>如果并行下载多个脚本，就无法保证响应是按照特定顺序到达浏览器的。如后面的先下载，结果后面的执行了，但内部有依赖于上一个脚本的代码，或导致js错误</p>
-]]></content>
-      <categories>
-        <category>performance-web</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>005-高性能网站建设笔记-07避免CSS表达式、08使用外部的js和css</title>
-    <url>/articles/20200213/ac31f31.html</url>
-    <content><![CDATA[<p>摘要：</p>
-<a id="more"></a>
-
-<h1 id="07避免CSS表达式"><a href="#07避免CSS表达式" class="headerlink" title="07避免CSS表达式"></a>07避免CSS表达式</h1><p>浏览器兼容，大部分不支持css表达式</p>
-<h1 id="08使用外部的js和css"><a href="#08使用外部的js和css" class="headerlink" title="08使用外部的js和css"></a>08使用外部的js和css</h1><h2 id="内联和外置"><a href="#内联和外置" class="headerlink" title="内联和外置"></a>内联和外置</h2><ul>
-<li>内联：默认的script 引入</li>
-<li>外置：动态加载 脚本<br>切割公共部分，适当选择使用外部js和css<figure class="highlight js"><table><tr><td class="code"><pre><span class="line">&lt;script&gt;</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">doOnload</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">  setTimeout(<span class="string">"downloadComponents()"</span>,<span class="number">10</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">window</span>.onload=doOnload;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">doenloadComponents</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">  downloadJS(<span class="string">"ss"</span>);</span><br><span class="line">  downloadCSS(<span class="string">"aaa"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">downloadJS</span>(<span class="params">url</span>)</span>&#123;</span><br><span class="line">  <span class="keyword">var</span> elem = <span class="built_in">document</span>.createElement(<span class="string">"script"</span>);</span><br><span class="line">  elem.src = url;</span><br><span class="line">  <span class="built_in">document</span>.body.appendChild(elem);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">downloadCSS</span>(<span class="params">url</span>)</span>&#123;</span><br><span class="line">  <span class="keyword">var</span> elem = <span class="built_in">document</span>.createElement(<span class="string">"link"</span>);</span><br><span class="line">  elem.rel = <span class="string">"stylesheet"</span>;</span><br><span class="line">  elem.type = <span class="string">"text/css"</span>;</span><br><span class="line">  elem.href = url;</span><br><span class="line">  <span class="built_in">document</span>.body.appendChild(elem);</span><br><span class="line">&#125;</span><br><span class="line">&lt;<span class="regexp">/script&gt;</span></span><br></pre></td></tr></table></figure>
-
-
-
-
-</li>
-</ul>
 ]]></content>
       <categories>
         <category>performance-web</category>

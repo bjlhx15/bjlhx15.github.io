@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.itag.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：对象应该直接访问其中的数据，还是通过访问函数来访问？    常选择“直接访问”方式，任何时候进行这项重构（self encapsulate field）都是很简单的 eplace value with object:将“哑”数据变成善表达的对象 hange value to reference：有太多地方需要这一类对象，可用此方法将其变为引用对象 eplace array with obje">
+<meta property="og:type" content="article">
+<meta property="og:title" content="008-重新组织数据">
+<meta property="og:url" content="https://blog.itag.top/articles/20210102/28ec1893.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：对象应该直接访问其中的数据，还是通过访问函数来访问？    常选择“直接访问”方式，任何时候进行这项重构（self encapsulate field）都是很简单的 eplace value with object:将“哑”数据变成善表达的对象 hange value to reference：有太多地方需要这一类对象，可用此方法将其变为引用对象 eplace array with obje">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-01-02T03:29:08.000Z">
+<meta property="article:modified_time" content="2021-01-02T03:29:20.117Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.itag.top/articles/20210102/28ec1893.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>008-重新组织数据 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20210102/28ec1893.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          008-重新组织数据
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-01-02 11:29:08 / 修改时间：11:29:20" itemprop="dateCreated datePublished" datetime="2021-01-02T11:29:08+08:00">2021-01-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%87%8D%E6%9E%84/" itemprop="url" rel="index">
+                    <span itemprop="name">重构</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：对象应该直接访问其中的数据，还是通过访问函数来访问？  </p>
+<ul>
+<li>常选择“直接访问”方式，任何时候进行这项重构（self encapsulate field）都是很简单的</li>
+<li>eplace value with object:将“哑”数据变成善表达的对象</li>
+<li>hange value to reference：有太多地方需要这一类对象，可用此方法将其变为引用对象</li>
+<li>eplace array with object：看到一个数组的行为方式很像一个数据结构。将数组变成对象，从而使这个数据结构更清晰地显露出来。move method，为这个对象加入相应行为，真正的好处才得以体现</li>
+<li>eplace magic number with symbolic constant：处理魔法数（带有特殊含义的数字）</li>
+<li>hange unidirectional association to bidirectional：将对象之间的单向关联变成双向关联</li>
+<li>hange bidirectional association to undirectional：将双向关联变成单向关联</li>
+<li>uplicate Observed data：GUI类处理不该其处理的业务：将处理业务逻辑的行为移到合适的领域类去，需要在领域类中保存这些逻辑的相关数据。一般，不喜欢重复数据，但这是一个意外，这里的重复数据不可避免</li>
+<li>ncapsulate field：封装类中公开的数据</li>
+<li>ncapsulate collection：封装类中公开的集合。集合有其特殊协议</li>
+<li>eplace recorde with data class：如果一整条记录都被裸露在外</li>
+<li>ype code：类型码，特殊数值。“与实例所属之类型相关的某些东西”。通常以枚举形式出现。通常以static final 整数实现。</li>
+<li>eplace type code with class：应用于：用来表现某种信息，且不会改变所属类型的行为。可以提供更好的类型检查和更好的平台(在未来方便地将相关的行为添加进去)</li>
+<li>eplace type code with subclasses :如果当前类型的行为受到类型码的影响</li>
+<li>eplace type code with state/strategy:更复杂的情况<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="self-encapsulate-field：自封装字段"><a href="#self-encapsulate-field：自封装字段" class="headerlink" title="self encapsulate field：自封装字段"></a>self encapsulate field：自封装字段</h1><ul>
+<li>问题：直接访问一个字段，但是字段之间的耦合关系逐渐变得笨拙</li>
+<li>解决：为这个字段建立取值、设值函数，并且只以这些函数来访问字段</li>
+<li>动机：<ul>
+<li>“间接访问变量”。好处：子类可以通过覆写一个函数，改变获取数据的途径；支持更灵活的数据管理方式（延迟初始化）</li>
+<li>“直接访问变量”。好处：代码比较容易阅读。</li>
+<li>通常，先使用直接访问方式，直到这种方式会带来麻烦，接着转而使用间接访问方式。重构给了改变主意的自由</li>
+<li>使用 self encapsulate field：<ul>
+<li>想访问超类中的一个字段，却又想在子类中将这个变量的访问改为一个计算后的值</li>
+<li>“字段的自我封装” 只是第一步。完成自我封装之后，可以在子类中根据自己的需要随意覆写set/get函数</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>可以暂时将字段改名，让编译器帮助查找引用点</li>
+<li>将字段声明为private</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-data-value-with-object-以对象取代数据值"><a href="#replace-data-value-with-object-以对象取代数据值" class="headerlink" title="replace data value with object:以对象取代数据值"></a>replace data value with object:以对象取代数据值</h1><ul>
+<li>问题：有一个数据项，需要与其他数据、行为一起使用才有意义</li>
+<li>解决：将数据项变成对象</li>
+<li></li>
+<li>动机：<ul>
+<li>开发初期，往往决定以简单的数据项表示简单的情况。随着开发的进行，发现这些简单数据项不再简单。散发duplicate code/feature envy的代码坏味道，则需要将数据值变成对象</li>
+<li>例：开始，用字符串表示“电话号码”。随后，电话号码需要“格式化”、“抽取区号”之类的特殊行为。</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>为待替换数值新建一个类，在其中声明一个final字段，类型和源类中的待替换数据类型一样；在新类中加入这个字段的取值函数；新类中加上一个接受此字段为参数的构造函数</li>
+<li>将源类中的待替换数值字段的类型改为新建的类</li>
+<li>修改源类的该字段的取值函数，令其调用新类的取值函数</li>
+<li>如果源类构造函数中用到这个待替换字段（多半是赋值动作），就修改构造函数，令其改用新类的构造函数来对字段进行赋值</li>
+<li>修改源类中的待替换字段的设值函数，令其为新类创建一个实例（值对象应该是不可修改的内容。可以避免一些讨厌的别名问题）</li>
+<li>可能需要对新类使用change value to reference</li>
+</ul>
+</li>
+</ul>
+<h1 id="change-value-to-reference-将值对象改为引用对象"><a href="#change-value-to-reference-将值对象改为引用对象" class="headerlink" title="change value to reference:将值对象改为引用对象"></a>change value to reference:将值对象改为引用对象</h1><ul>
+<li>问题：从一个类衍生出许多彼此相等的实例，希望将它们替换为同一个对象</li>
+<li>解决：将这个值对象变为引用对象</li>
+<li>动机：<ul>
+<li>引用对象：可以直接==，来验证对象同一性</li>
+<li>值对象：覆写equal()、hashCode()</li>
+<li>应用：确保对任何一个对象的修改，都能影响到所有引用此对象的地方。需要将此对象变成一个引用对象</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>使用replace constructor with factory method</li>
+<li>决定由什么对象负责提供访问新对象的途径<ul>
+<li>可能是一个静态字典，或一个注册表对象</li>
+<li>可以使用多个对象作为新对象的访问点</li>
+</ul>
+</li>
+<li>决定这些引用对象应该预先创建好，还是应该动态创建<ul>
+<li>如果引用对象是预先创建好的，且必须从内存中将其读取出来。就需确保它们在被需要的时候能够被及时加载</li>
+</ul>
+</li>
+<li>修改工厂函数，令它返回引用对象<ul>
+<li>如果对象是预先创建好的，需要考虑：万一有人索取一个其实并不存在的对象，要如何处理错误</li>
+<li>可能希望对工厂函数使用rename method，使其传达：它返回的是一个既存对象</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="change-reference-to-value：将引用对象改为值对象"><a href="#change-reference-to-value：将引用对象改为值对象" class="headerlink" title="change reference to value：将引用对象改为值对象"></a>change reference to value：将引用对象改为值对象</h1><ul>
+<li>问题：一个引用对象，很小，且不可变，且不易管理</li>
+<li>解决：将其变成一个值对象</li>
+<li>动机：<ul>
+<li>引用对象开始变得难以使用。<ul>
+<li>引用对象必须被某种方式控制，总是必须向其控制者请求适当的引用对象</li>
+<li>可能造成内存区域之间错综复杂的关联</li>
+<li>在分步系统、并发系统中，不可变的值对象特别有用，无需考虑它们的同步问题</li>
+</ul>
+</li>
+<li>值对象的一个非常重要的特性：不可变<ul>
+<li>保证了，可以放心地以多个对象表示同一事物</li>
+<li>不代表不能改变。如果要改变，需要用新的对象来取代现有对象，而不是在现有对象上修改。值对象自身不能修改，但是可以修改其他对象与值对象之间的关系</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>检查重构目标是否为不可变对象，或是否可修改为不可变对象<ul>
+<li>如果改对象目前还不是不可变的，使用remove setting method，直到其成为不可变的为止</li>
+<li>如果无法将对象修改为不可变的，就放弃使用本项重构</li>
+</ul>
+</li>
+<li>建立equal()、hashcode()。这两个函数的修改必须同时进行，负责依赖hash的任何集合对象（hashtable、hashset、hashmap……）都可能产生意外行为</li>
+<li>考虑是否可以删除工厂函数，并将构造函数声明为public</li>
+</ul>
+</li>
+<li>注意：要把一个引用对象变成值对象，关键动作：检查是否不可变。<ul>
+<li>如果不是，就不能使用本项重构。</li>
+<li>可变的值对象会造成烦人的别名问题</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-array-with-object：以对象取代数值"><a href="#replace-array-with-object：以对象取代数值" class="headerlink" title="replace array with object：以对象取代数值"></a>replace array with object：以对象取代数值</h1><ul>
+<li>问题：由一个数值，各元素各自代表不同的东西、</li>
+<li>解决：以对象替换数组。对于数组中的每个元素，以一个字段来表示</li>
+</ul>
+<h1 id="change-unidirectional-association-to-bidirectional将单向关联改为双向关联"><a href="#change-unidirectional-association-to-bidirectional将单向关联改为双向关联" class="headerlink" title="change unidirectional association to bidirectional将单向关联改为双向关联"></a>change unidirectional association to bidirectional将单向关联改为双向关联</h1><ul>
+<li>场合：两个类·····都需要使用双方特性，但其间只有一条单向连接</li>
+<li>方式：添加一个反向指针，并使修改函数能够同时更新两条连接</li>
+<li>动机：<ul>
+<li>开发初期，可能会在两个类之间建立一条单向连接，使其中一个类可以引用另一个类。随着时间推移，引用类需要得到其引用者，以便进行某些处理。即需要一个反向指针</li>
+<li>指针是一种单向连接，不可能反向操作。可以绕道而行，耗费一些计算时间，成本还算合理，然后在被引用类中建立一个函数专门负责此行为</li>
+<li>有时候绕过这个问题并不容易，此时需要建立双向引用关系，即反向指针</li>
+<li>如果使用不当，反向指针很容易造成混乱；但只要习惯了这种手法，其实并不复杂</li>
+<li>反向指针，不好实现。在熟练运用前，应该有相应的测试。</li>
+<li>通常不会花心思测试访问函数，因为普通访问函数的风险没有高到需要测试的地步。但本重构要求测试访问函数，是极少数需要添加测试的重构手法之一</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>在被引用类中增加一个字段，用以保存反向指针</li>
+<li>决定由哪个类：引用端？被引用端？ 控制关联关系<ul>
+<li>如果两者都是引用对象，而其间的关联是“一对多”关系。那么就由“拥有单一引用”的那一方（N）承担“控制者”角色。</li>
+<li>如果某个对象是组成另一对象的不见，那么由后者负责控制关联关系</li>
+<li>如果两者都是引用对象，而关联关系是“多对多”关系，那么随便其中一个对象来控制关联关系都无所谓</li>
+</ul>
+</li>
+<li>在被控端建立一个辅助函数，其命名应该清楚指出它的有限用途。<ul>
+<li>尽量降低可见程度：最小范围内可见</li>
+</ul>
+</li>
+<li>如果既有的修改函数在控制端，让它负责更新反向指针</li>
+<li>如果既有的修改函数在被控端，就在控制端及那里一个控制函数，并让既有的修改函数调用这个新建的控制函数<ul>
+<li>基本形式：先让对方删除指向你的指针，再将你的指针指向一个新对象，最后让那个新对象把它的指针指向你</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="change-bidirectional-association-to-unidirectional将双向关联改为单向关联"><a href="#change-bidirectional-association-to-unidirectional将双向关联改为单向关联" class="headerlink" title="change bidirectional association to unidirectional将双向关联改为单向关联"></a>change bidirectional association to unidirectional将双向关联改为单向关联</h1><ul>
+<li>场合：两个类之间有双向关联，但其中一个类如今不再需要另一个类的特性</li>
+<li>方式：去除不必要的关联</li>
+<li>动机：<ul>
+<li>双向关联很有用，但是必须为其付出代价。维护双向关联；确保对象被正确创建、删除而增加的复杂度；很多程序员并不习惯使用双向关联，往往成为错误之源</li>
+<li>大量的双向连接也很容易造成“僵尸对象”：某个对象本来应该已经死亡，却仍然保留在系统中，因为对其的引用还没有完全清除</li>
+<li>双向关联迫使两个类直接有了依赖：对其中任一个类的任何修改，都可能引发另一个类的变化。如果两个类位于不同的包，这种依赖就是包与包之间的相依。过多的跨包依赖会造成紧耦合系统，使得任何一点小小改动都可能造成许多无法预知的后果</li>
+<li>只有真正需要双向关联的时候，才应该使用它，如果发现双向关联不再存在价值，就应该去掉其中不必要的一条关联</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>找出“想去除的指针”的字段，检查它的每一个用户，判断时候可以去除改指针<ul>
+<li>不但要检查直接访问点，也要检查调用这些直接访问点的函数</li>
+<li>考虑有无可能不通过指针取得被引用的对象。如果有可能，就可以对取值函数使用substitute algorithm，从而让客户在没有指针的情况先也可以使用改取值函数</li>
+<li>对于使用该字段的所有函数，考虑将被引用对象作为参数传进去</li>
+</ul>
+</li>
+<li>如果客户使用了取值函数，先运用self encapsulate field将待删除字段自我封装起来，然后使用substitute algorithm对付取值函数，令它不再使用该字段</li>
+<li>如果客户并未使用取值函数，直接修改待删除字段的所有被引用点，改以其他途径获得该字段所保存的对象</li>
+<li>如果已经没有任何函数使用待删除字段，移除所有对该字段的更新逻辑，然后移除该字段<ul>
+<li>如果有许多地方对次字段赋值，先运用self encapsulate field使这些地点改用同一赋值函数。而后将这个设值函数的本体清空。接着就可将此字段、设值函数、及其所有调用全部移除</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>最困呐的地方：检查可行性。如果知道本重构是安全的，则重构手法自身十分简单。</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-magic-number-with-symbolic-constant：以字面常量取代魔法值"><a href="#replace-magic-number-with-symbolic-constant：以字面常量取代魔法值" class="headerlink" title="replace magic number with symbolic constant：以字面常量取代魔法值"></a>replace magic number with symbolic constant：以字面常量取代魔法值</h1><h1 id="encapsualte-collection-封装集合"><a href="#encapsualte-collection-封装集合" class="headerlink" title="encapsualte collection 封装集合"></a>encapsualte collection 封装集合</h1><ul>
+<li>场合：有一个函数返回一个集合</li>
+<li>方式：让这个函数返回该集合的一个只读副本，并在这个类中提供添加、移除集合元素的函数</li>
+<li>动机：<ul>
+<li>集合的处理方式应该和其他种类的数据略有不同。</li>
+<li>取值函数不该返回集合本身：这将会让用户得以修改集合内容，而集合拥有者却一无所知；对用户暴露过多对象内部的数据接口信息</li>
+<li>如果一个取值函数确实需要返回多个值，应该避免用户直接操作对象内所保存的集合，并隐藏对象内与用户无关的数据结构。</li>
+<li>不应该为整个集合提供一个设值函数，但应该为集合加上添加、移除元素的函数。集合拥有者可以控制集合元素的添加、移除</li>
+<li>降低集合拥有者、用户间的耦合度<br>做法：</li>
+</ul>
+</li>
+<li>为集合加上添加、移除元素的函数</li>
+<li>将保存集合的字段初始化为一个空集合</li>
+<li>找出集合设值函数的所有调用者。修改那个设值函数，使其使用上述新建立的“添加、移除元素”的函数；也可以直接修改调用端，让其使用上述新建立的“添加、移除元素”的函数<ul>
+<li>两种情况下，需要用到集合设值函数：1、集合为空；2、准备将原有集合替换为另一个集合时</li>
+<li>也能用rename method，为集合设值函数改名，从set<strong><em>()改为initialize</em></strong>()或replace***()</li>
+</ul>
+</li>
+<li>找出所有“通过取值函数，获得集合，并修改其内容的函数”，逐一修改这些函数，改用述新建立的“添加、移除元素”的函数</li>
+<li>修改取值函数本身，使其返回该集合的一个只读副本</li>
+<li>找出取值函数的所有用户，找出应该存在与集合所属对象内的代码。用extract method、remove method将代码移到宿主对象去</li>
+<li>修改现有取值函数的名字，添加一个新的取值函数，使其返回一个枚举。找出旧取值函数的所有被使用点，改用新取值函数<ul>
+<li>跨步过大，可使用rename method修改原有取值函数的名称；再建立一个新取值函数，用以返回枚举；最后再修改所有调用者，使其调用新取值函数。<h1 id="replace-type-code-with-subclasses：以子类取代类型码"><a href="#replace-type-code-with-subclasses：以子类取代类型码" class="headerlink" title="replace type code with subclasses：以子类取代类型码"></a>replace type code with subclasses：以子类取代类型码</h1></li>
+</ul>
+</li>
+<li>问题：有一个不可变的类型码，会影响类的行为</li>
+<li>解决：以子类取代这个类型码</li>
+<li>动机：<ul>
+<li>面对的类型码不会影响宿主类的行为，使用replace type code with class来处理。</li>
+<li>如果类型码会影响宿主类的行为，最好的办法是借助多态来处理变化行为<ul>
+<li>一般，这种情况的标志就是向switch这样的表达式、if-then-else结构……检查类型码的值，根据不同的值执行不同的动作。应该以replace conditional with polymorphism进行重构。</li>
+<li>为了能够顺利进行那样的重构，首先应该将类型码替换为可拥有多态行为的继承体系。这样的一个继承体系应该以类型码的宿主类为基类，并针对每一种类型码各建立一个子类</li>
+</ul>
+</li>
+<li>为了建立这样的一个继承体系，最简单的方法：replace type code with subclasses。以类型码的宿主类为基类，针对每种类型码建立相应的子类</li>
+<li>以下情况不能这么做：1.类型码值在对象创建之后发生了改变；2.由于某些原因，类型码宿主类已经有了子类。<ul>
+<li>使用replace type code with state/stragegy</li>
+</ul>
+</li>
+<li>replace type code with subclasses：主要作用是搭建一个舞台，让replace conditional with polymorphism得以一展身手。</li>
+<li>如果宿主类中并美哟出现条件表达式，replace type code with class 更合适，风险更低</li>
+<li>使用replace type code with subclasses另一个原因：宿主类中出现了“只与具备特定类型码之对象有关”的特性。可以使用push down method、push down field将这些特性推到合适的子类去，以彰显只与特定情况相关这一事实</li>
+<li>replace type code with subclasses好处：把“对不同行为的了解”从类用户那儿转移到了类自身。如果需要再加入新的行为变化，只需添加一个子类就行了。如果没有多态机制，就必须找到所有条件表达式，并逐一修改它们=》如果未来还有可能加入新行为，这项重构将特别有价值</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>使用self encapsulate field将类型码自我封装起来<ul>
+<li>如果类型码被传递给构造函数，就需要将构造函数换成工厂函数</li>
+</ul>
+</li>
+<li>为类型码的每一个数值建立一个相应的子类。在每个子类中覆写类型码的取值函数，使其返回相应的类型码值<ul>
+<li>这个值被硬编码于return中（例如：return 1）.看起来很肮脏，但只是权益之计，当所有case子句都被替换后，问题就解决了</li>
+</ul>
+</li>
+<li>每建立一个新的子类，编译并测试</li>
+<li>从超类中删掉保存类型码的字段，将类型码访问函数声明为抽象函数</li>
+<li>注意：避免使用switch语句。这里只有一处用到switch语句，并且只用于决定创建何种对象，这样的switch语句是可以接受的</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-type-code-with-state-strategy"><a href="#replace-type-code-with-state-strategy" class="headerlink" title="replace type code with state/strategy"></a>replace type code with state/strategy</h1><ul>
+<li>问题：有一个类型码，会影响类的行为，但无法通过继承手法消除它</li>
+<li>解决：以状态对象取代类型码</li>
+<li>动机：<ul>
+<li>与replace type code with subclasses很相似。但如果“类型码值在对象生命周期中发生变化”或“其他原因使得宿主类不能被继承”，可以使用本重构（使用state模式、strategy模式）</li>
+<li>state模式、strategy模式非常相似，无论选择其中哪一个，重构过程都是相同的。“选择哪一个模式”并非问题关键所在，只需要选择更合适特定情境的模式就行了<ul>
+<li>strategy模式适合：在本项重构之后再以replace conditional with polymorphism简化一个算法</li>
+<li>state模式适合：搬移与状态相关的数据，而且把新建对象视为一种变迁状态</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>selfe encapsulate field将类型码自我封装起来</li>
+<li>新建一个类，根据类型码的用途为它命名，就是一个状态对象</li>
+<li>为这个新类添加子类，每个子类对应一种类型码<ul>
+<li>比起逐一添加，一次性加入所有必要的子类可能更简单写</li>
+</ul>
+</li>
+<li>在超类中建议一个抽象的查询函数，用以返回类型码。在每个子类中覆写该函数，返回确切的类型码</li>
+<li>在源类中建立一个字段，用以保存新建的状态对象</li>
+<li>调整源类中负责铲鲟类型码的函数，将查询动作状态转发给状态对象</li>
+<li>调整源类中为类型码设值的函数，将一个恰当的状态对象子类赋值给“保存状态对象”的那个字段</li>
+</ul>
+</li>
+</ul>
+<h1 id="replace-subclass-with-field：以字段取代子类"><a href="#replace-subclass-with-field：以字段取代子类" class="headerlink" title="replace subclass with field：以字段取代子类"></a>replace subclass with field：以字段取代子类</h1><ul>
+<li>问题：各个子类的唯一差别，只在“返回常量数据”的函数身上</li>
+<li>解决：修改这些函数，使其返回超类中的某个（新增）字段，然后销毁子类</li>
+<li>动机：<ul>
+<li>建立子类的目的：为了增加新特性、变化其行为。</li>
+<li>有一种变化行为被称为“常量函数”constant method，会返回一个硬编码的值。<ul>
+<li>有其用途，可以让不同的子类中的同一个访问函数返回不同的值。可以在超类中将访问函数声明为抽象函数，并在不同的子类中让它返回不同的值</li>
+</ul>
+</li>
+<li>尽管常量函数有其用途，但若子类中只有常量函数，实在没有足够的存在价值。可以在超类中设计一个与常量函数返回值相应的字段，从而完全去除这样的子类=》避免因继承而带来的额外的复杂性</li>
+</ul>
+</li>
+<li>做法：<ul>
+<li>对所有子类使用replace constructor with factory method</li>
+<li>如果有任何代码直接引用子类，令它改而引用超类</li>
+<li>针对每个常量函数，在超类中声明一个final 字段</li>
+<li>为超类声明一个protected构造函数，用以初始化这些新增字段</li>
+<li>新建、修改子类构造函数，使其调用超类的新增构造函数</li>
+<li>在超类中实现所有常量函数，令其返回相应字段值，然后将函数从子类中删掉</li>
+<li>inline method将子类构造函数内联到超类的工厂函数中</li>
+<li>删除子类</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.itag.top/articles/20210102/28ec1893.html" title="008-重新组织数据">https://blog.itag.top/articles/20210102/28ec1893.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20210102/bcb5204a.html" rel="prev" title="007-在对象之间搬移特性">
+      <i class="fa fa-chevron-left"></i> 007-在对象之间搬移特性
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20210102/642a4d3f.html" rel="next" title="009-简化条件表达式">
+      009-简化条件表达式 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#self-encapsulate-field：自封装字段"><span class="nav-number">1.</span> <span class="nav-text">self encapsulate field：自封装字段</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#replace-data-value-with-object-以对象取代数据值"><span class="nav-number">2.</span> <span class="nav-text">replace data value with object:以对象取代数据值</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#change-value-to-reference-将值对象改为引用对象"><span class="nav-number">3.</span> <span class="nav-text">change value to reference:将值对象改为引用对象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#change-reference-to-value：将引用对象改为值对象"><span class="nav-number">4.</span> <span class="nav-text">change reference to value：将引用对象改为值对象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#replace-array-with-object：以对象取代数值"><span class="nav-number">5.</span> <span class="nav-text">replace array with object：以对象取代数值</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#change-unidirectional-association-to-bidirectional将单向关联改为双向关联"><span class="nav-number">6.</span> <span class="nav-text">change unidirectional association to bidirectional将单向关联改为双向关联</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#change-bidirectional-association-to-unidirectional将双向关联改为单向关联"><span class="nav-number">7.</span> <span class="nav-text">change bidirectional association to unidirectional将双向关联改为单向关联</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#replace-magic-number-with-symbolic-constant：以字面常量取代魔法值"><span class="nav-number">8.</span> <span class="nav-text">replace magic number with symbolic constant：以字面常量取代魔法值</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#encapsualte-collection-封装集合"><span class="nav-number">9.</span> <span class="nav-text">encapsualte collection 封装集合</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#replace-type-code-with-subclasses：以子类取代类型码"><span class="nav-number">10.</span> <span class="nav-text">replace type code with subclasses：以子类取代类型码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#replace-type-code-with-state-strategy"><span class="nav-number">11.</span> <span class="nav-text">replace type code with state&#x2F;strategy</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#replace-subclass-with-field：以字段取代子类"><span class="nav-number">12.</span> <span class="nav-text">replace subclass with field：以字段取代子类</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>

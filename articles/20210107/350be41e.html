@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.itag.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：002-springboot测试-Mockito服务层测试  使用实际真实接口数据测试 使用Mock接口数据测试 使用Mock接口数据、以及真实接口测试">
+<meta property="og:type" content="article">
+<meta property="og:title" content="002-springboot测试-Mockito服务层测试.md">
+<meta property="og:url" content="https://blog.itag.top/articles/20210107/350be41e.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：002-springboot测试-Mockito服务层测试  使用实际真实接口数据测试 使用Mock接口数据测试 使用Mock接口数据、以及真实接口测试">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-01-07T10:37:22.000Z">
+<meta property="article:modified_time" content="2021-01-07T12:02:28.984Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.itag.top/articles/20210107/350be41e.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>002-springboot测试-Mockito服务层测试.md | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20210107/350be41e.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          002-springboot测试-Mockito服务层测试.md
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-01-07 18:37:22 / 修改时间：20:02:28" itemprop="dateCreated datePublished" datetime="2021-01-07T18:37:22+08:00">2021-01-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java-spring-test/" itemprop="url" rel="index">
+                    <span itemprop="name">java-spring-test</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：002-springboot测试-Mockito服务层测试</p>
+<ul>
+<li>使用实际真实接口数据测试</li>
+<li>使用Mock接口数据测试</li>
+<li>使用Mock接口数据、以及真实接口测试</li>
+</ul>
+<a id="more"></a>
+
+<h1 id="什么是Mockito"><a href="#什么是Mockito" class="headerlink" title="什么是Mockito"></a>什么是Mockito</h1><pre><code>Mockito是一个java测试框架，它提供mock的创建，验证，打桩。在测试中，可能会依赖外部资源，比如数据库等，mockito可以模拟这些数据，进行测试。</code></pre><h2 id="打桩"><a href="#打桩" class="headerlink" title="打桩"></a>打桩</h2><p>就是模拟一些函数调用的反应。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Mockito.when(list.get(1)).thenReturn(3); &#x2F;&#x2F; 含义遇到 list.get(1) 等于 3 不执行内部</span><br><span class="line">Assert.assertEquals(list.get(1),3);</span><br></pre></td></tr></table></figure>
+<ul>
+<li>可以进行多次打桩，但是以最后一次为准。</li>
+<li>一次打桩，可多次调用</li>
+</ul>
+<h2 id="参数匹配"><a href="#参数匹配" class="headerlink" title="参数匹配"></a>参数匹配</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Mockito.when(list.get(Mockito.anyInt())).thenReturn(&quot;hi&quot;);&#x2F;&#x2F;只要传入任何int，返回hi</span><br><span class="line">Assert.assertEquals(&quot;hi&quot;,list.get(1));&#x2F;&#x2F;hi</span><br><span class="line">Assert.assertEquals(&quot;hi&quot;,list.get(999));&#x2F;&#x2F;hi</span><br><span class="line">Mockito.when(list.contains(Mockito.isA(One.class))).thenReturn(true);&#x2F;&#x2F;只要传入String类型，就返回hello</span><br><span class="line">Assert.assertTrue(list.contains(&quot;hello&quot;));&#x2F;&#x2F;hello</span><br><span class="line">Assert.assertTrue(list.contains(1));&#x2F;&#x2F;发生错误</span><br></pre></td></tr></table></figure>
+
+<p>参数匹配器是为了更加灵活的进行验证和打桩，可以自定义</p>
+<h2 id="Mockito工具常用注解"><a href="#Mockito工具常用注解" class="headerlink" title="Mockito工具常用注解"></a>Mockito工具常用注解</h2><p>有些函数需要处理某个服务的返回结果，而在对函数单元测试的时候，又不能启动那些服务</p>
+<ul>
+<li>@Mock：对函数的调用均执行mock（即虚假函数），不执行真正部分。</li>
+<li>@Spy：对函数的调用均执行真正部分。</li>
+<li>@InjectMocks：创建一个实例，简单的说是这个Mock可以调用真实代码的方法，其余用@Mock（或@Spy）注解创建的mock将被注入到用该实例中。<ul>
+<li>@Mock出的对象会被注入到@InjectMocks对象中</li>
+<li>它会把上下文中你标记为@Spy和@Mock的对象都自动注解进去。相当于把实现类中的私有成员属性给偷梁换柱</li>
+<li>注意当前没有问题了 但是service包含了多个既有真正实现也有mock的需要使用反射注入 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ReflectionTestUtils.setField(service, &quot;departService&quot;, departService);</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ul>
+<p>Mockito中的Mock和Spy都可用于拦截那些尚未实现或不期望被真实调用的对象和方法，并为其设置自定义行为。二者的区别在于Mock不真实调用，Spy会真实调用。</p>
+<h1 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h1><h2 id="真实数据"><a href="#真实数据" class="headerlink" title="真实数据"></a>真实数据</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RunWith</span>(SpringRunner<span class="class">.<span class="keyword">class</span>)//调用<span class="title">Spring</span>单元测试类</span></span><br><span class="line"><span class="class">@<span class="title">SpringBootTest</span>(<span class="title">classes</span> </span>= DemoApplication<span class="class">.<span class="keyword">class</span>) //加载<span class="title">Spring</span>配置文件</span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">UserServiceImplTest01RealData</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> IUserService service;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insertUser</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(<span class="string">"lhx"</span>);</span><br><span class="line">        user.setAge(<span class="number">202</span>);</span><br><span class="line"></span><br><span class="line">        service.insertUser(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="全部mock数据"><a href="#全部mock数据" class="headerlink" title="全部mock数据"></a>全部mock数据</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RunWith</span>(SpringRunner<span class="class">.<span class="keyword">class</span>)//调用<span class="title">Spring</span>单元测试类</span></span><br><span class="line"><span class="class">@<span class="title">ContextConfiguration</span>(<span class="title">locations</span> </span>= &#123;<span class="string">"classpath*:spring-config-mybatis-jd-dev.xml"</span>&#125;)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImplTest02MockData</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Mock</span></span><br><span class="line">    <span class="keyword">private</span> IDepartService departService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Mock</span></span><br><span class="line">    <span class="keyword">private</span> UserMapper mapper ;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@InjectMocks</span></span><br><span class="line">    <span class="keyword">private</span> UserServiceImpl service;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUp</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        MockitoAnnotations.initMocks(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insertUserAndDepart</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(<span class="string">"lhx"</span>);</span><br><span class="line">        user.setAge(<span class="number">202</span>);</span><br><span class="line">        String userStr = JSON.toJSONString(user);</span><br><span class="line">        when(service.insertUser(user))</span><br><span class="line">                .thenReturn(<span class="number">1</span>);</span><br><span class="line">        when(departService.insert(user))</span><br><span class="line">                .thenReturn(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">int</span> i = service.insertUserAndDepart(user);</span><br><span class="line">        Assert.assertEquals(<span class="number">2</span>,i);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="部分mock数据、部分真实接口"><a href="#部分mock数据、部分真实接口" class="headerlink" title="部分mock数据、部分真实接口"></a>部分mock数据、部分真实接口</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RunWith</span>(SpringJUnit4ClassRunner<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">@<span class="title">SpringBootTest</span>(<span class="title">classes</span> </span>= DemoApplication<span class="class">.<span class="keyword">class</span>) //加载<span class="title">Spring</span>配置文件</span></span><br><span class="line"><span class="class">@<span class="title">Transactional</span></span></span><br><span class="line"><span class="class">@<span class="title">Rollback</span></span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">UserServiceImplTest03PartMockPartReal</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Mock</span></span><br><span class="line">    <span class="keyword">private</span> IDepartService departService;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> UserMapper mapper;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="meta">@InjectMocks</span></span><br><span class="line">    <span class="keyword">private</span> UserServiceImpl service;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUp</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        MockitoAnnotations.initMocks(<span class="keyword">this</span>);</span><br><span class="line">        ReflectionTestUtils.setField(service, <span class="string">"departService"</span>, departService);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insertUserAndDepart</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setName(<span class="string">"lhx"</span>);</span><br><span class="line">        user.setAge(<span class="number">202</span>);</span><br><span class="line"></span><br><span class="line">        when(departService.insert(user))</span><br><span class="line">                .thenReturn(<span class="number">1</span>);</span><br><span class="line"><span class="comment">//        when(mapper.insert(user))</span></span><br><span class="line"><span class="comment">//                .thenReturn(1);</span></span><br><span class="line">        <span class="keyword">int</span> i = service.insertUserAndDepart(user);</span><br><span class="line">        Assert.assertEquals(<span class="number">2</span>, i);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="常用方法"><a href="#常用方法" class="headerlink" title="常用方法"></a>常用方法</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">方法名	描述</span><br><span class="line">Mockito.mock(classToMock)	模拟对象</span><br><span class="line">Mockito.verify(mock)	验证行为是否发生</span><br><span class="line">Mockito.when(methodCall).thenReturn(value1).thenReturn(value2)	触发时第一次返回value1，第n次都返回value2</span><br><span class="line">Mockito.doThrow(toBeThrown).when(mock).[method]	模拟抛出异常。</span><br><span class="line">Mockito.mock(classToMock,defaultAnswer)	使用默认Answer模拟对象</span><br><span class="line">Mockito.when(methodCall).thenReturn(value)	参数匹配</span><br><span class="line">Mockito.doReturn(toBeReturned).when(mock).[method]	参数匹配（直接执行不判断）</span><br><span class="line">Mockito.when(methodCall).thenAnswer(answer))	预期回调接口生成期望值</span><br><span class="line">Mockito.doAnswer(answer).when(methodCall).[method]	预期回调接口生成期望值（直接执行不判断）</span><br><span class="line">Mockito.spy(Object)	用spy监控真实对象,设置真实对象行为</span><br><span class="line">Mockito.doNothing().when(mock).[method]	不做任何返回</span><br><span class="line">Mockito.doCallRealMethod().when(mock).[method] &#x2F;&#x2F;等价于Mockito.when(mock.[method]).thenCallRealMethod();	调用真实的方法</span><br><span class="line">reset(mock)	重置mock</span><br></pre></td></tr></table></figure>
+
+<h1 id="MockitoJUnitRunner-与-SpringRunner-SpringJUnit4ClassRunner-说明"><a href="#MockitoJUnitRunner-与-SpringRunner-SpringJUnit4ClassRunner-说明" class="headerlink" title="MockitoJUnitRunner 与 SpringRunner(SpringJUnit4ClassRunner)说明"></a>MockitoJUnitRunner 与 SpringRunner(SpringJUnit4ClassRunner)说明</h1><h2 id="MockitoJUnitRunner"><a href="#MockitoJUnitRunner" class="headerlink" title="MockitoJUnitRunner"></a>MockitoJUnitRunner</h2><ul>
+<li>特别适用于Mockito测试框架</li>
+<li>当您希望将测试集中在单个类上并避免在依赖项上调用方法时（而是调用易于配置的模拟/虚拟），Mockito框架可以帮助模拟依赖项。 </li>
+<li>以上是mockito的用途，但有关此运行的更多内容 - 来自文档：“保持测试清洁并改善调试体验”。“Runner是完全可选的 - 还有其他方法可以让@Mock工作”。来源 - <a href="https://static.javadoc.io/org.mockito/mockito-core/2.6.8/org/mockito/junit/MockitoJUnitRunner.html" target="_blank" rel="noopener">https://static.javadoc.io/org.mockito/mockito-core/2.6.8/org/mockito/junit/MockitoJUnitRunner.html</a></li>
+</ul>
+<h2 id="基于SpringJUnit4ClassRunner"><a href="#基于SpringJUnit4ClassRunner" class="headerlink" title="基于SpringJUnit4ClassRunner"></a>基于SpringJUnit4ClassRunner</h2><ul>
+<li>特别适用于弹簧框架</li>
+<li>当需要加载spring上下文（创建spring bean，执行依赖注入等）时，用于集成测试。  </li>
+<li>在集成测试中，您可能无法对依赖项进行尽可能多的模拟，但您可以在同一测试中执行这两项操作。  </li>
+<li>当您想要测试加载弹簧上下文或者可能从服务/高级别一直测试到较低级别（如使用单个测试的数据访问）时，集成测试非常有用。</li>
+</ul>
+<p>在某些情况下，您可能希望同时使用它们 - 比如集成测试，您还希望模拟某些依赖项（可能是它们进行远程调用）。不幸的是你不能使用两个@RunWiths<br>可以参看上述第三种：部分mock数据、部分真实接口</p>
+<h1 id="RunWith-MockitoJUnitRunner-class-vs-MockitoAnnotations-initMocks-this"><a href="#RunWith-MockitoJUnitRunner-class-vs-MockitoAnnotations-initMocks-this" class="headerlink" title="@RunWith(MockitoJUnitRunner.class) vs MockitoAnnotations.initMocks(this)"></a>@RunWith(MockitoJUnitRunner.class) vs MockitoAnnotations.initMocks(this)</h1><p>MockitoJUnitRunner 和 initMocks(this) 都可以为UT提供框架使用的自动验证</p>
+<ul>
+<li>在单元测试中使用@Mock, @Spy, @InjectMocks等注解时，需要进行初始化后才能使用</li>
+<li>若在单元测试类中使用了@RunWith(SpringJUnit4ClassRunner.class) 就不能再使用@RunWith(SpringJUnit4ClassRunner.class)，可以使用 MockitoAnnotations.initMocks(this) 来代替</li>
+<li>MockitoAnnotations.initMocks(this)，其中this就是单元测试所在的类，在initMocks函数中Mockito会根据类中不同的注解（如@Mock, @Spy等）创建不同的mock对象，即初始化工作</li>
+</ul>
+<h1 id="参看文章"><a href="#参看文章" class="headerlink" title="参看文章"></a>参看文章</h1><p><a href="https://blog.csdn.net/gentlezuo/article/details/108293961" target="_blank" rel="noopener">1</a></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.itag.top/articles/20210107/350be41e.html" title="002-springboot测试-Mockito服务层测试.md">https://blog.itag.top/articles/20210107/350be41e.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20210107/4f18d467.html" rel="prev" title="001-springboot测试-MockMvc控制层测试">
+      <i class="fa fa-chevron-left"></i> 001-springboot测试-MockMvc控制层测试
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#什么是Mockito"><span class="nav-number">1.</span> <span class="nav-text">什么是Mockito</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#打桩"><span class="nav-number">1.1.</span> <span class="nav-text">打桩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参数匹配"><span class="nav-number">1.2.</span> <span class="nav-text">参数匹配</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mockito工具常用注解"><span class="nav-number">1.3.</span> <span class="nav-text">Mockito工具常用注解</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#使用示例"><span class="nav-number">2.</span> <span class="nav-text">使用示例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#真实数据"><span class="nav-number">2.1.</span> <span class="nav-text">真实数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#全部mock数据"><span class="nav-number">2.2.</span> <span class="nav-text">全部mock数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#部分mock数据、部分真实接口"><span class="nav-number">2.3.</span> <span class="nav-text">部分mock数据、部分真实接口</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#常用方法"><span class="nav-number">3.</span> <span class="nav-text">常用方法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MockitoJUnitRunner-与-SpringRunner-SpringJUnit4ClassRunner-说明"><span class="nav-number">4.</span> <span class="nav-text">MockitoJUnitRunner 与 SpringRunner(SpringJUnit4ClassRunner)说明</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#MockitoJUnitRunner"><span class="nav-number">4.1.</span> <span class="nav-text">MockitoJUnitRunner</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基于SpringJUnit4ClassRunner"><span class="nav-number">4.2.</span> <span class="nav-text">基于SpringJUnit4ClassRunner</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RunWith-MockitoJUnitRunner-class-vs-MockitoAnnotations-initMocks-this"><span class="nav-number">5.</span> <span class="nav-text">@RunWith(MockitoJUnitRunner.class) vs MockitoAnnotations.initMocks(this)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参看文章"><span class="nav-number">6.</span> <span class="nav-text">参看文章</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>

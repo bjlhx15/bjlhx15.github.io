@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.itag.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：何为不健康的代码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="004-代码的坏味道-不健康代码">
+<meta property="og:url" content="https://blog.itag.top/articles/20210102/c4155470.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：何为不健康的代码">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-01-02T01:37:27.000Z">
+<meta property="article:modified_time" content="2021-01-02T02:12:26.430Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.itag.top/articles/20210102/c4155470.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>004-代码的坏味道-不健康代码 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20210102/c4155470.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          004-代码的坏味道-不健康代码
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-01-02 09:37:27 / 修改时间：10:12:26" itemprop="dateCreated datePublished" datetime="2021-01-02T09:37:27+08:00">2021-01-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%87%8D%E6%9E%84/" itemprop="url" rel="index">
+                    <span itemprop="name">重构</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：何为不健康的代码</p>
+<a id="more"></a>
+
+<h1 id="DuplicatedCode（重复代码）"><a href="#DuplicatedCode（重复代码）" class="headerlink" title="DuplicatedCode（重复代码）"></a>DuplicatedCode（重复代码）</h1><ul>
+<li>一个以上地点看到相同的程序结构：提炼新函数</li>
+<li>同一个类的两个函数含有相同的表达式：：提炼新函数</li>
+<li>两个互为兄弟的子类内含有相同表达式：分别提炼代码，推入超类。不完全相同的，将相似部分和差异部分分割</li>
+<li>两个毫不相关的类：考虑方法提取、继承</li>
+</ul>
+<h1 id="LongMethod（过长函数）"><a href="#LongMethod（过长函数）" class="headerlink" title="LongMethod（过长函数）"></a>LongMethod（过长函数）</h1><ul>
+<li>活的好，活的长</li>
+<li>程序愈长愈难以理解</li>
+<li>“间接层”所能带来的全部利益：解释能力、共享能力、选择能力，都是由小型函数支持的</li>
+<li>让小函数容易理解的真正关键在于一个好名字</li>
+<li>更积极地分解函数</li>
+<li>原则：<ul>
+<li>当需要以注释来说明点儿什么的时候，将需要说明的东西写进一个独立函数中，并以用途（非实现手法）来命名</li>
+<li>可以对一组甚至一行代码做这件事儿，哪怕替换后的函数调用动作比函数自身还长，只要函数名称能够解释其用途，也该毫不犹豫地这么做</li>
+<li>关键不在于函数的长度，而在于函数“做什么”和“如何做”之间的语义距离</li>
+<li>99%的场合里，要把函数变小，只需使用方法提取：找到函数中适合集中在一起的部分，将它们提炼出来，形成一个新的函数</li>
+<li>如果函数内有大量的参数、临时变量，会对函数提炼形成阻碍。</li>
+<li>避免将许多参数、临时变量当作参数传递给被提炼出来的新函数，导致可读性几乎没有任何提升</li>
+<li>运用replace temp with query来消除这些临时元素</li>
+<li>introduce parameter object和preserve whole object,则可将过长的参数变得简洁</li>
+<li>如果还是有太多临时变量、参数，则使用杀手锏：replace method with method object</li>
+<li>如何确定该提炼哪一段代码？<ul>
+<li>寻找注释：<ul>
+<li>可以指出代码用途、实现手法之间的语义距离。</li>
+<li>注释是在提醒你，可将这段代码替换成一个函数，且可以在注释的基础上为这个函数命名</li>
+<li>就算只有一行代码，如果需要以注释来说明，也值得将其提炼到独立函数去</li>
+</ul>
+</li>
+<li>条件表达式、循环：<ul>
+<li>使用decompose conditional处理条件表达式</li>
+<li>循环，将循环和其内的代码提炼到一个独立函数中</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="large-class-过大的类"><a href="#large-class-过大的类" class="headerlink" title="large class 过大的类"></a>large class 过大的类</h1><ul>
+<li>缺点：拥有太多实例变量、拥有太多代码</li>
+<li>解决：<ul>
+<li>extract class：将几个变量一起提炼至新类内。提炼时，应该选择类内彼此相关的变量。通常，如果类内的数个变量有着相同的前缀、字尾，一位着有机会把它们提炼到某个组件内。</li>
+<li>extract subclass：同理，适合作为一个子类。</li>
+<li>提炼方法：代码重复、混乱</li>
+<li>extract interface：确定客户端如何使用它们，为每一种方式提炼出一个接口</li>
+<li>独立领域对象：如果是个GUI类，可能需要把数据、行为移到一个独立的领域对象去</li>
+<li>duplicate observe data：两边各保留一些重复数据，并保持两边同步。</li>
+</ul>
+</li>
+</ul>
+<h1 id="long-parameter-list-过长参数列"><a href="#long-parameter-list-过长参数列" class="headerlink" title="long parameter list 过长参数列"></a>long parameter list 过长参数列</h1><ul>
+<li>把函数所需的所有东西，都以参数传递进去。除此之外只能选择全局数据，而全局数据是邪恶的东西</li>
+<li>对象技术改变了这一情况：如果手上没有所需的东西，总可以叫另一个对象给你</li>
+<li>有了对象，只需要给它足够的、让函数能从中获得自己所需的东西就行了。</li>
+<li>函数需要的东西多半可以在函数的宿主类中找到。</li>
+<li>面向对象中的函数，参数列通常比在传统程序中短很多</li>
+<li>缺点：<ul>
+<li>难以理解，太多参数会造成前后不一致，不易使用；</li>
+<li>一旦需要更多数据，不得不修改它。如果将对象传递给函数，大多数修改都没有必要。</li>
+</ul>
+</li>
+<li>解决：<ul>
+<li>replace parameter with method：如果向已有对象发出一条请求就可以取代一个参数。已有对象：可能是类内的一个字段，也可能是另一个参数</li>
+<li>preserve whole object：将来自同一对象的一堆数据收集起来，并以改对象替换它们</li>
+<li>introduce parameter object：如果某些数据缺乏合理的对象归属，为它们制造一个“参数对象”</li>
+<li>例外：不希望造成”被调用对象“与”较大对象“间的某种依赖关系，这时将数据从对象中拆解出来，单独作为参数也很合理。但需注意其所引发的代价。如果参数列太长、变化太频繁，就需要重新考虑自己的依赖结构了</li>
+</ul>
+</li>
+</ul>
+<h1 id="divergent-change-发散式变化"><a href="#divergent-change-发散式变化" class="headerlink" title="divergent change 发散式变化"></a>divergent change 发散式变化</h1><ul>
+<li>易修改，相关性尽量减少</li>
+<li>一个类受多种变化的影响</li>
+<li>解决：<ul>
+<li>divergent change：某个类因为不同的原因在不同的方向上发生变化。</li>
+<li>extract class：针对某一外界变化的所有相应修改，都只应发生在单一类中，而这个新类内的所有内容都应反应此变化。应该找出某特定原因而造成的所有变化</li>
+</ul>
+</li>
+<li>目的：使“外界变化”与“需要修改的类”趋于一一对应</li>
+</ul>
+<h1 id="shotgun-surgery-散弹式修改"><a href="#shotgun-surgery-散弹式修改" class="headerlink" title="shotgun surgery 散弹式修改"></a>shotgun surgery 散弹式修改</h1><ul>
+<li>如果每遇到某种变化，都必须在许多不同的类内做出许多小的修改</li>
+<li>需要修改的代码散步四处，不但很难找到它们，也很容易忘记某个重要的修改。</li>
+<li>一种变化引发多个类相应修改</li>
+<li>解决：<ul>
+<li>move method、move field：将所有需要修改的代码放进同一个类。</li>
+<li>inline class：把一系列相关行为放进同一个类，可能会造成少量divergent change，但可以轻易处理</li>
+</ul>
+</li>
+<li>目的：使“外界变化”与“需要修改的类”趋于一一对应</li>
+</ul>
+<h1 id="feature-envy-依恋情节"><a href="#feature-envy-依恋情节" class="headerlink" title="feature envy 依恋情节"></a>feature envy 依恋情节</h1><ul>
+<li>将数据、对数据的操作行为，包装在一起</li>
+<li>解释：函数对某个类的兴趣搞过对自己所处类的兴趣，数据依恋</li>
+<li>解决：<ul>
+<li>move method：将函数移到应该去的地方</li>
+<li>extract method + move method：函数中有一部分受依恋之苦</li>
+<li>一个函数往往会用到几个类的功能，究竟该被置于何处？判断哪个类拥有最多被此函数使用的数据。可先用extract method将函数分解为数个较小函数，并分别置于不同地点</li>
+</ul>
+</li>
+<li>根本原则：<ul>
+<li>将总是一起变化的东西放在一起。</li>
+<li>数据和引用这些数据的行为总是一起变化的，也有例外</li>
+<li>如果例外出现，就搬移那些行为，保持变化只在一地发生</li>
+</ul>
+</li>
+</ul>
+<h1 id="data-clumps-数据泥团"><a href="#data-clumps-数据泥团" class="headerlink" title="data clumps 数据泥团"></a>data clumps 数据泥团</h1><ul>
+<li>很多地方看到相同的三四项数据：两个类中相同的字段；许多函数签名中相同的参数</li>
+<li>绑定在一起出现的数据，应该拥有数据它们自己的对象</li>
+<li>解决：<ul>
+<li>extract class：将一起出现的数据，提炼到一个独立对象中</li>
+<li>introduce parameter object、preserve whole object：将注意力转移到函数签名上。将很多参数列缩短，简化函数调用</li>
+<li>不必在意Data clumps上只用上新对象的一部分字段，只要以新对象取代两个、更多字段，就值回票价。</li>
+<li>判断依据：删掉众多数据中的一项，其他数据没有因而失去意义。如果它们不再有意义，则是明确信号，应该为它们产生一个新对象。</li>
+</ul>
+</li>
+<li>好处：<ul>
+<li>减少字段、参数个数</li>
+<li>一旦拥有新对象，就可以着手找寻feature envy，帮你指出能够移至新类中的种种程序行为</li>
+</ul>
+</li>
+</ul>
+<h1 id="primitive-obsession-基本类型偏执"><a href="#primitive-obsession-基本类型偏执" class="headerlink" title="primitive obsession 基本类型偏执"></a>primitive obsession 基本类型偏执</h1><ul>
+<li>结构类型数据：将数据组织成有意义的形式</li>
+<li>基本类型数据：构成结构类型的积木块</li>
+<li>结构总会带来额外的开销，可能代表着数据库中的表，如果只为做一两件事而创建结构类型也可能显得麻烦。</li>
+<li>对象的最大价值：模糊了横亘于基本数据、体积较大的类之间的界限。可以轻松编写出与语言基本类型无异的小型类</li>
+<li>新手通常不愿意在小任务上运用小对象</li>
+<li>解决：<ul>
+<li>replace data value with object：将原本单独存在的数据值替换为对象，从而走出传统的窟窿，进入炙手可热的对象世界<ul>
+<li>例如：结合数值和币种的money 类；由起始值、结束值组成的range类；电话号码或邮政编码……特殊字符串</li>
+</ul>
+</li>
+<li>replace type code with class、replace type code with state/strategy：有与类型码相关的条件表达式</li>
+<li>extract class：有一组总是被放在一起的字段</li>
+<li>intruduce parameter object:参数列看到基本型数据</li>
+<li>replace array  with object：从数组中挑选数据</li>
+</ul>
+</li>
+</ul>
+<h1 id="switch-statements-switch代码块"><a href="#switch-statements-switch代码块" class="headerlink" title="switch statements switch代码块"></a>switch statements switch代码块</h1><ul>
+<li>少用switch、case语句。本质上都是在重复</li>
+<li>可用多态来优雅解决</li>
+<li>switch语句长根据类型码进行选择，要的是“与该类型码相关的函数、类”</li>
+<li>解决：<ul>
+<li>多态</li>
+</ul>
+</li>
+</ul>
+<h1 id="parallel-inheritance-hierarchies-平行继承体系"><a href="#parallel-inheritance-hierarchies-平行继承体系" class="headerlink" title="parallel inheritance hierarchies 平行继承体系"></a>parallel inheritance hierarchies 平行继承体系</h1><ul>
+<li>特殊的shotgun surgery</li>
+<li>每当为某个类增加一个子类，必须为另一个类相应增加一个子类</li>
+<li>特征：某个继承体系的类名称前缀与另一个继承体系的类名称前缀完全相同</li>
+<li>解决：<ul>
+<li>让一个继承体系的实例引用另一个继承体系的实例&amp;&amp;move method、move field。将引用端的继承体系消弭于无形</li>
+</ul>
+</li>
+</ul>
+<h1 id="lazy-class-冗赘类"><a href="#lazy-class-冗赘类" class="headerlink" title="lazy class 冗赘类"></a>lazy class 冗赘类</h1><ul>
+<li>所创建的每一个类都需要有人去理解它，维护它，这些工作都是要花钱的</li>
+<li>如果一个类的所得不值其身价，就应该消失</li>
+<li>场景：<ul>
+<li>某个类原本对得起自己的身价，但重构使其缩水，不再承担那么多的责任</li>
+<li>开发者事前规划了某些变化，并添加一个类来应付这些变化，但变化实际没有发生</li>
+</ul>
+</li>
+<li>解决：<ul>
+<li>collapse hierarchy：如果某些子类没有足够的工作</li>
+<li>inline class：几乎没用的组件</li>
+</ul>
+</li>
+</ul>
+<h1 id="speculative-generality-夸夸其他未来性"><a href="#speculative-generality-夸夸其他未来性" class="headerlink" title="speculative generality 夸夸其他未来性"></a>speculative generality 夸夸其他未来性</h1><ul>
+<li>“我想总有一天需要做这事儿”。企图以各式各样的钩子、特殊情况来处理一些非必要的事情。</li>
+<li>造成系统更难理解、维护</li>
+<li>如果所有装置会被用到，就值得这么做；如果用不到，就不值得。用不上的装置只会挡你的路，所以，把它搬开吧</li>
+<li>解决：<ul>
+<li>collapse hierarchy：某个抽象类没有太大作用</li>
+<li>inline class：除去不必要的委托</li>
+<li>remove parameter：函数的某些参数未被用上</li>
+<li>rename method：函数名称带有多余的抽象意味</li>
+<li>测试用例：如果函数、类的唯一用户是测试用例，则为speculative generality。如果发现这样的函数、类，请把它们连同测试用例一并删除。但如果它们的用途是帮助测试用例检测正当功能，必定刀下留人。</li>
+</ul>
+</li>
+</ul>
+<h1 id="temporary-field-令人迷惑的暂时字段"><a href="#temporary-field-令人迷惑的暂时字段" class="headerlink" title="temporary field 令人迷惑的暂时字段"></a>temporary field 令人迷惑的暂时字段</h1><ul>
+<li>某个实例变量仅为某种特定情况而设。</li>
+<li>这样的代码让人不易理解。通常认为对象在所有时候都需要它的所有变量</li>
+<li>在变量未被使用的情况下，猜测当初的设置目的，会让人发疯的</li>
+<li>解决：<ul>
+<li>extract class：把所有和这个变量相关的代码，都放进这个新家<ul>
+<li>如果类中有一个复杂算法，需要好几个变量，往往导致temporary field的出现。</li>
+<li>由于实现者不希望传递一长串参数，所以将这些参数都放进字段中。</li>
+<li>但这些字段只有使用改算法时才有效，其他情况只会让人迷惑</li>
+<li>extract class：将这些变量和其相关函数提炼到一个独立类中，提炼后的新对象将是一个函数对象</li>
+</ul>
+</li>
+<li>intruduce null objec：变量不合法的情况下，创建一个null对象，避免写出条件式代码</li>
+</ul>
+</li>
+</ul>
+<h1 id="message-chains-过度耦合的消息链"><a href="#message-chains-过度耦合的消息链" class="headerlink" title="message chains 过度耦合的消息链"></a>message chains 过度耦合的消息链</h1><ul>
+<li>消息链：对象传递性请求</li>
+<li>特征：代码中可能是一长串的getthis{}或一长串的临时变量</li>
+<li>意味着客户代码将于查找过程中的导航结构紧密耦合。一旦对象间的关系发生任何变化，客户端就不得不做出相应的修改</li>
+<li>解决：<ul>
+<li>hide delegate：在消息链的不同位置进行这种重构手法。<ul>
+<li>理论上，可以重构消息链上的任何一个对象，但这么做往往会把一系列对象intermediate object都变成middle man</li>
+<li>通常，更好的选择是，先观察消息链最终得到的对象是用来干什么的，看看能否使用extract method把使用该对象的代码提炼到一个独立函数中，再运用move method将这个函数推入消息链</li>
+<li>如果这条链上的某个对象有多位用户打算添加此消息链的一部分，就加一个函数来做这件事</li>
+</ul>
+</li>
+<li>注意：不是任何函数链都是坏味道</li>
+</ul>
+</li>
+</ul>
+<h1 id="middle-man-中间人"><a href="#middle-man-中间人" class="headerlink" title="middle man 中间人"></a>middle man 中间人</h1><ul>
+<li>过度运用委托：某个类有一半的函数都委托给其他类</li>
+<li>解决：<ul>
+<li>remove middle man：直接和真正负责的对象打交道</li>
+<li>inline method：如果这样“不干实事”的函数只有少数几个，将其放进调用端。</li>
+<li>replace delegation with inheritance：如果middle man 还有其他行为，将其变成实责对象。即可扩展原对象的行为，又不必负担那么多的委托动作</li>
+</ul>
+</li>
+</ul>
+<h1 id="inappropriate-intimacy-过度亲密"><a href="#inappropriate-intimacy-过度亲密" class="headerlink" title="inappropriate intimacy 过度亲密"></a>inappropriate intimacy 过度亲密</h1><ul>
+<li>两个类过于亲密，花费太多时间去探究彼此的private成分。</li>
+<li>对于类，希望尽量保持独立</li>
+<li>继承往往造成过度亲密：子类对超类的了解总是超过超类的主观愿望</li>
+<li>解决：<ul>
+<li>move method、move field：划清界限，减少亲密度</li>
+<li>change bidirectional association to unidirectional：让其中一个类脱离另一个类</li>
+<li>extract class：将两者共同点提炼到一个安全地点，并使用新类</li>
+<li>hide delegate：让另一个类来传递关系</li>
+<li>replace inheritance with delegation：继承造成的过度亲密，让子类独自生活，离开继承体系</li>
+</ul>
+</li>
+</ul>
+<h1 id="alternative-classes-with-different-interfaces-异曲同工的类"><a href="#alternative-classes-with-different-interfaces-异曲同工的类" class="headerlink" title="alternative classes with different interfaces 异曲同工的类"></a>alternative classes with different interfaces 异曲同工的类</h1><ul>
+<li>解决：<ul>
+<li>rename method：两个函数做着同一件事，有着不同的签名。根据用途为其重新命名</li>
+<li>remove method：将某些行为移入类，直到两者的函数功能不同为止</li>
+<li>extract superclass：防止重复而冗余的移入代码</li>
+</ul>
+</li>
+</ul>
+<h1 id="incomplete-library-class-不完美的类库"><a href="#incomplete-library-class-不完美的类库" class="headerlink" title="incomplete library class 不完美的类库"></a>incomplete library class 不完美的类库</h1><ul>
+<li>库作者没有未卜先知的能力&amp;&amp;需求不明确，导致库往往构造的不够好，往往不可能让我们修改其中的类来完成我们希望完成的工作。</li>
+<li>解决：<ul>
+<li>introduce foreign method：如果只想修改库类的一两个函数</li>
+<li>intruduce local extension：想要添加一大堆额外的行为</li>
+</ul>
+</li>
+</ul>
+<h1 id="data-class-纯粹的数据类"><a href="#data-class-纯粹的数据类" class="headerlink" title="data class 纯粹的数据类"></a>data class 纯粹的数据类</h1><ul>
+<li>拥有一些字段，以及用于访问（读写）一些字段的函数。除此之外，一无是处</li>
+<li>这样的类，只是一种不会说话的数据容器，几乎一定被其他类过分细碎地操控着</li>
+<li>data class就像一个小孩子，起点很好，但若要让它们像成熟的对象那样参与整个系统的工作，它们就必须承担一定责任</li>
+<li>解决：<ul>
+<li>encapsulate field：类中早期拥有public字段。在别人注意之前将其封装起来</li>
+<li>encapsulate collection：如果类内含容器类字段，且没有得到恰当的封装</li>
+<li>remove setting method：对于不该被其他类修改的字段</li>
+<li>move method：找出取值、设值函数被其他类运用的地点，将调用行为搬移到data class 中</li>
+<li>extract method：无法搬移整个函数，则残生一个可搬移的函数。</li>
+<li>hide method：将取值、设值函数隐藏起来</li>
+</ul>
+</li>
+</ul>
+<h1 id="refused-bequest-被拒绝的继承"><a href="#refused-bequest-被拒绝的继承" class="headerlink" title="refused bequest 被拒绝的继承"></a>refused bequest 被拒绝的继承</h1><ul>
+<li>子类应该继承超类的函数、数据。</li>
+<li>如果子类不想、不需要继承所有的函数、数据，仅需要其中的一部分？</li>
+<li>不建议的传统做法：（起码不建议每次都这么做）<ul>
+<li>为子类新建一个兄弟类</li>
+<li>push down mehtod、push down field 把所有用不到的函数下推给那个兄弟</li>
+<li>最终，超类只持有子类共享的东西。达到“所有的超类，应该是抽象的”</li>
+</ul>
+</li>
+<li>经常利用继承来复用一些行为，并发现可以很好地应用于日常工作。但这也是一种坏味道，但气味通常不那么强烈</li>
+<li>建议：<ul>
+<li>如果refused bequest引起困惑。问题，请遵循传统忠告，但不必每次都这么做。十有八九这种坏味道很淡，</li>
+<li>如果子类复用了超类的行为（实现），却不愿意支持超类的接口，refused bequest的坏味道就会变得浓烈。</li>
+<li>拒绝继承超类的实现，可以不介意；但如果拒绝继承超类的接口，必须重视。</li>
+<li>replace inheritance with delegation：即使不愿意继承接口，也不要胡乱修改继承体系。</li>
+</ul>
+</li>
+</ul>
+<h1 id="comments-过多的注释"><a href="#comments-过多的注释" class="headerlink" title="comments 过多的注释"></a>comments 过多的注释</h1><ul>
+<li>comments不是一种坏味道，是一种好味道</li>
+<li>但，人们常用Comments来作为除臭剂。</li>
+<li>常见情境：一段代码，有长长的注释。而注释之所以存在，是因为代码很糟糕。</li>
+<li>comments可以带我们找到上面所提到的各种坏味道。找到坏味道之后，用各种重构手法去除坏味道。完成之后，常发现：注释已经变得多余了，因为代码已经说清楚说明了一切</li>
+<li>解决：<ul>
+<li>extract method：注释来解释一块代码做了什么</li>
+<li>rename method：如果函数已经提炼出来，但还是需要注释来解释其行为</li>
+<li>introduce assertion：如果需要注释说明某些系统的需求规格</li>
+</ul>
+</li>
+<li>建议：<ul>
+<li>当感觉需要撰写注释时，请先尝试重构，试着让所有的注释都变得多余</li>
+</ul>
+</li>
+<li>注释的良好运用情境：（信息可以帮助将来的修改者，尤其是那些健忘的人）<ul>
+<li>不知道该做什么：用来记录将来的打算</li>
+<li>标记并无十足把握的区域</li>
+<li>写下自己“为什么做某某事”</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.itag.top/articles/20210102/c4155470.html" title="004-代码的坏味道-不健康代码">https://blog.itag.top/articles/20210102/c4155470.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20210102/1d5fb0cc.html" rel="prev" title="003-重构原则">
+      <i class="fa fa-chevron-left"></i> 003-重构原则
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20210102/3c568e55.html" rel="next" title="005-构筑测试体系">
+      005-构筑测试体系 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#DuplicatedCode（重复代码）"><span class="nav-number">1.</span> <span class="nav-text">DuplicatedCode（重复代码）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LongMethod（过长函数）"><span class="nav-number">2.</span> <span class="nav-text">LongMethod（过长函数）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#large-class-过大的类"><span class="nav-number">3.</span> <span class="nav-text">large class 过大的类</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#long-parameter-list-过长参数列"><span class="nav-number">4.</span> <span class="nav-text">long parameter list 过长参数列</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#divergent-change-发散式变化"><span class="nav-number">5.</span> <span class="nav-text">divergent change 发散式变化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#shotgun-surgery-散弹式修改"><span class="nav-number">6.</span> <span class="nav-text">shotgun surgery 散弹式修改</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#feature-envy-依恋情节"><span class="nav-number">7.</span> <span class="nav-text">feature envy 依恋情节</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#data-clumps-数据泥团"><span class="nav-number">8.</span> <span class="nav-text">data clumps 数据泥团</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#primitive-obsession-基本类型偏执"><span class="nav-number">9.</span> <span class="nav-text">primitive obsession 基本类型偏执</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#switch-statements-switch代码块"><span class="nav-number">10.</span> <span class="nav-text">switch statements switch代码块</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#parallel-inheritance-hierarchies-平行继承体系"><span class="nav-number">11.</span> <span class="nav-text">parallel inheritance hierarchies 平行继承体系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#lazy-class-冗赘类"><span class="nav-number">12.</span> <span class="nav-text">lazy class 冗赘类</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#speculative-generality-夸夸其他未来性"><span class="nav-number">13.</span> <span class="nav-text">speculative generality 夸夸其他未来性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#temporary-field-令人迷惑的暂时字段"><span class="nav-number">14.</span> <span class="nav-text">temporary field 令人迷惑的暂时字段</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#message-chains-过度耦合的消息链"><span class="nav-number">15.</span> <span class="nav-text">message chains 过度耦合的消息链</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#middle-man-中间人"><span class="nav-number">16.</span> <span class="nav-text">middle man 中间人</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#inappropriate-intimacy-过度亲密"><span class="nav-number">17.</span> <span class="nav-text">inappropriate intimacy 过度亲密</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#alternative-classes-with-different-interfaces-异曲同工的类"><span class="nav-number">18.</span> <span class="nav-text">alternative classes with different interfaces 异曲同工的类</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#incomplete-library-class-不完美的类库"><span class="nav-number">19.</span> <span class="nav-text">incomplete library class 不完美的类库</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#data-class-纯粹的数据类"><span class="nav-number">20.</span> <span class="nav-text">data class 纯粹的数据类</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#refused-bequest-被拒绝的继承"><span class="nav-number">21.</span> <span class="nav-text">refused bequest 被拒绝的继承</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#comments-过多的注释"><span class="nav-number">22.</span> <span class="nav-text">comments 过多的注释</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>
