@@ -165,12 +165,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">25</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">114</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -288,7 +288,7 @@
 
 
 <h1 id="InnoDB-内存中的结构"><a href="#InnoDB-内存中的结构" class="headerlink" title="InnoDB 内存中的结构"></a>InnoDB 内存中的结构</h1><p>参看原理图 03-存储引擎层、InnoDB 架构</p>
-<p><img src="/images/post/db-mysql/innodb-struct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/innodb-struct.webp" alt></p>
 <p>内存中的结构主要包括 Buffer Pool，Change Buffer、Adaptive Hash Index以及 Log Buffer 四部分。</p>
 <p>如果从内存上来看，Change Buffer 和 Adaptive Hash Index 占用的内存都属于 Buffer Pool，Log Buffer占用的内存与 Buffer Pool独立。</p>
 <p>缓冲池缓存的数据包括Page Cache、Change Buffer、Data Dictionary Cache等，通常 MySQL 服务器的 80% 的物理内存会分配给 Buffer Pool。</p>
@@ -309,7 +309,7 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">----------------------</span><br><span class="line">BUFFER POOL AND MEMORY</span><br><span class="line">----------------------</span><br><span class="line">Total large memory allocated 137428992 # 分配给InnoDB缓存池的内存(字节)</span><br><span class="line">Dictionary memory allocated 102398  # 分配给InnoDB数据字典的内存(字节)</span><br><span class="line">Buffer pool size   8191 # 缓存池的页数目</span><br><span class="line">Free buffers       7893 # 缓存池空闲链表的页数目</span><br><span class="line">Database pages     298  # 缓存池LRU链表的页数目</span><br><span class="line">Modified db pages  0    # 修改过的页数目</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
 
 <p>Innodb的这个缓存区就是Innodb_buffer_pool，当读取数据时，就会先从缓存中查看是否数据的页（page）存在，不存在的话才去磁盘上检索，查到后缓存到这个pool里。<br>同理，插入、修改、删除也是先操作缓存里数据，之后再以一定频率更新到磁盘上。控制刷盘的机制，叫做Checkpoint。</p>
-<p><img src="/images/post/db-mysql/innodb_buffer_pool.png" alt=""></p>
+<p><img src="/images/post/db-mysql/innodb_buffer_pool.png" alt></p>
 <p>注意，左边那两个不在Innodb_buffer_pool里，是另外一块内存。只不过大部分的内存都属于Innodb_buffer_pool的。</p>
 <p>mysql安装后，默认pool的大小是128M，可以通过show variables like ‘innodb_buffer_pool%’;命令查看。</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'innodb_buffer_pool%'</span>;</span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_at_shutdown	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_filename	ib_buffer_pool</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_instances	8</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_abort	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_at_startup	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_size	134217728</span></span><br></pre></td></tr></table></figure>
@@ -402,7 +402,7 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Ibuf：size	已经合并页的数量</span><br><span class="line">free list len	空闲列表长度</span><br><span class="line">seg size	Insert Buffer大小</span><br><span class="line">merges	合并次数</span><br><span class="line">merged operations 	</span><br><span class="line">                    Change Buffer中每个操作次数；</span><br><span class="line">                    insert代表Insert Buffer;</span><br><span class="line">                    delete mark代表Delete Buffer；</span><br><span class="line">                    delete代表Purge Buffer;</span><br><span class="line">discarded operations	Change Buffer中无需合并的次数</span><br><span class="line">hash searches&#x2F;s	通过hash索引查询</span><br><span class="line">non-hash searches&#x2F;s	不能通过hash索引查询</span><br></pre></td></tr></table></figure>
 
 <p>可以通过 innodb_change_buffering 配置是否缓存辅助索引页的修改，默认为 all，即缓存 insert/delete-mark/purge 操作<br>(注：MySQL 删除数据通常分为两步，第一步是delete-mark，即只标记，而purge才是真正的删除数据)。</p>
-<p><img src="/images/post/db-mysql/changebuffer.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/changebuffer.webp" alt></p>
 <h3 id="ADAPTIVE-HASH-INDEX"><a href="#ADAPTIVE-HASH-INDEX" class="headerlink" title="ADAPTIVE HASH INDEX"></a>ADAPTIVE HASH INDEX</h3><p>自适应哈希索引(AHI)查询非常快，一般时间复杂度为 O(1)，相比 B+ 树通常要查询 3~4次，效率会有很大提升。</p>
 <p>innodb 通过观察索引页上的查询次数，如果发现建立哈希索引可以提升查询效率，则会自动建立哈希索引，称之为自适应哈希索引，不需要人工干预，可以通过 innodb_adaptive_hash_index 开启，MySQL5.7 默认开启。</p>
 <p>考虑到不同系统的差异，有些系统开启自适应哈希索引可能会导致性能提升不明显，而且为监控索引页查询次数增加了多余的性能损耗，</p>
@@ -432,7 +432,7 @@
 <p>注意，除了 MySQL 的缓冲区，操作系统本身也有内核缓冲区。</p>
 <p>Log Buffer是 重做日志在内存中的缓冲区，大小由 innodb_log_buffer_size 定义，默认是 16M。</p>
 <p>一个大的 Log Buffer可以让大事务在提交前不必将日志中途刷到磁盘，可以提高效率。如果你的系统有很多修改很多行记录的大事务，可以增大该值。</p>
-<p><img src="/images/post/db-mysql/innodb_flush_log_at_trx_commit.png" alt=""></p>
+<p><img src="/images/post/db-mysql/innodb_flush_log_at_trx_commit.png" alt></p>
 <p>innodb_flush_log_at_timeout 可以配置刷新日志缓存到磁盘的频率，默认是1秒。注意刷磁盘的频率并不保证就正好是这个时间，可能因为MySQL的一些操作导致推迟或提前。<br>而这个 “flush” 方法并不是C标准库的 fflush 方法(fflush是将C标准库的缓冲写到内核缓冲区，并不保证刷到磁盘)，它通过 innodb_flush_method 配置的，默认是 fsync，即日志和数据都通过 fsync 系统调用刷到磁盘。</p>
 <p>可以发现，InnoDB 基本每秒都会将 Log buffer落盘。而InnoDB中使用的 redo log 和 undo log，它们是分开存储的。<br>redo log在内存中有log buffer，在磁盘对应ib_logfile文件。而undo log是记录在表空间ibd文件中的，InnoDB为undo log会生成undo页，对undo log本身的操作（比如向undo log插入一条记录），也会记录redo log，因此undo log并不需要马上落盘。<br>而 redo log则通常会分配一块连续的磁盘空间，然后先写到log buffer，并每秒刷一次磁盘。redo log必须在数据落盘前先落盘(Write Ahead Log)，从而保证数据持久性和一致性。而数据本身的修改可以先驻留在内存缓冲池中，再根据特定的策略定期刷到磁盘。</p>
 <h2 id="BUFFER-POOL-AND-MEMORY"><a href="#BUFFER-POOL-AND-MEMORY" class="headerlink" title="BUFFER POOL AND MEMORY"></a>BUFFER POOL AND MEMORY</h2><p>innodb_buffer_pool包含数据页、索引页、undo页、insert buffer、数据字典、自适应哈希索引、锁信息等。数据库缓冲池是通过LRU列表管理的。</p>
@@ -622,14 +622,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

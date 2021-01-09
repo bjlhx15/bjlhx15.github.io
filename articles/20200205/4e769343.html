@@ -172,12 +172,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">25</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">114</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -303,7 +303,7 @@
 
 <h1 id="用树的概念理解mysql数据库"><a href="#用树的概念理解mysql数据库" class="headerlink" title="用树的概念理解mysql数据库"></a>用树的概念理解mysql数据库</h1><h2 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a>二叉查找树</h2><p>树的基础：<a href="https://www.cnblogs.com/bjlhx/p/10870875.html" target="_blank" rel="noopener">006-数据结构-树形结构-二叉树、二叉查找树、平衡二叉查找树-AVL树</a></p>
 <p>数据库表 对应 二叉查找树</p>
-<p><img src="/images/post/db-mysql/002/erchachazhao.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/erchachazhao.jpg" alt></p>
 <p>从图中可以看到，为 user 表（用户信息表）建立了一个二叉查找树的索引。</p>
 <p>图中的圆为二叉查找树的节点，节点中存储了键（key）和数据（data）。键对应 user 表中的 id，数据对应 user 表中的行数据。</p>
 <p>二叉查找树的特点就是任何节点的左子节点的键值都小于当前节点的键值，右子节点的键值都大于当前节点的键值。顶端的节点我们称为根节点，没有子节点的节点我们称之为叶节点。</p>
@@ -315,13 +315,13 @@
 </ol>
 <p>利用二叉查找树我们只需要 3 次即可找到匹配的数据。如果在表中一条条的查找的话，需要 6 次才能找到。</p>
 <h2 id="平衡二叉树"><a href="#平衡二叉树" class="headerlink" title="平衡二叉树"></a>平衡二叉树</h2><p>上面利用二叉查找树可以快速的找到数据。但是，如果上面的二叉查找树是这样的构造【以5为根节点】：</p>
-<p><img src="/images/post/db-mysql/002/pinghengerchashu.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/pinghengerchashu.jpg" alt></p>
 <p>可以看到二叉查找树变成了一个链表。如果需要查找 id=17 的用户信息，需要查找 7 次，也就相当于全表扫描了。</p>
 <p>导致这个现象的原因其实是二叉查找树变得不平衡了，也就是高度太高了，从而导致查找效率的不稳定。</p>
 <p>为了解决这个问题，需要保证二叉查找树一直保持平衡，就需要用到平衡二叉树。</p>
 <p>平衡二叉树又称 AVL 树，在满足二叉查找树特性的基础上，要求每个节点的左右子树的高度差不能超过 1。</p>
 <p>下面是平衡二叉树和非平衡二叉树的对比：</p>
-<p><img src="/images/post/db-mysql/002/pinghengerchashu-2.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/pinghengerchashu-2.jpg" alt></p>
 <p>由平衡二叉树的构造可以发现第一张图中的二叉树其实就是一棵平衡二叉树。</p>
 <p>平衡二叉树保证了树的构造是平衡的，当插入或删除数据导致不满足平衡二叉树不平衡时，平衡二叉树会进行调整树上的节点来保持平衡。具体的调整方式,参看。</p>
 <p>平衡二叉树相比于二叉查找树来说，查找效率更稳定，总体的查找速度也更快。</p>
@@ -332,11 +332,11 @@
 <p>如果用树这种数据结构作为索引的数据结构，那每查找一次数据就需要从磁盘中读取一个节点，也就是一个磁盘块。</p>
 <p>平衡二叉树是每个节点只存储一个键值和数据的。那说明什么？说明每个磁盘块仅仅存储一个键值和数据！那如果要存储海量的数据呢</p>
 <p>可以想象到二叉树的节点将会非常多，高度也会极其高，查找数据时也会进行很多次磁盘 IO，查找数据的效率将会极低！</p>
-<p><img src="/images/post/db-mysql/002/btree-1.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/btree-1.jpg" alt></p>
 <p>为了解决平衡二叉树的这个弊端，应该寻找一种单个节点可以存储多个键值和数据的平衡树。也就是我们接下来要说的 B 树。</p>
 <p>B 树（Balance Tree）即为平衡树的意思，下图即是一棵 B 树：</p>
 <p>B树，<a href="https://www.cnblogs.com/bjlhx/p/10898059.html" target="_blank" rel="noopener">参看</a></p>
-<p><img src="/images/post/db-mysql/002/btree-2.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/btree-2.jpg" alt></p>
 <p>图中的 p 节点为指向子节点的指针，二叉查找树和平衡二叉树其实也有。</p>
 <p>图中的每个节点称为页，页就是上面说的磁盘块，在 MySQL 中数据读取的基本单位都是页，所以这里叫做页更符合 MySQL 中索引的底层数据结构。</p>
 <p>从上图可以看出，B 树相对于平衡二叉树，每个节点存储了更多的键值（key）和数据（data），并且每个节点拥有更多的子节点，子节点的个数一般称为阶，上述图中的 B 树为 3 阶 B 树，高度也会很低。</p>
@@ -349,7 +349,7 @@
 </ul>
 <h2 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h2><p><a href="https://www.cnblogs.com/bjlhx/p/10898373.html" target="_blank" rel="noopener">参看</a></p>
 <p>B+ 树是对 B 树的进一步优化。看下 B+ 树的结构图：</p>
-<p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/btree-3.jpg" alt></p>
 <p>根据上图看下 B+ 树和 B 树有什么不同：</p>
 <p>①B+ 树非叶子节点上是不存储数据的，仅存储键值，而 B 树节点中不仅存储键值，也会存储数据。</p>
 <p>之所以这么做是因为在数据库中页的大小是固定的，InnoDB 中页的默认大小是 16KB。</p>
@@ -368,7 +368,7 @@
 <p>其中非叶子结点存储的是子页的最小的键值和子页的页号，叶子结点存储的是数据，数据按照索引键排序。</p>
 <p>同一层的页之间用双向链表连接(前面提到的FIL Header中PREV PAGE 和 NEXT PAGE)，同一页内的记录用单向链表连接(Record Header中记录了下一条记录的偏移)。</p>
 <p>每一页设置了两个虚拟记录Infimum和Supremum用于标识页的开始和结束。</p>
-<p><img src="/images/post/db-mysql/bptreestruct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/bptreestruct.webp" alt></p>
 <p>在InnoDB中根据辅助索引查询，如果除了主键外还有其他字段，则需要查询两遍，先根据辅助索引查询主键的值，然后再到主索引中查询得到记录。</p>
 <p>此外，因为辅助索引的数据部分是主键值，主键不能过大，否则会导致辅助索引占用空间变大，用自增ID做主键是个不错的选择。</p>
 <h2 id="聚集索引-VS-非聚集索引-概念"><a href="#聚集索引-VS-非聚集索引-概念" class="headerlink" title="聚集索引 VS 非聚集索引 概念"></a>聚集索引 VS 非聚集索引 概念</h2><p>在上面介绍 B+ 树索引的时候，提到了图中的索引其实是聚集索引的实现方式。</p>
@@ -384,7 +384,7 @@
 <p>将来能通过这个索引找到数据行的ID。要查数据时，就根据ID去聚簇索引那棵B+tree去查，这就是回表。</p>
 <p>最后，索引是方便查询的，索引列的数据不适合放大的，它占用的空间一多，那么B+tree一层中能放的个数就越少。</p>
 <p>索引列一多，插入就越慢，如果没有索引，插入一行时只需要对主键进行排序即可。如果有很多列都有索引，那么插入时，就要做很多次排序,以及多个B+tree的结构变化。</p>
-<h3 id="利用聚集索引查找数据"><a href="#利用聚集索引查找数据" class="headerlink" title="利用聚集索引查找数据"></a>利用聚集索引查找数据</h3><p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
+<h3 id="利用聚集索引查找数据"><a href="#利用聚集索引查找数据" class="headerlink" title="利用聚集索引查找数据"></a>利用聚集索引查找数据</h3><p><img src="/images/post/db-mysql/002/btree-3.jpg" alt></p>
 <p>聚集索引，表中的数据存储在其中。</p>
 <p>现在假设要查找 id&gt;=18 并且 id&lt;40 的用户数据。对应的 sql 语句为：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>&gt;=<span class="number">18</span> <span class="keyword">and</span> <span class="keyword">id</span> &lt;<span class="number">40</span></span><br></pre></td></tr></table></figure>
@@ -403,16 +403,16 @@
 <p>最终我们找到满足条件的所有数据，总共 12 条记录：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(18,kl),(19,kl),(22,hj),(24,io),(25,vg),(29,jk),(31,jk),(33,rt),(34,ty),(35,yu),(37,rt),(39,rt)。</span><br></pre></td></tr></table></figure>
 <p>具体的查找流程图：</p>
-<p><img src="/images/post/db-mysql/002/jucu-chazhao.jpeg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/jucu-chazhao.jpeg" alt></p>
 <h3 id="利用非聚集索引查找数据"><a href="#利用非聚集索引查找数据" class="headerlink" title="利用非聚集索引查找数据"></a>利用非聚集索引查找数据</h3><p>上述表结构 只有主键 和 名称，扩展下表</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">id  name    luckyNum</span><br><span class="line">1   zs      23</span><br><span class="line">2   ls      7</span><br></pre></td></tr></table></figure>
 <p>使用 luckyNum 建立非聚集索引</p>
 <p>在叶子节点中，不再存储所有的数据了，存储的是键值和主键。对于叶子节点中的 x-y，比如 1-1。左边的 1 表示的是索引的键值，右边的 1 表示的是主键值。</p>
-<p><img src="/images/post/db-mysql/002/feijuji-1.jpeg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/feijuji-1.jpeg" alt></p>
 <p>如果要找到幸运数字为 33 的用户信息，对应的 sql 语句为：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> luckNum=<span class="number">33</span></span><br></pre></td></tr></table></figure>
 <p>查找的流程跟聚集索引一样，最终会找到主键值 47，找到主键后,需要再到聚集索引中查找具体对应的数据信息，此时又回到了聚集索引的查找流程。</p>
-<p><img src="/images/post/db-mysql/002/feijuji-chazhao.jpeg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/feijuji-chazhao.jpeg" alt></p>
 <p>在 MyISAM 中，聚集索引和非聚集索引的叶子节点都会存储数据的文件地址。</p>
 <p>因为 B 树不管叶子节点还是非叶子节点，都会保存数据，这样导致在非叶子节点中能保存的指针数量变少（有些资料也称为扇出）。<br>指针少的情况下要保存大量数据，只能增加树的高度，导致 IO 操作变多，查询性能变低。</p>
 <p>参看地址：<a href="https://blog.51cto.com/14480698/2451603" target="_blank" rel="noopener">https://blog.51cto.com/14480698/2451603</a></p>
@@ -574,14 +574,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

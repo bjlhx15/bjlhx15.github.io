@@ -162,12 +162,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">25</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">114</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -315,7 +315,7 @@
 <li><p>其他表空间：其他表空间中Undo表空间存储的是Undo日志。除了存储在系统表空间外，Undo日志也可以存储在单独的Undo表空间中。<br>临时表空间则是非压缩的临时表的存储空间，默认是数据目录的 ibtmp1 文件，所有临时表共享，压缩的临时表用的是 File-Per-Table 表空间。</p>
 </li>
 </ul>
-<h1 id="innodb承上启下的结构"><a href="#innodb承上启下的结构" class="headerlink" title="innodb承上启下的结构"></a>innodb承上启下的结构</h1><p><img src="/images/post/db-mysql/005/innodb-jiegou.png" alt=""></p>
+<h1 id="innodb承上启下的结构"><a href="#innodb承上启下的结构" class="headerlink" title="innodb承上启下的结构"></a>innodb承上启下的结构</h1><p><img src="/images/post/db-mysql/005/innodb-jiegou.png" alt></p>
 <p>Handler API是供mysql server层调用的，server层定义了一些接口，譬如insert、delete，具体怎么实现，是由每个存储引擎自己实现的。</p>
 <p>以上图中间虚线为分界，上面的是逻辑层，每个访问都会产生事务，事务处理会产生锁（表锁、行锁），操作对象是表、索引、b+ tree。对数据页面的访问需要物理事务，为了读写一致性，需要读写锁（物理锁）。为了高效定位和管理“页”，需要用到文件管理系统。</p>
 <p>这些都是基于逻辑的处理，再往下就是物理层。</p>
@@ -481,14 +481,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

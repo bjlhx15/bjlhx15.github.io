@@ -164,12 +164,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">25</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">114</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -291,7 +291,7 @@
 <h3 id="方式一、直接按页存储【假想】"><a href="#方式一、直接按页存储【假想】" class="headerlink" title="方式一、直接按页存储【假想】"></a>方式一、直接按页存储【假想】</h3><p>数据表中的数据都是存储在页中的，所以一个页中能存储多少行数据呢？假设一行数据的大小是 1K，那么一个页可以存放 16 行这样的数据。</p>
 <p>如果数据库按这样的方式存储，那么查找数据就成为一个问题。不知道要查找的数据存在哪个页中，每次查询都需要把所有的页遍历一遍，时间复杂度为 n。</p>
 <h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例一、2层b+ tree</p>
-<p><img src="source/images/post/db-mysql/ecengbtree.png" alt=""></p>
+<p><img src="source/images/post/db-mysql/ecengbtree.png" alt></p>
 <p>这个树只有2层，首先每个page都有自己的唯一编号，将来就要通过编号来找对应的page。根页做为一个第一层的索引页，里面是不存在叶子数据（行数据）的，只存放Key，同时还包含了pageNo信息，用来将来去找对应的页。</p>
 <p>所有的记录节点都是按键值的大小顺序存放在同一层的叶子节点上，由各叶子节点指针进行连接（双向指针）。所以查询时，无论正序倒序，其实是一样的扫描速度。</p>
 <p>每一层的最左边节点页面的最左边位置，会有一个Min记录，该记录由2部分组成，第一部分就是一个Min标记，代表这就是 最小值；第二部分是一个pageNo指针，指向下一层中最左边的记录。注意看根页的Min记录，就是这样的。而33号page的Min记录由于没有下一层了，所以没有pageNo指针。</p>
@@ -302,7 +302,7 @@
 <p>通过这样的方式，我们就知道了一颗树是怎么构成的了。</p>
 <p>示例解说：</p>
 <ol>
-<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt=""></li>
+<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt></li>
 </ol>
 <p>先将数据记录按主键进行排序，分别存放在不同的页中（为了便于理解这里一个页中只存放 3 条记录，实际情况可以存放很多）。</p>
 <p>除了存放数据的页以外，还有存放键值+指针的页，如图中 page number=3 的页，该页存放键值和指向数据页的指针，这样的页由 N 个键值+指针组成。</p>
@@ -317,7 +317,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>小结：  InnoDB 中主键索引 B+ 树是如何组织数据、查询数据</p>
 <p>InnoDB 存储引擎的最小存储单元是页，页可以用于存放数据也可以用于存放键值+指针，在 B+ 树中叶子节点存放数据，非叶子节点存放键值+指针。</p>
 <p>索引组织表通过非叶子节点的二分查找法以及指针确定数据在哪个页中，进而在去数据页中查找到需要的数据。</p>
-<h3 id="Page内详细结构"><a href="#Page内详细结构" class="headerlink" title="Page内详细结构"></a>Page内详细结构</h3><p><img src="/images/post/db-mysql/page.png" alt=""></p>
+<h3 id="Page内详细结构"><a href="#Page内详细结构" class="headerlink" title="Page内详细结构"></a>Page内详细结构</h3><p><img src="/images/post/db-mysql/page.png" alt></p>
 <p>page内的存储，共16K的空间,分为几个部分，文件管理头信息、页面头信息、页面尾信息、最小记录最大记录、用户记录、可重用空间、未使用空间、页面槽信息。</p>
 <p>用户记录就是行数据，可重用就是曾经被分配过数据后来被删了，未使用就是没分配过的空间。</p>
 <h4 id="文件管理头信息"><a href="#文件管理头信息" class="headerlink" title="文件管理头信息"></a>文件管理头信息</h4><p>它占用38个字节，里面存储的东西主要有:</p>
@@ -548,14 +548,14 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

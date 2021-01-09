@@ -1,6 +1,382 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>003-spring容器之ApplicationContext</title>
+    <url>/articles/20210109/ae0ddb33.html</url>
+    <content><![CDATA[<p>摘要：<br>ApplicationContext：是spring继BeanFactory之外的另一个核心接口或容器，允许容器通过应用程序上下文环境创建、获取、管理bean。为应用程序提供配置的中央接口。在应用程序运行时这是只读的，但如果实现支持这一点，则可以重新加载。</p>
+<p>一个ApplicationContext提供:</p>
+<ul>
+<li>访问应用程序组件的Bean工厂方法。从org.springframework.beans.factory.ListableBeanFactory继承。</li>
+<li>以通用方式加载文件资源的能力。继承自org.springframe .core.io。ResourceLoader接口。—beanXML</li>
+<li>向注册侦听器发布事件的能力。继承自ApplicationEventPublisher接口。</li>
+<li>解析消息的能力，支持国际化。继承自MessageSource接口。</li>
+<li>从父上下文继承。后代上下文中的定义总是优先级。例如，这意味着单个父上下文可以被整个web应用程序使用，而每个servlet都有自己独立于任何其他servlet的子上下文。<a id="more"></a>
+<h1 id="接口依赖关系"><a href="#接口依赖关系" class="headerlink" title="接口依赖关系"></a>接口依赖关系</h1></li>
+</ul>
+<p>如果说BeanFactory是Spring的心脏，那么ApplicationContext就是完整的身躯了。ApplicationContext由BeanFactory派生而来，提供了更多面向实际应用的功能。</p>
+<p><img src="/articles/20210109/ae0ddb33/00302.jpg" alt></p>
+<h1 id="ApplicationContext子类接口"><a href="#ApplicationContext子类接口" class="headerlink" title="ApplicationContext子类接口"></a>ApplicationContext子类接口</h1><p>主要是：ConfigurableApplicationContext、WebApplicationContext</p>
+<h2 id="ConfigurableApplicationContext"><a href="#ConfigurableApplicationContext" class="headerlink" title="ConfigurableApplicationContext"></a>ConfigurableApplicationContext</h2><p>该接口提供了根据配置创建、获取bean的一些方法，其中主要常用的实现包括：ClassPathXmlApplicationContext、FileSystemXmlApplicationContext等。提供了通过各种途径去加载实例化bean的手段。</p>
+<h3 id="ClassPathXmlApplicationContext"><a href="#ClassPathXmlApplicationContext" class="headerlink" title="ClassPathXmlApplicationContext"></a>ClassPathXmlApplicationContext</h3><p>独立的XML应用程序上下文，从类路径中获取上下文定义文件，将普通路径解释为包含包路径的类路径资源名(例如，“mypackage / myresource.txt”)。<br>适用于测试工具以及嵌入在jar中的应用程序上下文。配置位置的默认值可以通过getConfigLocations重写，配置位置可以表示具体的文件，比如“/myfiles/context”。xml“或ant样式的模式，比如”/myfiles/*-context。参见org.springframework.util。模式细节的AntPathMatcher javadoc)。</p>
+<p>注意：对于多个配置位置，后面的bean定义将覆盖前面加载的文件中定义的配置位置。可以利用这一点，通过额外的XML文件故意覆盖某些bean定义。</p>
+<h3 id="FileSystemXmlApplicationContext"><a href="#FileSystemXmlApplicationContext" class="headerlink" title="FileSystemXmlApplicationContext:"></a>FileSystemXmlApplicationContext:</h3><p>独立的XML应用程序上下文，从文件系统或url获取上下文定义文件，将普通路径解释为相对的文件系统位置(例如，“mydir / myfile.txt”)。<br>适用于测试线束以及独立环境。<br>注意：普通路径总是被解释为相对于当前VM工作目录，即使它们以斜杠开头。(这与Servlet容器中的语义一致。)使用显式的“file:”前缀强制执行绝对文件路径。<br>配置位置的默认值可以通过getConfigLocations重写，配置位置可以表示具体的文件，比如“/myfiles/context”。xml“或ant样式的模式，比如”/myfiles/*-context。参见org.springframework.util。<br>模式细节的AntPathMatcher javadoc)。注意:对于多个配置位置，后面的bean定义将覆盖前面加载的文件中定义的配置位置。<br>可以利用这一点，通过额外的XML文件故意覆盖某些bean定义。这是一个简单的一站式应用程序上下文。考虑将GenericApplicationContext类与org.springframework.bean .factory.xml结合使用。用于更灵活的上下文</p>
+<ul>
+<li>ClassPathXmlApplicationContext  FileSystemXmlApplicationContext<br>一个是从类路径获取配置文件并进一步实例化bean，一个是从文件系统或url加载文件并进一步实例化bean。</li>
+</ul>
+<h2 id="WebApplicationContext"><a href="#WebApplicationContext" class="headerlink" title="WebApplicationContext"></a>WebApplicationContext</h2><h3 id="AnnotationConfigWebApplicationContext是WebApplicationContext实现，"><a href="#AnnotationConfigWebApplicationContext是WebApplicationContext实现，" class="headerlink" title="AnnotationConfigWebApplicationContext是WebApplicationContext实现，"></a>AnnotationConfigWebApplicationContext是WebApplicationContext实现，</h3><ul>
+<li>它接受带注释的类作为输入—特别是@Configuration-annotated类，</li>
+<li>也接受普通的@Component类和使用javax兼容JSR-330的类。注入注解。</li>
+<li>允许逐个注册类(指定类名作为配置位置)以及类路径扫描(指定基本包作为配置位置)。</li>
+<li>对于多个@Configuration类，后面的@Bean定义将覆盖前面加载的文件中定义的类。<ul>
+<li>可以利用这一点，通过额外的配置类故意覆盖某些bean定义。提供了注册注解类和扫描注解类等操作：<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public void register(Class&lt;?&gt;... annotatedClasses) &#123;---注册一个或多个要处理的带注释的类。</span><br><span class="line">    Assert.notEmpty(annotatedClasses, &quot;At least one annotated class must be specified&quot;);</span><br><span class="line">    this.annotatedClasses.addAll(Arrays.asList(annotatedClasses));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public void scan(String... basePackages) &#123;---在指定的包中扫描类</span><br><span class="line">    Assert.notEmpty(basePackages, &quot;At least one base package must be specified&quot;);</span><br><span class="line">    this.basePackages.addAll(Arrays.asList(basePackages));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="核心方法：loadBeanDefinitions"><a href="#核心方法：loadBeanDefinitions" class="headerlink" title="核心方法：loadBeanDefinitions"></a>核心方法：loadBeanDefinitions</h4></li>
+</ul>
+</li>
+</ul>
+<p><img src="/articles/20210109/ae0ddb33/00301.jpg" alt></p>
+<h3 id="XmlWebApplicationContext"><a href="#XmlWebApplicationContext" class="headerlink" title="XmlWebApplicationContext"></a>XmlWebApplicationContext</h3><p>是WebApplicationContext实现，它从XML文档获取配置，默认情况下，配置将取自“/WEB-INF/applicationContext.xml” for the root context, and “/WEB-INF/test-servlet。对于具有名称空间“test-servlet”的上下文(类似于对于具有servlet-name“test”的DispatcherServlet实例)。</p>
+<h1 id="在springboot中获取Bean"><a href="#在springboot中获取Bean" class="headerlink" title="在springboot中获取Bean"></a>在springboot中获取Bean</h1><h2 id="直接注入"><a href="#直接注入" class="headerlink" title="直接注入"></a>直接注入</h2><p>使用@Autowired，当然通过context也可以getbean操作</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@RequestMapping</span>(<span class="string">"/a"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Demo4Controller</span> </span>&#123;</span><br><span class="line">	<span class="comment">//将容器注入进来</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> ApplicationContext context;</span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/c"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">m1</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    	<span class="comment">//获取所有的bean名称，并打印输出</span></span><br><span class="line">        String[] beanDefinitionNames = <span class="keyword">this</span>.context.getBeanDefinitionNames();</span><br><span class="line">        System.out.println(Arrays.asList(beanDefinitionNames));</span><br><span class="line">        <span class="comment">//返回逻辑视图名称</span></span><br><span class="line">        <span class="keyword">return</span> <span class="string">"demo2"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="实现-ApplicationContextAware接口"><a href="#实现-ApplicationContextAware接口" class="headerlink" title="实现 ApplicationContextAware接口"></a>实现 ApplicationContextAware接口</h2><p>实现 ApplicationContextAware接口并重写setApplicationContext方法来进行容器获取</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringBeanUtil</span> <span class="keyword">implements</span> <span class="title">ApplicationContextAware</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ApplicationContext applicationContext = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取ApplicationContext对象</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setApplicationContext</span><span class="params">(ApplicationContext applicationContext)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        SpringBeanUtil.applicationContext = applicationContext;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@Title</span>: getBeanByName</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@Description</span>: TODO  通过bean的名字来获取Spring容器中的bean</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> beanName</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span>: Object</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">getBeanByName</span><span class="params">(String beanName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (applicationContext == <span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> applicationContext.getBean(beanName);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">T <span class="title">getBean</span><span class="params">(Class&lt;T&gt; type)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> applicationContext.getBean(type);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">getAllBean</span><span class="params">()</span></span>&#123;</span><br><span class="line">        String[] beanDefinitionNames = applicationContext.getBeanDefinitionNames();</span><br><span class="line">        <span class="keyword">for</span> (String beanDefinitionName : beanDefinitionNames) &#123;</span><br><span class="line">            System.out.println(beanDefinitionName);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="普通bean加入springboot容器"><a href="#普通bean加入springboot容器" class="headerlink" title="普通bean加入springboot容器"></a>普通bean加入springboot容器</h1><p>springboot也是一个spring容器。以下是把Bean注入到容器</p>
+<h2 id="ImportResource-导入xml"><a href="#ImportResource-导入xml" class="headerlink" title="@ImportResource 导入xml"></a>@ImportResource 导入xml</h2><p>在resources下像往常一样编写xml配置文件，在springboot启动类加上@importResource注解并在value数组里指明配置文件的位置，即可把spring容器和springboot容器整合一起。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@ImportResource</span>(&#123;</span><br><span class="line">        <span class="string">"classpath:spring-config.xml"</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="Configuration和-Bean"><a href="#Configuration和-Bean" class="headerlink" title="@Configuration和@Bean"></a>@Configuration和@Bean</h2><pre><code>上一种方法的弊端是如果存在多个xml配置文件则需要在@ImportResource中引入多个注解。所以springboot推荐使用基于@Configuration注解的形式去替代xml文件来向spring容器添加bean。
+
+从Spring3.0起@Configuration开始逐渐用来替代传统的xml配置文件。@Configuration继承自@Component，spring会把标注了@Configuration的对象管理到容器中。除此之外还要在某一个方法加上@Bean，该方法的返回对象被当做bean交给容器，该bean的名称为方法的名称。</code></pre><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">myAppConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> helloService <span class="title">helloService</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"给容器添加组件"</span>);</span><br><span class="line">        helloService helloService = <span class="keyword">new</span> helloService();</span><br><span class="line">        <span class="keyword">return</span> helloService;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="使用注解组件-类级别注解-加包扫描的方式注入Bean"><a href="#使用注解组件-类级别注解-加包扫描的方式注入Bean" class="headerlink" title="使用注解组件-类级别注解,加包扫描的方式注入Bean"></a>使用注解组件-类级别注解,加包扫描的方式注入Bean</h2><p>如果使用组件注解需要搭配@ComponentScan，该注解会指定需要扫描的包，扫描以后，路径内所有带有组件注解的类都将被注册进IOC容器当中</p>
+<p>@Component：定义一个Bean</p>
+<p>以下几个注解功能都和@Component相同，一般用于特定位置，便于区分。</p>
+<p>@Controller/RestController：定义一个Bean，用于标识控制器，其中@RestController包含了@ResponseBody注解，用于Rest风格接口的开发</p>
+<p>@Service等</p>
+<h2 id="使用-Import注解"><a href="#使用-Import注解" class="headerlink" title="使用@Import注解"></a>使用@Import注解</h2><p>SpringBoot的@Import注解可以用于为容器中注册Bean</p>
+<p>有三种使用方法：</p>
+<ol>
+<li><p>直接@Import某个类，将这个类添加到IOC容器中,@Import注解需要和@Configuration结合使用才能生效</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@Import</span>( &#123; A<span class="class">.<span class="keyword">class</span>,<span class="title">B</span>.<span class="title">class</span> &#125; )</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>实现了ImportSelector接口的实现类</p>
+<ul>
+<li>如果想根据某些属性进行判断是否导入某个Bean，则可以在@Import中传入实现了@ImportSelector的实现类</li>
+<li>在执行时，@Import如果判断出传入的是实现了@ImportSelecor接口的实现类，就会调用该类中的selectImport方法，判断需要导入的configuration<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public class MyImportSelector implements ImportSelector &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public String[] selectImports(AnnotationMetadata annotationMetadata) &#123;</span><br><span class="line">        &#x2F;&#x2F;返回值为String数组类型，实际值应该是注入Bean类的全类名。</span><br><span class="line">        return new String[]&#123;&quot;com.github.bjlhx15.common.springdemo.springcontainer.domain.auto.TestJoinBean&quot;&#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@Import</span>( &#123; MyImportSelector<span class="class">.<span class="keyword">class</span> &#125; )</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>导入实现了@ImportBeanDefinitionRegistrar接口的实现类</p>
+<ul>
+<li>在执行时，会调用该类中的registerBeanDefinitions方法，通过参数中的BeanDefinitionRegistry可以进行Bean的注册<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyImportBeanDefinitionRegistrar</span> <span class="keyword">implements</span> <span class="title">ImportBeanDefinitionRegistrar</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">registerBeanDefinitions</span><span class="params">(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//可以从importingClassMetadata和registry对象获取一些上下文信息进行其他业务逻辑的判断</span></span><br><span class="line">        <span class="keyword">boolean</span> b1 = registry.containsBeanDefinition(<span class="string">"com.github.bjlhx15.common.springdemo.springcontainer.domain.auto.TestJoinBeann"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(b1)&#123;</span><br><span class="line">            registry.registerBeanDefinition(<span class="string">"Class"</span>, <span class="keyword">new</span> RootBeanDefinition(Class<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@Import</span>( &#123; MyImportBeanDefinitionRegistrar<span class="class">.<span class="keyword">class</span> &#125; )</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="手工装载"><a href="#手工装载" class="headerlink" title="手工装载"></a>手工装载</h2><p>有的时候在有类型后需要将现有某个类装载到spring容器托管中</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> GenericApplicationContext gac;</span><br><span class="line"><span class="comment">//代码中</span></span><br><span class="line">    gac.registerBean(TestJoinBean<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    TestJoinBean bean = context.getBean(TestJoinBean<span class="class">.<span class="keyword">class</span>)</span>;</span><br></pre></td></tr></table></figure>
+<p>注入后的名称为 类全名：com.github.bjlhx15.common.springdemo.springcontainer.domain.auto.TestJoinBean</p>
+]]></content>
+      <categories>
+        <category>java-spring-bean</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>009-permalink永久链与image不显示问题</title>
+    <url>/articles/20210109/4eaf081e.html</url>
+    <content><![CDATA[<p>摘要：文章底部版权、文章底部打赏</p>
+<a id="more"></a>
+
+<h1 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h1><h2 id="永久链"><a href="#永久链" class="headerlink" title="永久链"></a>永久链</h2><p><a href="#">配置</a></p>
+<h2 id="asset-image配置"><a href="#asset-image配置" class="headerlink" title="asset-image配置"></a>asset-image配置</h2><h3 id="配置-1"><a href="#配置-1" class="headerlink" title="配置"></a>配置</h3><p>配置_config.yml里面的post_asset_folder:false这个选项设置为true。Hexo 提供了一种更方便管理 Asset 的设定：post_asset_folder</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">post_asset_folder: true</span><br></pre></td></tr></table></figure>
+
+<p>主要是为了和文章创建同名的文件夹放图片</p>
+<h3 id="图片插件安装"><a href="#图片插件安装" class="headerlink" title="图片插件安装"></a>图片插件安装</h3><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">npm install hexo-asset-image --save</span><br></pre></td></tr></table></figure>
+
+<h1 id="问题与方案"><a href="#问题与方案" class="headerlink" title="问题与方案"></a>问题与方案</h1><h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>如果永久链使用标题，此问题不存在</p>
+<p>永久链配置使用了:abbrlink 以及使用</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">permalink:</span> <span class="string">articles/:year:month:day/:abbrlink.html</span>  <span class="comment"># 此处可以自己设置，也可以直接使用 :/abbrlink</span></span><br><span class="line"><span class="attr">abbrlink:</span></span><br><span class="line">    <span class="attr">alg:</span> <span class="string">crc32</span>   <span class="comment">#算法： crc16(default) and crc32</span></span><br><span class="line">    <span class="attr">rep:</span> <span class="string">hex</span>     <span class="comment">#进制： dec(default) and hex</span></span><br></pre></td></tr></table></figure>
+
+<p>这时候原标题为 “009-permalink永久链与image不显示问题” 会变成 “4eaf081e”</p>
+<p>但是文章内图片链接没有变。</p>
+<h2 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h2><p>由于hexo3版本后对很多插件支持有问题，hexo-asset-image插件在处理data.permalink链接时出现路径错误，把年月去掉了，导致最后生成的路径为%d/xxx/xxx需要对其做兼容处理。通过判断当前版本是否等于3的版本做不同的路径分割。</p>
+<h2 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h2><h3 id="JS自己修改"><a href="#JS自己修改" class="headerlink" title="JS自己修改"></a>JS自己修改</h3><p>找到：node_modules/hexo-asset-image/index.js</p>
+<p>在代码的函数前加入：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">var version &#x3D; String(hexo.version).split(&#39;.&#39;);</span><br></pre></td></tr></table></figure>
+
+<p>如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">var version &#x3D; String(hexo.version).split(&#39;.&#39;);</span><br><span class="line"></span><br><span class="line">hexo.extend.filter.register(&#39;after_post_render&#39;, function(data)&#123;</span><br><span class="line">  var config &#x3D; hexo.config;</span><br><span class="line">  if(config.post_asset_folder)&#123;</span><br><span class="line">    var link &#x3D; data.permalink;</span><br><span class="line">    var beginPos &#x3D; getPosition(link, &#39;&#x2F;&#39;, 3) + 1;</span><br></pre></td></tr></table></figure>
+
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>002-Spring、SpringMVC和SpringBoot框架</title>
+    <url>/articles/20210109/509d5c14.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<ul>
+<li>Spring<br>Spring是一个开源容器框架，可以接管web层，业务层，dao层，持久层的组件，并且可以配置各种bean,和维护bean与bean之间的关系。其核心就是控制反转(IOC),和面向切面(AOP),简单的说就是一个分层的轻量级开源框架。</li>
+<li>SpringMVC<br>Spring MVC属于SpringFrameWork的后续产品，已经融合在Spring Web Flow里面。SpringMVC是一种web层mvc框架，用于替代servlet（处理|响应请求，获取表单参数，表单校验等。SpringMVC是一个MVC的开源框架，SpringMVC=struts2+spring，springMVC就相当于是Struts2加上Spring的整合。</li>
+<li>SpringBoot<br>Springboot是一个微服务框架，延续了spring框架的核心思想IOC和AOP，简化了应用的开发和部署。Spring Boot是为了简化Spring应用的创建、运行、调试、部署等而出现的，使用它可以做到专注于Spring应用的开发，而无需过多关注XML的配置。提供了一堆依赖打包，并已经按照使用习惯解决了依赖问题—&gt;习惯大于约定。</li>
+</ul>
+<p>spring mvc &lt; spring &lt; springboot</p>
+<a id="more"></a>
+
+<h1 id="spring的原理和组成"><a href="#spring的原理和组成" class="headerlink" title="spring的原理和组成"></a>spring的原理和组成</h1><p>Spring为简化我们的开发工作，封装了一系列的开箱即用的组件功能模块，包括：Spring JDBC 、Spring MVC 、Spring Security、 Spring AOP 、Spring ORM 、Spring Test等。</p>
+<p><img src="/articles/20210109/509d5c14/00201.jpg" alt></p>
+<h1 id="springmvc的原理和组成"><a href="#springmvc的原理和组成" class="headerlink" title="springmvc的原理和组成"></a>springmvc的原理和组成</h1><p>SpringMVC是属于SpringWeb里面的一个功能模块（SpringWebMVC）。专门用来开发SpringWeb项目的一种MVC模式的技术框架实现。其原理如下：</p>
+<p><img src="/articles/20210109/509d5c14/00202.png" alt></p>
+<p>MVC：Model（模型）、VIew（视图）、Controller（控制器）；</p>
+<h2 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@HandlesTypes</span>(&#123;WebApplicationInitializer<span class="class">.<span class="keyword">class</span>&#125;)</span></span><br><span class="line"><span class="class"><span class="title">public</span> <span class="title">class</span> <span class="title">SpringServletContainerInitializer</span> <span class="keyword">implements</span> <span class="title">ServletContainerInitializer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">SpringServletContainerInitializer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onStartup</span><span class="params">(@Nullable Set&lt;Class&lt;?&gt;&gt; webAppInitializerClasses, ServletContext servletContext)</span> <span class="keyword">throws</span> ServletException </span>&#123;</span><br><span class="line">        List&lt;WebApplicationInitializer&gt; initializers = <span class="keyword">new</span> LinkedList();</span><br><span class="line">        Iterator var4;</span><br><span class="line">        <span class="keyword">if</span> (webAppInitializerClasses != <span class="keyword">null</span>) &#123;</span><br><span class="line">            var4 = webAppInitializerClasses.iterator();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">while</span>(var4.hasNext()) &#123;</span><br><span class="line">                Class&lt;?&gt; waiClass = (Class)var4.next();</span><br><span class="line">                <span class="keyword">if</span> (!waiClass.isInterface() &amp;&amp; !Modifier.isAbstract(waiClass.getModifiers()) &amp;&amp; WebApplicationInitializer<span class="class">.<span class="keyword">class</span>.<span class="title">isAssignableFrom</span>(<span class="title">waiClass</span>)) </span>&#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        initializers.add((WebApplicationInitializer)ReflectionUtils.accessibleConstructor(waiClass, <span class="keyword">new</span> Class[<span class="number">0</span>]).newInstance());</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Throwable var7) &#123;</span><br><span class="line">                        <span class="keyword">throw</span> <span class="keyword">new</span> ServletException(<span class="string">"Failed to instantiate WebApplicationInitializer class"</span>, var7);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (initializers.isEmpty()) &#123;</span><br><span class="line">            servletContext.log(<span class="string">"No Spring WebApplicationInitializer types detected on classpath"</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            servletContext.log(initializers.size() + <span class="string">" Spring WebApplicationInitializers detected on classpath"</span>);</span><br><span class="line">            AnnotationAwareOrderComparator.sort(initializers);</span><br><span class="line">            var4 = initializers.iterator();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">while</span>(var4.hasNext()) &#123;</span><br><span class="line">                WebApplicationInitializer initializer = (WebApplicationInitializer)var4.next();</span><br><span class="line">                initializer.onStartup(servletContext);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>通过SpringServletContainerInitializer来负责对容器启动时的相关组件的初始化，在web这个jar包下面有个meta-inf目录，下面有个services目录，下面有个javax.servlet.ServletContainerInitializer文件，里面指明了SpringServletContainerInitializer</li>
+<li>到底要初始化哪些组件是通过Servlet规范中所提供的注解handlesTypes来指定的</li>
+<li>在SpringServletCOntainerInitializer中，其HandlesTYpes注解则明确指定为了WebApplicationInitializer.class类型作为onStartup方法的第一个参数</li>
+<li>在SpringServletContainerIntializer的onStartup方法中，则主要是完成了一些验证与组件装配的工作</li>
+<li>在SpringServletCOntainerInitializer的onStartup方法中，由于某些容器并未遵循Servlet规范，导致虽然明确指定了HandlesTYpe注解的类型为webApplicationInitializer.class类型，但还是可能会存在将一些非法类型传递过来的情况，所以该方法还对传递过来的具体类型进行了细致的判断，只有符合条件的类型才会被纳入到List<webApplicationInitializer>集合中</webApplicationInitializer></li>
+<li>当以上判断完成之后，LIst<WebApplicationInitializer>就是接下来需要进行初始化的组件了，</WebApplicationInitializer></li>
+<li>最后，通过遍历LIst<WebApplicationInitializer>列表，取出其中的每一个webApplicationInitializer对象，调用这些对象的onStartup方法，完成组件的启动初始化工作</WebApplicationInitializer></li>
+</ol>
+<p>小结：SpringServletContainerInitializer在整个初始化过程中，其扮演的角色实际上是委托或者是代理的角色，真正完成初始化工作的是一个个的webApplicationInitializer实现类</p>
+<h1 id="springboot原理和特性"><a href="#springboot原理和特性" class="headerlink" title="springboot原理和特性"></a>springboot原理和特性</h1><h2 id="springboot应用的容器初始化过程"><a href="#springboot应用的容器初始化过程" class="headerlink" title="springboot应用的容器初始化过程"></a>springboot应用的容器初始化过程</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TomcatStarter</span> <span class="keyword">implements</span> <span class="title">ServletContainerInitializer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Log logger = LogFactory.getLog(TomcatStarter<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> ServletContextInitializer[] initializers;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">volatile</span> Exception startUpException;</span><br><span class="line"></span><br><span class="line">	TomcatStarter(ServletContextInitializer[] initializers) &#123;</span><br><span class="line">		<span class="keyword">this</span>.initializers = initializers;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onStartup</span><span class="params">(Set&lt;Class&lt;?&gt;&gt; classes, ServletContext servletContext)</span></span></span><br><span class="line"><span class="function">			<span class="keyword">throws</span> ServletException </span>&#123;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="keyword">for</span> (ServletContextInitializer initializer : <span class="keyword">this</span>.initializers) &#123;</span><br><span class="line">				initializer.onStartup(servletContext);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">			<span class="keyword">this</span>.startUpException = ex;</span><br><span class="line">			<span class="comment">// Prevent Tomcat from logging and re-throwing when we know we can</span></span><br><span class="line">			<span class="comment">// deal with it in the main thread, but log for information here.</span></span><br><span class="line">			<span class="keyword">if</span> (logger.isErrorEnabled()) &#123;</span><br><span class="line">				logger.error(<span class="string">"Error starting Tomcat context. Exception: "</span></span><br><span class="line">						+ ex.getClass().getName() + <span class="string">". Message: "</span> + ex.getMessage());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Exception <span class="title">getStartUpException</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">this</span>.startUpException;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>对于一个springboot应用来说，它并没有使用SpringServletContainerInitializer来进行容器的初始化，而是使用了TomcatStarter进行的。</li>
+<li>TomcatStarter存在三点因素使得它无法通过SPI机制进行初始化：它没有不带参数的构造方法，它的声明并非public，其所在jar包并没有META-INF.services目录，当然也不存在名为javax.servlet.sertvletContainerInitialezer的文件了</li>
+<li>综上，TomcatStarter并非通过SPI机制进行的查找和实例化</li>
+<li>本质上，TOmcatStarter是通过spring boot框架new出来的</li>
+<li>与SpringServletContainerInitializer类似，TomcatStarter在容器的初始化过程中也是扮演着一个委托或者是代理的角色，真正执行的初始化动作实际上是由它所持有的ServletContextInitializer的onStartup方法来完成的</li>
+</ol>
+<h3 id="核心流程图"><a href="#核心流程图" class="headerlink" title="核心流程图"></a>核心流程图</h3><p><img src="/articles/20210109/509d5c14/00205.jpg" alt></p>
+<p>Spring-boot容器启动流程总体可划分为2部分：</p>
+<ol>
+<li><p>执行注解：扫描指定范围下的bean、载入自动配置类对应的bean加载到IOC容器。</p>
+</li>
+<li><p>main方法中具体SpringAppliocation.run()，全流程贯穿SpringApplicationEvent,有6个子类：</p>
+<ul>
+<li>ApplicationEnvironmentPreparedEvent</li>
+<li>ApplicationFailedEvent.class</li>
+<li>ApplicationPreparedEvent.class</li>
+<li>ApplicationReadyEvent.class</li>
+<li>ApplicationStartedEvent.class</li>
+<li>ApplicationStartingEvent.class</li>
+</ul>
+</li>
+</ol>
+<h2 id="Spring-Boot中的一些特点："><a href="#Spring-Boot中的一些特点：" class="headerlink" title="Spring Boot中的一些特点："></a>Spring Boot中的一些特点：</h2><ul>
+<li>创建独立的spring应用。</li>
+<li>嵌入Tomcat, JettyUndertow 而且不需要部署他们。</li>
+<li>提供的“starters” poms来简化Maven配置</li>
+<li>尽可能自动配置spring应用。</li>
+<li>提供生产指标,健壮检查和外部化配置</li>
+<li>绝对没有代码生成和XML配置要求。</li>
+</ul>
+<h1 id="综合分析"><a href="#综合分析" class="headerlink" title="综合分析"></a>综合分析</h1><p><img src="/articles/20210109/509d5c14/00203.png" alt></p>
+<p>springmvc和springboot应用组件之间的对应关系：</p>
+<ol>
+<li>springServletContainerInitializer对应于TomcatStarter</li>
+<li>webApplicationInitializer对应于ServletContextInitializer</li>
+</ol>
+]]></content>
+      <categories>
+        <category>java-spring-bean</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>003-java-验证码Kaptcha</title>
+    <url>/articles/20210108/a53d4816.html</url>
+    <content><![CDATA[<p>摘要：保Kaptcha 是一个可高度配置的实用验证码生成工具，可自由配置的选项如：</p>
+<ul>
+<li>验证码的字体</li>
+<li>验证码字体的大小</li>
+<li>验证码字体的字体颜色</li>
+<li>验证码内容的范围(数字，字母，中文汉字！)</li>
+<li>验证码图片的大小，边框，边框粗细，边框颜色</li>
+<li>验证码的干扰线</li>
+<li>验证码的样式(鱼眼样式、3D、普通模糊、…)<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="Kaptcha-详细配置表"><a href="#Kaptcha-详细配置表" class="headerlink" title="Kaptcha 详细配置表"></a>Kaptcha 详细配置表</h1><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">kaptcha.border	图片边框，合法值：yes , no	yes</span><br><span class="line">kaptcha.border.color	边框颜色，合法值： r,g,b (and optional alpha) 或者 white,black,blue.	black</span><br><span class="line">kaptcha.image.width	图片宽	200</span><br><span class="line">kaptcha.image.height	图片高	50</span><br><span class="line">kaptcha.producer.impl	图片实现类	com.google.code.kaptcha.impl.DefaultKaptcha</span><br><span class="line">kaptcha.textproducer.impl	文本实现类	com.google.code.kaptcha.text.impl.DefaultTextCreator</span><br><span class="line">kaptcha.textproducer.char.string	文本集合，验证码值从此集合中获取	abcde2345678gfynmnpwx</span><br><span class="line">kaptcha.textproducer.char.length	验证码长度	5</span><br><span class="line">kaptcha.textproducer.font.names	字体	Arial, Courier</span><br><span class="line">kaptcha.textproducer.font.size	字体大小	40px.</span><br><span class="line">kaptcha.textproducer.font.color	字体颜色，合法值： r,g,b 或者 white,black,blue.	black</span><br><span class="line">kaptcha.textproducer.char.space	文字间隔	2</span><br><span class="line">kaptcha.noise.impl	干扰实现类	com.google.code.kaptcha.impl.DefaultNoise</span><br><span class="line">kaptcha.noise.color	干扰 颜色，合法值： r,g,b 或者 white,black,blue.	black</span><br><span class="line">kaptcha.obscurificator.impl	</span><br><span class="line">    图片样式：&lt;br &#x2F;&gt;水纹 com.google.code.kaptcha.impl.WaterRipple &lt;br &#x2F;&gt;</span><br><span class="line">    鱼眼 com.google.code.kaptcha.impl.FishEyeGimpy &lt;br &#x2F;&gt;</span><br><span class="line">    阴影 com.google.code.kaptcha.impl.ShadowGimpy </span><br><span class="line">com.google.code.kaptcha.impl.WaterRipple</span><br><span class="line">kaptcha.background.impl	背景实现类	com.google.code.kaptcha.impl.DefaultBackground</span><br><span class="line">kaptcha.background.clear.from	背景颜色渐变，开始颜色	light grey</span><br><span class="line">kaptcha.background.clear.to	背景颜色渐变， 结束颜色	white</span><br><span class="line">kaptcha.word.impl	文字渲染器	com.google.code.kaptcha.text.impl.DefaultWordRenderer</span><br><span class="line">kaptcha.session.key	session key	KAPTCHA_SESSION_KEY</span><br><span class="line">kaptcha.session.date	session date	KAPTCHA_SESSION_DATE</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><h2 id="pom依赖"><a href="#pom依赖" class="headerlink" title="pom依赖"></a>pom依赖</h2><figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.github.penggle<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>kaptcha<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.3.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="bean注入"><a href="#bean注入" class="headerlink" title="bean注入"></a>bean注入</h2><figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 验证码 --&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"captchaProducer"</span> <span class="attr">class</span>=<span class="string">"com.google.code.kaptcha.impl.DefaultKaptcha"</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"config"</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"com.google.code.kaptcha.util.Config"</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">constructor-arg</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">props</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 这里的颜色只支持标准色和rgb颜色，不可使用十六进制的颜色 --&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 是否有边框 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.border"</span>&gt;</span>no<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码文本字符颜色 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.textproducer.font.color"</span>&gt;</span>black<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码图片宽度 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.image.width"</span>&gt;</span>92<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码图片高度 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.image.height"</span>&gt;</span>36<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码文本字符大小 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.textproducer.font.size"</span>&gt;</span>24<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- session中存放验证码的key键 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.session.key"</span>&gt;</span>code<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码噪点颜色 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.noise.color"</span>&gt;</span>white<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码文本字符间距 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.textproducer.char.space"</span>&gt;</span>3<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码样式引擎 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.obscurificator.impl"</span>&gt;</span>com.google.code.kaptcha.impl.ShadowGimpy<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码文本字符长度 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.textproducer.char.length"</span>&gt;</span>4<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!-- 验证码文本字体样式 --&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">prop</span> <span class="attr">key</span>=<span class="string">"kaptcha.textproducer.font.names"</span>&gt;</span>宋体,楷体,微软雅黑<span class="tag">&lt;/<span class="name">prop</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">props</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="java代码"><a href="#java代码" class="headerlink" title="java代码"></a>java代码</h2><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">KaptchaController</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 验证码工具</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    DefaultKaptcha defaultKaptcha;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/get"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">defaultKaptcha</span><span class="params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">byte</span>[] captcha = <span class="keyword">null</span>;</span><br><span class="line">        ByteArrayOutputStream out = <span class="keyword">new</span> ByteArrayOutputStream();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 将生成的验证码保存在session中</span></span><br><span class="line">            String createText = defaultKaptcha.createText();</span><br><span class="line">            request.getSession().setAttribute(<span class="string">"rightCode"</span>, createText);</span><br><span class="line">            BufferedImage bi = defaultKaptcha.createImage(createText);</span><br><span class="line">            ImageIO.write(bi, <span class="string">"jpg"</span>, out);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            response.sendError(HttpServletResponse.SC_NOT_FOUND);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        captcha = out.toByteArray();</span><br><span class="line">        response.setHeader(<span class="string">"Cache-Control"</span>, <span class="string">"no-store"</span>);</span><br><span class="line">        response.setHeader(<span class="string">"Pragma"</span>, <span class="string">"no-cache"</span>);</span><br><span class="line">        response.setDateHeader(<span class="string">"Expires"</span>, <span class="number">0</span>);</span><br><span class="line">        response.setContentType(<span class="string">"image/jpeg"</span>);</span><br><span class="line">        ServletOutputStream sout = response.getOutputStream();</span><br><span class="line">        sout.write(captcha);</span><br><span class="line">        sout.flush();</span><br><span class="line">        sout.close();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 校对验证码</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> request</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> response</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@RequestMapping</span>(value = <span class="string">"/check"</span>, method = RequestMethod.GET)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> ResponseEntity <span class="title">check</span><span class="params">(HttpServletRequest request, HttpServletResponse response)</span> </span>&#123;</span><br><span class="line">        ModelAndView model = <span class="keyword">new</span> ModelAndView();</span><br><span class="line">        String rightCode = (String) request.getSession().getAttribute(<span class="string">"rightCode"</span>);</span><br><span class="line">        String tryCode = request.getParameter(<span class="string">"tryCode"</span>);</span><br><span class="line">        System.out.println(<span class="string">"rightCode:"</span> + rightCode + <span class="string">" ———— tryCode:"</span> + tryCode);</span><br><span class="line">        <span class="keyword">if</span> (!rightCode.equals(tryCode)) &#123;</span><br><span class="line">            <span class="keyword">return</span> ResponseEntity.ok(<span class="keyword">new</span> AbstractMap.SimpleEntry(<span class="keyword">false</span>, <span class="string">"验证码错误,请再输一次!"</span>));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> ResponseEntity.ok(<span class="keyword">new</span> AbstractMap.SimpleEntry(<span class="keyword">true</span>, <span class="string">"ok"</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>java-base</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>001-web容器、Spring容器、SpringMVC容器的关系</title>
+    <url>/articles/20210108/1c366cf8.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<ul>
+<li>springmvc和spring都是容器，容器就是管理对象的地方，例如Tomcat，就是管理servlet对象的。</li>
+<li>springMVC容器和spring容器，就是管理bean对象的地方，springmvc就是管理controller对象的容器，spring就是管理service和dao的容器。</li>
+<li>一般在springmvc的配置文件里配置的扫描路径就是controller的路径，而spring的配置文件里自然配的就是service和dao的路径。<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="Servlet"><a href="#Servlet" class="headerlink" title="Servlet"></a>Servlet</h1><p>Servlet是JavaEE规范的一种，主要是为了扩展Java作为Web服务的功能，统一接口。由其他内部厂商如tomcat，jetty内部实现web的功能。如一个http请求到来：<br>容器将请求封装为servlet中的HttpServletRequest对象，调用init（），service（）等方法输出response,由容器包装为httpresponse返回给客户端的过程。</p>
+<p><img src="/articles/20210108/1c366cf8/00103.webp" alt></p>
+<p>在Servlet规范中，提供了ServletContext,ServletRequest,ServletResponse,Filter等诸多接口。<br>基本类图和调用关系如下：<br><img src="/articles/20210108/1c366cf8/00104.webp" alt></p>
+<p><img src="/articles/20210108/1c366cf8/00105.webp" alt></p>
+<p>接口的作用，生命周期和使用：</p>
+<h2 id="Servlet-1"><a href="#Servlet-1" class="headerlink" title="Servlet"></a>Servlet</h2><ul>
+<li>作用：用于处理请求（service方法）</li>
+<li>生命周期：加载实例化、初始化、处理客户端请求、销毁。<br> 加载实例化主要是交由web容器完成，而其他三个阶段则对应Servlet的init、service和destroy方法。<br> Servlet对象被创建出来后需要对其进行初始化操作，初始化工作可以放在以ServletConfig类型为参数的ini方法中，<br> ServletConfig为web.xml配置文件中配置的对应的初始化参数，由web容器完成web.xml配置读取并封装成ServletConfig对象；<br> 当Servlet初始化完成后，开始接受客户端的请求，这些请求被封装成ServletRequest类型的请求对象和ServletResponse类型的响应对象，<br> 通过service方法处理请求并响应客户端；当一个Servlet需要从web容器中移除时，就会调用对应的destroy方法用于释放所有的资源，<br> 并且调用destroy方法之前要保证所有正在执行service方法的线程都完成执行。</li>
+<li>使用：servlet规范中定义了GenericServlet接口，定义了通用，协议独立的servlet,他们的子接口HttpServlet就是用来处理http请求的Servlet,根据http协议扩展了不同方式的请求处理方法，如doPost,doGet.</li>
+</ul>
+<h2 id="ServletContext"><a href="#ServletContext" class="headerlink" title="ServletContext"></a>ServletContext</h2><p>Servlet与Servlet容器之间直接通信的接口,一个web应用只独有一个ServletContext.</p>
+<ul>
+<li>作用：<ul>
+<li>用于在web应用范围内存取共享数据,如setAttribute(String name, Object object)，getAttribute()</li>
+<li>获取当前Web应用的资源，如getContextPath()</li>
+<li>获取服务器端的文件系统资源，如getResourceAsStream()</li>
+<li>输出日志，如log(String msg) ： 向Servlet的日志文件中写日志</li>
+<li>在具体ServletContext 实现中，提供了添加Servlet，Filter,Listener到ServletContext里面的方法</li>
+</ul>
+</li>
+<li>生命周期：和web应用的生命周期一样</li>
+<li>使用：一般由web容器实现，如tomcat</li>
+</ul>
+<h2 id="Filter"><a href="#Filter" class="headerlink" title="Filter"></a>Filter</h2><ul>
+<li>作用：用于Web容器对请求和响应做统一处理，例如统一改变HTTP请求内容和响应内容，它可以作用在某个Servlet或一组Servlet</li>
+<li>生命周期：加载实例化、初始化（init）、处理客户端请求(doFilter)、销毁(destroy)</li>
+<li>使用：在doFilter方法中调用chain.doFilter(request, response)之前的代码可用来做一些请求校验，之后代码可用来做一些响应包装。</li>
+</ul>
+<h2 id="ServletRequest"><a href="#ServletRequest" class="headerlink" title="ServletRequest"></a>ServletRequest</h2><p>封装了客户端请求的所有信息，如果使用HTTP协议通信则包括HTTP协议的请求行和请求头。HTTP协议对应请求对象类型是HttpServletRequest类</p>
+<ul>
+<li>作用：<ul>
+<li>获取HTTP协议请求头部，如getHeader、getHeaders</li>
+<li>获取请求路径，如getContextPath、getServletPath</li>
+<li>获取cookie的方法，如getCookies</li>
+<li>获取session的方法，如getSession,session是存储在服务器内存中，返回响应的时候会写入浏览器一个sessionId的cookie，用来标示这一个会话</li>
+</ul>
+</li>
+<li>生命周期：只在servlet的service方法或过滤器的doFilter方法作用域内有效，除非启用了异步处理调用了ServletRequest接口对象的startAsync方法，此时request对象会一直有效，直到调用AsyncContext的complete方法。另外，web容器通常会为了性能而不销毁ServletRequest接口的对象，而是重复利用ServletRequest接口对象。</li>
+</ul>
+<h2 id="ServletResponse"><a href="#ServletResponse" class="headerlink" title="ServletResponse"></a>ServletResponse</h2><p>Servlet通过ServletResponse对象来生成响应结果。</p>
+<ul>
+<li>作用：定义了一系列与生成响应结果相关的方法，如:<ul>
+<li>setCharacterEncoding() —— 设置相应正文的字符编码。响应正文的默认字符编码为ISO-8859-1；</li>
+<li>setContentLength() —— 设置响应正文的长度；</li>
+<li>setBufferSize() —— 设置用于存放响应正文数据的缓冲区的大小</li>
+<li>getBufferSize() —— 获得用于存放响应正文数据的缓冲区的大小；</li>
+<li>reset() —— 清空缓冲区内的正文数据，并且清空响应状态代码及响应头</li>
+<li>resetBuffer() —— 仅仅清空缓冲区的正文数据，不清空响应状态代码及响应头；</li>
+<li>flushBuffer() —— 强制性地把缓冲区内的响应正文数据发送到客户端；</li>
+<li>isCommitted() —— 返回一个boolean类型的值，如果为true，表示缓冲区内的数据已经提交给客户，即数据已经发送到客户端；</li>
+<li>getOutputStream() —— 返回一个ServletOutputStream对象，Servlet用它来输出二进制的正文数据；</li>
+<li>getWriter() —— 返回一个PrinterWriter对象，Servlet用它来输出字符串形式的正文数据；</li>
+</ul>
+</li>
+</ul>
+<p>为了提高输出数据的效率，ServletOutputStream和PrintWriter首先把数据写到缓冲区内。当缓冲区内的数据被提交给客户后，ServletResponse的isComitted方法返回true。</p>
+<ul>
+<li>生命周期：ServletResponse接口只在Servlet的service方法或过滤器的doFilter方法作用域内有效，除非它关联的ServletResponse接口调用了startAsync方法启用异步处理，此时ServletResponse接口会一直有效，直到调用AsyncContext的complete方法。另外，web容器通常会为了性能而不销毁ServletResponse接口对象，而是重复利用ServletResponse接口对象。</li>
+</ul>
+<h2 id="Listener"><a href="#Listener" class="headerlink" title="Listener"></a>Listener</h2><p>当触发某个事件，如servlet context初始化完成时，需要做一些事情，servlet规范中定义了若干个Listener用于监听这些事件。</p>
+<ul>
+<li>作用：用于对特定对象的生命周期和特定事件进行响应处理，主要用于对Session,request,context等进行监控。<ul>
+<li>监听域对象自身的创建和销毁的事件监听器<ul>
+<li>ServletContextListener：ServletContext的创建和销毁：contextInitialized方法和contextDestroyed方法，作为定时器、加载全局属性对象、创建全局数据库连接、加载缓存信息等</li>
+<li>HttpSessionListener：HttpSession的创建和销毁：sessionCreated和sessionDestroyed方法，可用于统计在线人数、记录访问日志等</li>
+<li>ServletRequestListener： ServletRequest的创建和销毁：requestInitialized和requestDestroyed方法</li>
+</ul>
+</li>
+<li>监听域对象中的属性的增加和删除的事件监听器<ul>
+<li>ServletContextAttributeListener、HttpSessionAttributeListener、ServletRequestAttributeListener接口。</li>
+<li>实现方法：attributeAdded、attributeRemoved、attributeReplaced</li>
+</ul>
+</li>
+<li>监听绑定到HttpSeesion域中的某个对象的状态的事件监听器(创建普通JavaBean)<ul>
+<li>HttpSession中的对象状态：绑定→解除绑定；钝化→活化</li>
+<li>实现接口及方法：HttpSessionBindingListener接口(valueBound和valueUnbound方法)、HttpSessionActivationListener接口(sessionWillPassivate和sessionDidActivate方法)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="web容器-tomcat"><a href="#web容器-tomcat" class="headerlink" title="web容器-tomcat"></a>web容器-tomcat</h1><h2 id="web容器使用spring管理bean"><a href="#web容器使用spring管理bean" class="headerlink" title="web容器使用spring管理bean"></a>web容器使用spring管理bean</h2><p>  web容器是管理servlet，以及监听器(Listener)和过滤器(Filter)的。这些都是在web容器的掌控范围里。但他们不在spring和springmvc的掌控范围里。<br>  因此，我们无法在这些类中直接使用Spring注解的方式来注入我们需要的对象，是无效的，web容器是无法识别的。</p>
+<p>  但我们有时候又确实会有这样的需求，比如在容器启动的时候，做一些验证或者初始化操作，这时可能会在监听器里用到bean对象；又或者需要定义一个过滤器做一些拦截操作，也可能会用到bean对象。<br>  那么在这些地方怎么获取spring的bean对象呢？下面我提供两个方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">contextInitialized</span><span class="params">(ServletContextEvent sce)</span> </span>&#123;</span><br><span class="line">　　ApplicationContext context = (ApplicationContext) sce.getServletContext().getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE); </span><br><span class="line">　　UserService userService = (UserService) context.getBean(<span class="string">"userService"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">contextInitialized</span><span class="params">(ServletContextEvent sce)</span> </span>&#123;</span><br><span class="line">　　WebApplicationContext webApplicationContext = WebApplicationContextUtils.getWebApplicationContext(sce.getServletContext()); </span><br><span class="line">　　UserService userService = (UserService) webApplicationContext.getBean(<span class="string">"userService"</span>); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意：以上代码有一个前提，那就是servlet容器在实例化ConfigListener并调用其方法之前，要确保spring容器已经初始化完毕！而spring容器的初始化也是由Listener（ContextLoaderListener）完成，<br>因此只需在web.xml中先配置初始化spring容器的Listener，然后在配置自己的Listener。</p>
+<h2 id="Servlet、spring核心关系图"><a href="#Servlet、spring核心关系图" class="headerlink" title="Servlet、spring核心关系图"></a>Servlet、spring核心关系图</h2><p><img src="/articles/20210108/1c366cf8/00101.jpg" alt></p>
+<ul>
+<li>web容器中有servlet容器，spring项目部署后存在spring容器和springmvc容器。其中spring控制service层和dao层的bean对象。springmvc容器控制controller层bean对象。</li>
+<li>servlet容器控制servlet对象。项目启动是，首先 servlet初始化，初始化过程中通过web.xml中spring的配置加载spring配置，初始化spring容器和springmvc容器。待容器加载完成。servlet初始化完成，则完成启动。</li>
+<li>HTTP请求到达web容器后，会到达Servlet容器，容器通过分发器分发到具体的spring的Controller层。执行业务操作后返回结果。</li>
+</ul>
+<p><img src="/articles/20210108/1c366cf8/00102.jpg" alt>   </p>
+<p>小结：</p>
+<ul>
+<li>Tomcat在启动时给每个Web应用创建一个全局的上下文环境，这个上下文就是ServletContext，其为后面的Spring容器提供宿主环境。</li>
+<li>Tomcat在启动过程中触发容器初始化事件，Spring的ContextLoaderListener会监听到这个事件，它的contextInitialized方法会被调用，在这个方法中，Spring会初始化全局的Spring根容器，这个就是Spring的IoC容器，IoC容器初始化完毕后，Spring将其存储到ServletContext中，便于以后来获取。</li>
+<li>Tomcat在启动过程中还会扫描Servlet，一个Web应用中的Servlet可以有多个，以SpringMVC中的DispatcherServlet为例，这个Servlet实际上是一个标准的前端控制器，用以转发、匹配、处理每个Servlet请求。</li>
+<li>Servlet一般会延迟加载，当第一个请求达到时，Tomcat&amp;Jetty发现DispatcherServlet还没有被实例化，就调用DispatcherServlet的init方法，DispatcherServlet在初始化的时候会建立自己的容器，叫做SpringMVC 容器，用来持有Spring MVC相关的Bean。同时，Spring MVC还会通过ServletContext拿到Spring根容器，并将Spring根容器设为SpringMVC容器的父容器，请注意，Spring MVC容器可以访问父容器中的Bean，但是父容器不能访问子容器的Bean， 也就是说Spring根容器不能访问SpringMVC容器里的Bean。说的通俗点就是，在Controller里可以访问Service对象，但是在Service里不可以访问Controller对象。   </li>
+</ul>
+<p>tomcat等容器其实就是web服务的实现，暴露端口，按照特定资源URL找到处理的servlet。然后处理请求。<br>web.xml其实tomcat在启动时候需要加载的配置欢迎页、Filter、Listener、Servlet等类的定义。当然不止加载这些东西，这些东西是需要加载到JVM堆内存中实例化的对象。</p>
+<h2 id="Tomcat启动时加载资源三个阶段"><a href="#Tomcat启动时加载资源三个阶段" class="headerlink" title="Tomcat启动时加载资源三个阶段"></a>Tomcat启动时加载资源三个阶段</h2><ul>
+<li>第一阶段：JVM相关资源<ul>
+<li>$JAVA_HOME/jre/lib/ext/*.jar</li>
+<li>系统classpath环境变量中的<em>.jar和</em>.class </li>
+</ul>
+</li>
+<li>第二阶段：Tomcat自身相关资源<ul>
+<li>$CATALINA_HOME/common/classes/*.class  </li>
+<li>$CATALINA_HOME/commons/endorsed/*.jar   </li>
+<li>$CATALINA_HOME/commons/i18n/*.jar   </li>
+<li>$CATALINA_HOME/common/lib/*.jar   </li>
+<li>$CATALINA_HOME/server/classes/*.class   </li>
+<li>$CATALINA_HOME/server/lib/*.jar   </li>
+<li>$CATALINA_BASE/shared/classes/*.class   </li>
+<li>$CATALINA_BASE/shared/lib/*.jar </li>
+</ul>
+</li>
+<li>第三阶段：Web应用相关资源<ul>
+<li>具体应用的webapp目录: /WEB-INF/classes/*.class   </li>
+<li>具体应用的webapp: /WEB-INF/lib/*.jar<br>在tomcat目录${CATALINA_HOME}/conf下和web应用目录${CATALINA_HOME}/webapps/WebDemo(WebDemo为web应用名)下都有web.xml这个文件，但是内容不一样。</li>
+</ul>
+</li>
+</ul>
+<p>Tomcat在激活、加载、部署web应用时，会解析加载${CATALINA_HOME}/conf目录下所有web应用通用的web.xml，然后解析加载web应用目录中的WEB-INF/web.xml。<br>其实根据他们的位置，我们就可以知道，conf/web.xml文件中的设定会应用于所有的web应用程序，而某些web应用程序的WEB-INF/web.xml中的设定只应用于该应用程序本身。</p>
+<p>如果没有WEB-INF/web.xml文件，tomcat会输出找不到的消息，但仍然会部署并使用web应用程序，servlet规范的作者想要实现一种能迅速并简易设定新范围的方法，以用作测试，因此，这个web.xml并不是必要的，不过通常最好还是让每一个上线的web应用程序都有一个自己的WEB-INF/web.xml。</p>
+<p>web.xml中可以配置web应用名称，图标，描述，ServletContext上下文参数，Fliter配置，Listener配置，Servlet配置，会话超时配置，MIME类型配置等等。</p>
+<h1 id="spring和springmvc"><a href="#spring和springmvc" class="headerlink" title="spring和springmvc"></a>spring和springmvc</h1><h2 id="springmvc配置"><a href="#springmvc配置" class="headerlink" title="springmvc配置"></a>springmvc配置</h2><p>spring-mvc.xml</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"com.github.bjlhx15.controller"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="spring配置"><a href="#spring配置" class="headerlink" title="spring配置"></a>spring配置</h2><p>applicationContext-service.xml</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 扫描包加载Service实现类 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"com.github.bjlhx15.service"</span>&gt;</span><span class="tag">&lt;/<span class="name">context:component-scan</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!--或者--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"com.github.bjlhx15"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">context:exclude-filter</span> <span class="attr">type</span>=<span class="string">"annotation"</span> <span class="attr">expression</span>=<span class="string">"org.springframework.stereotype.Controller"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">context:component-scan</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="spring容器和springmvc容器关系"><a href="#spring容器和springmvc容器关系" class="headerlink" title="spring容器和springmvc容器关系"></a>spring容器和springmvc容器关系</h2><pre><code>spring容器和springmvc容器的关系是父子容器的关系。   </code></pre><ul>
+<li><p>spring容器是父容器，springmvc是子容器。在子容器里可以访问父容器里的对象，但是在父容器里不可以访问子容器的对象，</p>
+</li>
+<li><p>说的通俗点就是，在controller里可以访问service对象，但是在service里不可以访问controller对象</p>
+<p>所有的bean，都是被spring或者springmvc容器管理的，他们可以直接注入。<br>然后springMVC的拦截器也是springmvc容器管理的，所以在springmvc的拦截器里，可以直接注入bean对象。如</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">mvc:interceptors</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">mvc:interceptor</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">mvc:mapping</span> <span class="attr">path</span>=<span class="string">"/employee/**"</span> &gt;</span><span class="tag">&lt;/<span class="name">mvc:mapping</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"com.smart.core.shiro.LoginInterceptor"</span> &gt;</span><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">mvc:interceptor</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">mvc:interceptors</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="web容器和spring容器结合"><a href="#web容器和spring容器结合" class="headerlink" title="web容器和spring容器结合"></a>web容器和spring容器结合</h1><h2 id="web容器servlet到springmvc的servlet"><a href="#web容器servlet到springmvc的servlet" class="headerlink" title="web容器servlet到springmvc的servlet"></a>web容器servlet到springmvc的servlet</h2><p><img src="/articles/20210108/1c366cf8/00106.webp" alt></p>
+<p>其中FrameworkServlet会和Spring的ApplicationContext联系起来，它实现了ApplicationContextAware接口。</p>
+<p><img src="/articles/20210108/1c366cf8/00107.webp" alt> </p>
+]]></content>
+      <categories>
+        <category>java-spring-bean</category>
+      </categories>
+  </entry>
+  <entry>
     <title>002-springboot测试-Mockito服务层测试</title>
     <url>/articles/20210107/1a42b9be.html</url>
     <content><![CDATA[<p>摘要：002-springboot测试-Mockito服务层测试</p>
@@ -142,7 +518,7 @@
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">byte[] bytes &#x3D; new byte[] &#123;1, 2&#125;;  </span><br><span class="line">mockMvc.perform(fileUpload(&quot;&#x2F;user&#x2F;&#123;id&#125;&#x2F;icon&quot;, 1L).file(&quot;icon&quot;, bytes)) &#x2F;&#x2F;执行文件上传  </span><br><span class="line">        .andExpect(model().attribute(&quot;icon&quot;, bytes)) &#x2F;&#x2F;验证属性相等性  </span><br><span class="line">        .andExpect(view().name(&quot;success&quot;)); &#x2F;&#x2F;验证视图</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>json验证</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mockMvc.perform(post(&quot;&#x2F;user&quot;)  </span><br><span class="line">        .contentType(MediaType.APPLICATION_JSON).content(requestBody)  </span><br><span class="line">        .accept(MediaType.APPLICATION_JSON)) &#x2F;&#x2F;执行请求  </span><br><span class="line">        .andExpect(content().contentType(MediaType.APPLICATION_JSON)) &#x2F;&#x2F;验证响应contentType  </span><br><span class="line">        .andExpect(jsonPath(&quot;$.id&quot;).value(1)); &#x2F;&#x2F;使用Json path验证JSON</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mockMvc.perform(post(&quot;&#x2F;user&quot;)  </span><br><span class="line">        .contentType(MediaType.APPLICATION_JSON).content(requestBody)  </span><br><span class="line">        .accept(MediaType.APPLICATION_JSON)) &#x2F;&#x2F;执行请求  </span><br><span class="line">        .andExpect(content().contentType(MediaType.APPLICATION_JSON)) &#x2F;&#x2F;验证响应contentType  </span><br><span class="line">        .andExpect(MockMvcResultMatchers.jsonPath(&quot;$.id&quot;).value(1)); &#x2F;&#x2F;使用Json path验证JSON</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>异步测试</p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;Callable  </span><br><span class="line">    MvcResult result &#x3D; mockMvc.perform(get(&quot;&#x2F;user&#x2F;async1?id&#x3D;1&amp;name&#x3D;zhang&quot;)) &#x2F;&#x2F;执行请求  </span><br><span class="line">            .andExpect(request().asyncStarted())  </span><br><span class="line">            .andExpect(request().asyncResult(CoreMatchers.instanceOf(User.class))) &#x2F;&#x2F;默认会等10秒超时  </span><br><span class="line">            .andReturn();  </span><br><span class="line">      </span><br><span class="line">    mockMvc.perform(asyncDispatch(result))  </span><br><span class="line">            .andExpect(status().isOk())  </span><br><span class="line">            .andExpect(content().contentType(MediaType.APPLICATION_JSON))  </span><br><span class="line">            .andExpect(jsonPath(&quot;$.id&quot;).value(1));</span><br></pre></td></tr></table></figure></li>
@@ -175,14 +551,6 @@
     <content><![CDATA[<p>摘要：保存成两个小数</p>
 <a id="more"></a>
 
-<h1 id="几种方式"><a href="#几种方式" class="headerlink" title="几种方式"></a>几种方式</h1><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> roundLong = <span class="number">8710</span>;</span><br><span class="line">System.out.println((roundLong * <span class="number">0.01</span>));</span><br><span class="line">System.out.println((roundLong /<span class="number">100.0</span>));</span><br><span class="line"><span class="comment">// 方式一、DecimalFormat</span></span><br><span class="line">DecimalFormat df = <span class="keyword">new</span> DecimalFormat(<span class="string">".00"</span>);</span><br><span class="line">System.out.println(df.format(roundLong * <span class="number">0.01</span>));</span><br><span class="line"><span class="comment">// 方式二、String.format</span></span><br><span class="line">System.out.println(String.format(<span class="string">"%.2f"</span>, (roundLong * <span class="number">0.01</span>)));</span><br><span class="line"><span class="comment">// 方式三、BigDecimal</span></span><br><span class="line">BigDecimal bg = <span class="keyword">new</span> BigDecimal(roundLong * <span class="number">0.01</span>);</span><br><span class="line"><span class="keyword">double</span> d3 = bg.setScale(<span class="number">2</span>, BigDecimal.ROUND_HALF_UP).doubleValue();</span><br><span class="line">System.out.println(d3);</span><br><span class="line"><span class="comment">// 方式四：通过NumberFormat类实现</span></span><br><span class="line">NumberFormat nf = NumberFormat.getNumberInstance();</span><br><span class="line">nf.setMaximumFractionDigits(<span class="number">2</span>);</span><br><span class="line">System.out.println(nf.format(roundLong * <span class="number">0.01</span>));</span><br></pre></td></tr></table></figure>
-<p>输出：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">87.10000000000001</span><br><span class="line">87.1</span><br><span class="line">87.10</span><br><span class="line">87.10</span><br><span class="line">87.1</span><br><span class="line">87.1</span><br></pre></td></tr></table></figure>
-
-<h1 id="浮点类型精度问题"><a href="#浮点类型精度问题" class="headerlink" title="浮点类型精度问题"></a>浮点类型精度问题</h1><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> t2 = <span class="number">8710</span>;</span><br><span class="line">System.out.println((t2 * <span class="number">0.1</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.01</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.001</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.0001</span>));</span><br><span class="line"></span><br><span class="line">t2 = <span class="number">870</span>;</span><br><span class="line">System.out.println((t2 * <span class="number">0.1</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.01</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.001</span>));</span><br><span class="line">System.out.println((t2 * <span class="number">0.0001</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">double</span> number1 = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">double</span> number2 = <span class="number">20.2</span>;</span><br><span class="line"><span class="keyword">double</span> number3 = <span class="number">300.03</span>;</span><br><span class="line"><span class="keyword">double</span> result = number1 + number2 + number3;</span><br><span class="line">System.out.println(result);</span><br></pre></td></tr></table></figure>
-<p>输出</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">871.0</span><br><span class="line">87.10000000000001</span><br><span class="line">8.71</span><br><span class="line">0.871</span><br><span class="line">87.0</span><br><span class="line">8.700000000000001</span><br><span class="line">0.87</span><br><span class="line">0.08700000000000001</span><br><span class="line">321.22999999999996</span><br></pre></td></tr></table></figure>
-<p>此处涉及，计算机浮点设计问题，详细可查阅资料。<br>float和double只能用来做科学计算或者是工程计算，在商业计算中我们要用 java.math.BigDecimal。<br>主要是说明应用系统设计、数据库设计，商业计算标准金额时，请尽量避开浮点直接运算，推荐 long、BigDecimal等其他方式进行</p>
 ]]></content>
       <categories>
         <category>java-base</category>
@@ -194,7 +562,7 @@
     <content><![CDATA[<p>摘要：“interface”。容易被理解、使用的接口，是开发良好面向对象软件的关键</p>
 <a id="more"></a>
 
-<h1 id=""><a href="#" class="headerlink" title=""></a></h1><p>12.1 Tease Apart Inheritance （梳理并分解继承体系） 362<br>12.2 Convert Procedural Design to Objects （将过程化设计转化为对象设计） 368<br>12.3 Separate Domain from Presentation （将领域和表述/显示分离） 370<br>12.4 Extract Hierarchy （提炼继承体系） 375</p>
+<h1 id><a href="#" class="headerlink" title></a></h1><p>12.1 Tease Apart Inheritance （梳理并分解继承体系） 362<br>12.2 Convert Procedural Design to Objects （将过程化设计转化为对象设计） 368<br>12.3 Separate Domain from Presentation （将领域和表述/显示分离） 370<br>12.4 Extract Hierarchy （提炼继承体系） 375</p>
 ]]></content>
       <categories>
         <category>重构</category>
@@ -2863,23 +3231,6 @@
       </categories>
   </entry>
   <entry>
-    <title>009-特征提取算法-BRIEF-检测斑点</title>
-    <url>/articles/20200229/6944d2af.html</url>
-    <content><![CDATA[<p>摘要：009-特征提取算法-BRIEF-检测斑点</p>
-<a id="more"></a>
-
-<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>并不是特征检测算法，它是一个描述符。关键点描述符是图像的一种表示，因为可以比较两个图像的关键点描述符，并找到他们的共同之处，因此可以作为特征匹配的一种方法。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># -*- coding: UTF-8 -*-</span></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">a</span><span class="params">(imgPath)</span>:</span></span><br><span class="line">    img = cv2.imread(imgPath)</span><br><span class="line">    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)</span><br><span class="line">    gray = np.float32(gray)</span><br><span class="line">    dst = cv2.cornerHarris(gray,<span class="number">2</span>,<span class="number">3</span>,<span class="number">0.04</span>)</span><br><span class="line">    dst = cv2.dilate(dst,<span class="literal">None</span>)</span><br><span class="line">    img[dst&gt;<span class="number">0.01</span> * dst.max()] = [<span class="number">0</span>,<span class="number">0</span>,<span class="number">255</span>]</span><br><span class="line">    cv2.imshow(<span class="string">'corners'</span>,img)</span><br><span class="line">    cv2.imwrite(<span class="string">'corners.png'</span>,img)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">0</span>) &amp; <span class="number">0xff</span> == <span class="number">27</span>:</span><br><span class="line">        cv2.destroyALLWindows()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="keyword">print</span> (<span class="string">'---------检测角点------------'</span>)</span><br><span class="line">    a(<span class="string">"/Users/lihongxu6/IdeaProjectsGit/python-algorithm/tests/feature/a.jpg"</span>)</span><br></pre></td></tr></table></figure>
-
-
-
-
-]]></content>
-      <categories>
-        <category>python-algorithm</category>
-      </categories>
-  </entry>
-  <entry>
     <title>011-特征提取算法-边缘检测</title>
     <url>/articles/20200229/d3acbf6a.html</url>
     <content><![CDATA[<p>摘要：011-特征提取算法-边缘检测</p>
@@ -2927,6 +3278,23 @@
       </categories>
   </entry>
   <entry>
+    <title>009-特征提取算法-BRIEF-检测斑点</title>
+    <url>/articles/20200229/6944d2af.html</url>
+    <content><![CDATA[<p>摘要：009-特征提取算法-BRIEF-检测斑点</p>
+<a id="more"></a>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>并不是特征检测算法，它是一个描述符。关键点描述符是图像的一种表示，因为可以比较两个图像的关键点描述符，并找到他们的共同之处，因此可以作为特征匹配的一种方法。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># -*- coding: UTF-8 -*-</span></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">a</span><span class="params">(imgPath)</span>:</span></span><br><span class="line">    img = cv2.imread(imgPath)</span><br><span class="line">    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)</span><br><span class="line">    gray = np.float32(gray)</span><br><span class="line">    dst = cv2.cornerHarris(gray,<span class="number">2</span>,<span class="number">3</span>,<span class="number">0.04</span>)</span><br><span class="line">    dst = cv2.dilate(dst,<span class="literal">None</span>)</span><br><span class="line">    img[dst&gt;<span class="number">0.01</span> * dst.max()] = [<span class="number">0</span>,<span class="number">0</span>,<span class="number">255</span>]</span><br><span class="line">    cv2.imshow(<span class="string">'corners'</span>,img)</span><br><span class="line">    cv2.imwrite(<span class="string">'corners.png'</span>,img)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">0</span>) &amp; <span class="number">0xff</span> == <span class="number">27</span>:</span><br><span class="line">        cv2.destroyALLWindows()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="keyword">print</span> (<span class="string">'---------检测角点------------'</span>)</span><br><span class="line">    a(<span class="string">"/Users/lihongxu6/IdeaProjectsGit/python-algorithm/tests/feature/a.jpg"</span>)</span><br></pre></td></tr></table></figure>
+
+
+
+
+]]></content>
+      <categories>
+        <category>python-algorithm</category>
+      </categories>
+  </entry>
+  <entry>
     <title>007-特征提取算法-SURF-检测斑点</title>
     <url>/articles/20200229/4550d3a.html</url>
     <content><![CDATA[<p>摘要：005-特征提取算法-Harris-检测角点</p>
@@ -2951,7 +3319,7 @@
 
 <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>Harris的cornerHarris函数可以很好的检测角点，并且在图像旋转的情况下也能检测到，然而减少或者增加图像的大小，可能会丢失图像的某些部分，甚至会增加角点的质量。所以采用一种与图像比例变化无关的角点检测方法来解决特特征损失现象！也就是尺度不变特征变换（SIFT）。</p>
 <p>尺度不变特征变换匹配算法<br>Scale Invariant Feature Transform(SIFT)</p>
-<h2 id=""><a href="#" class="headerlink" title=""></a></h2><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># -*- coding: UTF-8 -*-</span></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">a</span><span class="params">(imgPath)</span>:</span></span><br><span class="line">    img = cv2.imread(imgPath)</span><br><span class="line">    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)</span><br><span class="line">    gray = np.float32(gray)</span><br><span class="line">    dst = cv2.cornerHarris(gray,<span class="number">2</span>,<span class="number">3</span>,<span class="number">0.04</span>)</span><br><span class="line">    dst = cv2.dilate(dst,<span class="literal">None</span>)</span><br><span class="line">    img[dst&gt;<span class="number">0.01</span> * dst.max()] = [<span class="number">0</span>,<span class="number">0</span>,<span class="number">255</span>]</span><br><span class="line">    cv2.imshow(<span class="string">'corners'</span>,img)</span><br><span class="line">    cv2.imwrite(<span class="string">'corners.png'</span>,img)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">0</span>) &amp; <span class="number">0xff</span> == <span class="number">27</span>:</span><br><span class="line">        cv2.destroyALLWindows()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="keyword">print</span> (<span class="string">'---------检测角点------------'</span>)</span><br><span class="line">    a(<span class="string">"/Users/lihongxu6/IdeaProjectsGit/python-algorithm/tests/feature/a.jpg"</span>)</span><br></pre></td></tr></table></figure>
+<h2 id><a href="#" class="headerlink" title></a></h2><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># -*- coding: UTF-8 -*-</span></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">a</span><span class="params">(imgPath)</span>:</span></span><br><span class="line">    img = cv2.imread(imgPath)</span><br><span class="line">    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)</span><br><span class="line">    gray = np.float32(gray)</span><br><span class="line">    dst = cv2.cornerHarris(gray,<span class="number">2</span>,<span class="number">3</span>,<span class="number">0.04</span>)</span><br><span class="line">    dst = cv2.dilate(dst,<span class="literal">None</span>)</span><br><span class="line">    img[dst&gt;<span class="number">0.01</span> * dst.max()] = [<span class="number">0</span>,<span class="number">0</span>,<span class="number">255</span>]</span><br><span class="line">    cv2.imshow(<span class="string">'corners'</span>,img)</span><br><span class="line">    cv2.imwrite(<span class="string">'corners.png'</span>,img)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">0</span>) &amp; <span class="number">0xff</span> == <span class="number">27</span>:</span><br><span class="line">        cv2.destroyALLWindows()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="keyword">print</span> (<span class="string">'---------检测角点------------'</span>)</span><br><span class="line">    a(<span class="string">"/Users/lihongxu6/IdeaProjectsGit/python-algorithm/tests/feature/a.jpg"</span>)</span><br></pre></td></tr></table></figure>
 
 
 
@@ -3566,7 +3934,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <p>DCT变换的全称是离散余弦变换(Discrete Cosine Transform)，主要用于将数据或图像的压缩，能够将空域的信号转换到频域上，具有良好的去相关性的性能。DCT变换本身是无损的，但是在图像编码等领域给接下来的量化、哈弗曼编码等创造了很好的条件，同时，由于DCT变换时对称的，所以，我们可以在量化编码后利用DCT反变换，在接收端恢复原始的图像信息。对原始图像进行离散余弦变换，变换后DCT系数能量主要集中在左上角，其余大部分系数接近于零，DCT具有适用于图像压缩的特性。将变换后的DCT系数进行门限操作，将小于一定值得系数归零，这就是图像压缩中的量化过程，然后进行逆DCT运算，可以得到压缩后的图像。</p>
 </blockquote>
 <blockquote>
-<p>离散余弦变换的原理：<br>一维DCT变换：<br><img src="/images/post/python-algorithm/1dct.jpg" alt=""><br>其中，f(i)为原始的信号，F(u)是DCT变换后的系数，N为原始信号的点数，c(u)可以认为是一个补偿系数，可以使DCT变换矩阵为正交矩阵。<br>二维离散余弦变换的正变换公式为：<br><img src="/images/post/python-algorithm/1dct.jpg" alt=""></p>
+<p>离散余弦变换的原理：<br>一维DCT变换：<br><img src="/images/post/python-algorithm/1dct.jpg" alt><br>其中，f(i)为原始的信号，F(u)是DCT变换后的系数，N为原始信号的点数，c(u)可以认为是一个补偿系数，可以使DCT变换矩阵为正交矩阵。<br>二维离散余弦变换的正变换公式为：<br><img src="/images/post/python-algorithm/1dct.jpg" alt></p>
 </blockquote>
 <ul>
 <li>d) 缩小DCT<br>DCT的结果为32x32大小的矩阵，但只需保留左上角的8x8的矩阵，这部分呈现了图片中的最低频率。</li>
@@ -3682,7 +4050,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <li>多主一从—5.7版本开始支持</li>
 <li>联级复制</li>
 </ul>
-<h3 id="主从复制原理"><a href="#主从复制原理" class="headerlink" title="主从复制原理"></a>主从复制原理</h3><p><img src="/images/post/db-mysql/mysqlrepl.webp" alt=""></p>
+<h3 id="主从复制原理"><a href="#主从复制原理" class="headerlink" title="主从复制原理"></a>主从复制原理</h3><p><img src="/images/post/db-mysql/mysqlrepl.webp" alt></p>
 <ol>
 <li>主库将所有的写操作记录在binlog日志中，并生成log dump线程，将binlog日志传给从库的I/O线程</li>
 <li>从库生成两个线程，一个是I/O线程，另一个是SQL线程</li>
@@ -3819,15 +4187,15 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <h1 id="mysql-语句执行顺序"><a href="#mysql-语句执行顺序" class="headerlink" title="mysql 语句执行顺序"></a>mysql 语句执行顺序</h1><p>MySQL的语句，最先执行的总是FROM操作，最后执行的是LIMIT操作。其中每一个操作都会产生一张虚拟的表，这个虚拟的表作为一个处理的输入，只是这些虚拟的表对用户来说是透明的，但是只有最后一个虚拟的表才会被作为结果返回。如果没有在语句中指定对应的操作，那么将会跳过相应的步骤。</p>
 <ol>
 <li>from:需要从哪个数据表检索数据，对FROM的左边的表和右边的表计算笛卡尔积。产生虚表VT1</li>
-<li>on：在生成临时表时使用的条件，对虚表VT1进行ON筛选，只有那些符合<join-condition>的行才会被记录在虚表VT2中。</li>
+<li>on：在生成临时表时使用的条件，对虚表VT1进行ON筛选，只有那些符合<join-condition>的行才会被记录在虚表VT2中。</join-condition></li>
 <li>join：联合多表查询返回记录时，并生成一张临时表，如果指定了OUTER JOIN（比如left join、 right join），那么保留表中未匹配的行就会作为外部行添加到虚拟表VT2中，产生虚拟表VT3, rug from子句中包含两个以上的表的话，那么就会对上一个join连接产生的结果VT3和下一个表重复执行步骤1~3这三个步骤，一直到处理完所有的表为止。</li>
-<li>where:过滤表中数据的条件，对虚拟表VT3进行WHERE条件过滤。只有符合<where-condition>的记录才会被插入到虚拟表VT4中。</li>
+<li>where:过滤表中数据的条件，对虚拟表VT3进行WHERE条件过滤。只有符合<where-condition>的记录才会被插入到虚拟表VT4中。</where-condition></li>
 <li>group by:如何将上面过滤出的数据分组，根据group by子句中的列，对VT4中的记录进行分组操作，产生VT5.</li>
 <li>CUBE | ROLLUP: 对表VT5进行cube或者rollup操作，产生表VT6.</li>
-<li>having:对上面已经分组的数据进行过滤的条件，对虚拟表VT6应用having过滤，只有符合<having-condition>的记录才会被 插入到虚拟表VT7中。</li>
+<li>having:对上面已经分组的数据进行过滤的条件，对虚拟表VT6应用having过滤，只有符合<having-condition>的记录才会被 插入到虚拟表VT7中。</having-condition></li>
 <li>select:查看结果集中的哪个列，或列的计算结果，执行select操作，选择指定的列，插入到虚拟表VT8中。</li>
 <li>DISTINCT: 对VT8中的记录进行去重。产生虚拟表VT9.</li>
-<li>order by :按照什么样的顺序来查看返回的数据,将虚拟表VT9中的记录按照<order_by_list>进行排序操作，产生虚拟表VT10.</li>
+<li>order by :按照什么样的顺序来查看返回的数据,将虚拟表VT9中的记录按照<order_by_list>进行排序操作，产生虚拟表VT10.</order_by_list></li>
 <li>limit：限制查询结果返回的数量,取出指定行的记录，产生虚拟表VT11, 并将结果返回。</li>
 </ol>
 <h2 id="on与where的用法区别："><a href="#on与where的用法区别：" class="headerlink" title="on与where的用法区别："></a>on与where的用法区别：</h2><ol>
@@ -3930,6 +4298,37 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
       </categories>
   </entry>
   <entry>
+    <title>004-数据类型</title>
+    <url>/articles/20200219/56a0d34f.html</url>
+    <content><![CDATA[<p>摘要：事务</p>
+<a id="more"></a>
+
+<h1 id="整数类型-括号内数值含义"><a href="#整数类型-括号内数值含义" class="headerlink" title="整数类型-括号内数值含义"></a>整数类型-括号内数值含义</h1><p>包括TINYINT、SMALLINT、MEDIUMINT、INT、BIGINT，分别表示1字节、2字节、3字节、4字节、8字节整数。任何整数类型都可以加上UNSIGNED属性，表示数据是无符号的，即非负整数。</p>
+<h1 id="类型后的括号"><a href="#类型后的括号" class="headerlink" title="类型后的括号"></a>类型后的括号</h1><p>是展示长度含义：整数类型可以被指定长度，例如：INT(11)表示长度为11的INT类型。长度在大多数场景是没有意义的，它不会限制值的合法范围，只会影响显示字符的个数，而且需要和UNSIGNED ZEROFILL属性配合使用才有意义。</p>
+<p>例子，假定类型设定为INT(5)，属性为UNSIGNED ZEROFILL，如果用户插入的数据为12的话，那么数据库实际存储数据为00012。</p>
+<h1 id="varchar和char有什么区别"><a href="#varchar和char有什么区别" class="headerlink" title="varchar和char有什么区别"></a>varchar和char有什么区别</h1><p>char是一个定长字段,假如申请了char(10)的空间,那么无论实际存储多少内容.该字段都占用10个字符</p>
+<p>varchar是变长的,也就是说申请的只是最大长度,占用的空间为实际字符长度+1,最后一个字符存储使用了多长的空间.<br>在行数数据存储的时候，varchar 实际长度是需要记录到页结构中的 infimum和supermum record</p>
+<p>在检索效率上来讲,char &gt; varchar,因此在使用中,如果确定某个字段的值的长度,可以使用char,否则按照设计应该使用varchar.</p>
+<h1 id="varchar-10-和int-10-代表什么含义"><a href="#varchar-10-和int-10-代表什么含义" class="headerlink" title="varchar(10)和int(10)代表什么含义?"></a>varchar(10)和int(10)代表什么含义?</h1><ul>
+<li>varchar的10代表了申请的空间长度,也是可以存储的数据的最大长度</li>
+<li>int的10只是代表了展示的长度,不足10位以0填充.即,int(1)和int(10)所能存储的数字大小以及占用的空间都是相同的,只是在展示时按照长度展示.</li>
+</ul>
+<h1 id="日期和时间类型"><a href="#日期和时间类型" class="headerlink" title="日期和时间类型"></a>日期和时间类型</h1><p>尽量使用timestamp，空间效率高于datetime,但是 注意存储范围</p>
+<p>用整数保存时间戳通常不方便处理。如果需要存储微秒，可以使用bigint存储。</p>
+<h1 id="列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？"><a href="#列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？" class="headerlink" title="列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？"></a>列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？</h1><p>它会停止递增，任何进一步的插入都将产生错误，因为密钥已被使用。</p>
+<p>怎样才能找出最后一次插入时分配了哪个自动增量？</p>
+<p>LAST_INSERT_ID将返回由Auto_increment分配的最后一个值，并且不需要指定表名称。</p>
+<h1 id="段为什么要求定义为not-null"><a href="#段为什么要求定义为not-null" class="headerlink" title="段为什么要求定义为not null?"></a>段为什么要求定义为not null?</h1><p>MySQL官网这样介绍:</p>
+<blockquote>
+<p>NULL columns require additional space in the rowto record whether their values are NULL. For MyISAM tables, each NULL columntakes one bit extra, rounded up to the nearest byte.</p>
+</blockquote>
+<p>null值会占用更多的字节,且会在程序中造成很多与预期不符的情况.不利于索引</p>
+]]></content>
+      <categories>
+        <category>db-mysql-qa</category>
+      </categories>
+  </entry>
+  <entry>
     <title>003-事务、锁总结</title>
     <url>/articles/20200219/6fd41f87.html</url>
     <content><![CDATA[<p>摘要：事务</p>
@@ -3982,37 +4381,6 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <li>页面锁：开销和加锁时间界于表锁和行锁之间；会出现死锁；锁定粒度界于表锁和行锁之间，并发度一般。<br>他们的加锁开销从大到小,并发能力也是从大到小.</li>
 </ul>
 <h1 id="锁作用"><a href="#锁作用" class="headerlink" title="锁作用"></a>锁作用</h1><p>加锁是实现数据库并发控制的一个非常重要的技术。当事务在对某个数据对象进行操作前，先向系统发出请求，对其加锁。加锁后事务就对该数据对象有了一定的控制，在该事务释放锁之前，其他的事务不能对此数据对象进行更新操作。</p>
-]]></content>
-      <categories>
-        <category>db-mysql-qa</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>004-数据类型</title>
-    <url>/articles/20200219/56a0d34f.html</url>
-    <content><![CDATA[<p>摘要：事务</p>
-<a id="more"></a>
-
-<h1 id="整数类型-括号内数值含义"><a href="#整数类型-括号内数值含义" class="headerlink" title="整数类型-括号内数值含义"></a>整数类型-括号内数值含义</h1><p>包括TINYINT、SMALLINT、MEDIUMINT、INT、BIGINT，分别表示1字节、2字节、3字节、4字节、8字节整数。任何整数类型都可以加上UNSIGNED属性，表示数据是无符号的，即非负整数。</p>
-<h1 id="类型后的括号"><a href="#类型后的括号" class="headerlink" title="类型后的括号"></a>类型后的括号</h1><p>是展示长度含义：整数类型可以被指定长度，例如：INT(11)表示长度为11的INT类型。长度在大多数场景是没有意义的，它不会限制值的合法范围，只会影响显示字符的个数，而且需要和UNSIGNED ZEROFILL属性配合使用才有意义。</p>
-<p>例子，假定类型设定为INT(5)，属性为UNSIGNED ZEROFILL，如果用户插入的数据为12的话，那么数据库实际存储数据为00012。</p>
-<h1 id="varchar和char有什么区别"><a href="#varchar和char有什么区别" class="headerlink" title="varchar和char有什么区别"></a>varchar和char有什么区别</h1><p>char是一个定长字段,假如申请了char(10)的空间,那么无论实际存储多少内容.该字段都占用10个字符</p>
-<p>varchar是变长的,也就是说申请的只是最大长度,占用的空间为实际字符长度+1,最后一个字符存储使用了多长的空间.<br>在行数数据存储的时候，varchar 实际长度是需要记录到页结构中的 infimum和supermum record</p>
-<p>在检索效率上来讲,char &gt; varchar,因此在使用中,如果确定某个字段的值的长度,可以使用char,否则按照设计应该使用varchar.</p>
-<h1 id="varchar-10-和int-10-代表什么含义"><a href="#varchar-10-和int-10-代表什么含义" class="headerlink" title="varchar(10)和int(10)代表什么含义?"></a>varchar(10)和int(10)代表什么含义?</h1><ul>
-<li>varchar的10代表了申请的空间长度,也是可以存储的数据的最大长度</li>
-<li>int的10只是代表了展示的长度,不足10位以0填充.即,int(1)和int(10)所能存储的数字大小以及占用的空间都是相同的,只是在展示时按照长度展示.</li>
-</ul>
-<h1 id="日期和时间类型"><a href="#日期和时间类型" class="headerlink" title="日期和时间类型"></a>日期和时间类型</h1><p>尽量使用timestamp，空间效率高于datetime,但是 注意存储范围</p>
-<p>用整数保存时间戳通常不方便处理。如果需要存储微秒，可以使用bigint存储。</p>
-<h1 id="列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？"><a href="#列设置为AUTO-INCREMENT时，如果在表中达到最大值，会发生什么情况？" class="headerlink" title="列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？"></a>列设置为AUTO INCREMENT时，如果在表中达到最大值，会发生什么情况？</h1><p>它会停止递增，任何进一步的插入都将产生错误，因为密钥已被使用。</p>
-<p>怎样才能找出最后一次插入时分配了哪个自动增量？</p>
-<p>LAST_INSERT_ID将返回由Auto_increment分配的最后一个值，并且不需要指定表名称。</p>
-<h1 id="段为什么要求定义为not-null"><a href="#段为什么要求定义为not-null" class="headerlink" title="段为什么要求定义为not null?"></a>段为什么要求定义为not null?</h1><p>MySQL官网这样介绍:</p>
-<blockquote>
-<p>NULL columns require additional space in the rowto record whether their values are NULL. For MyISAM tables, each NULL columntakes one bit extra, rounded up to the nearest byte.</p>
-</blockquote>
-<p>null值会占用更多的字节,且会在程序中造成很多与预期不符的情况.不利于索引</p>
 ]]></content>
       <categories>
         <category>db-mysql-qa</category>
@@ -4168,6 +4536,28 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
       </categories>
   </entry>
   <entry>
+    <title>004-高性能网站建设笔记-05样式表放在顶部、06脚本放在底部</title>
+    <url>/articles/20200213/372b80cc.html</url>
+    <content><![CDATA[<p>摘要：</p>
+<a id="more"></a>
+
+<h1 id="05样式表放在顶部【必须】"><a href="#05样式表放在顶部【必须】" class="headerlink" title="05样式表放在顶部【必须】"></a>05样式表放在顶部【必须】</h1><p>将样式表放在 head中，在html规范中，也明确规定Link需出现下head中，不限次数</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">link</span> <span class="attr">href</span>=<span class="string">"//storage.jd.com/sy-static.jd.com/1564972561844_index.min.css"</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<p>避免了白屏和无样式内容的闪烁问题</p>
+<h1 id="06脚本放在底部"><a href="#06脚本放在底部" class="headerlink" title="06脚本放在底部"></a>06脚本放在底部</h1><p>DOM 加载是顺序加载<a href="http://blog.bjlhx.top/categories/html_jd_css" target="_blank" rel="noopener">more</a></p>
+<p>如果脚本在页面头部，可能会造成，页面阻塞。</p>
+<h2 id="并行下载-无意义，会发生脚本阻塞下载"><a href="#并行下载-无意义，会发生脚本阻塞下载" class="headerlink" title="并行下载-无意义，会发生脚本阻塞下载"></a>并行下载-无意义，会发生脚本阻塞下载</h2><p>如果页面编写了 script 标签，那么每个脚本都会产生一个http请求，进而进行下载。</p>
+<p>在http 1.1规范，建议浏览器从每个主机名并行下载两个组件。简单理解，默认同时下载两个文件。</p>
+<p>增加并行下载数量：可以简单使用CNAME（DNS别名）来将组件分别放到多个主机域名中。</p>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>增加了带宽以及cpu的使用</p>
+<h2 id="脚本阻塞下载"><a href="#脚本阻塞下载" class="headerlink" title="脚本阻塞下载"></a>脚本阻塞下载</h2><p>并行下载组件的优点多多，但是，在下载脚本时并行下载实际上是被禁用的–即使用了不同的主机名，浏览器也不会启动其他的下载。<br>原因：<br>1、脚本可能使用了document.write来修改页面内容，因此浏览器会等待，以确保页面能够恰当的布局。<br>2、为了保证脚本能够按照正确的顺序执行。</p>
+<p>如果并行下载多个脚本，就无法保证响应是按照特定顺序到达浏览器的。如后面的先下载，结果后面的执行了，但内部有依赖于上一个脚本的代码，或导致js错误</p>
+]]></content>
+      <categories>
+        <category>performance-web</category>
+      </categories>
+  </entry>
+  <entry>
     <title>005-高性能网站建设笔记-07避免CSS表达式、08使用外部的js和css</title>
     <url>/articles/20200213/ac31f31.html</url>
     <content><![CDATA[<p>摘要：</p>
@@ -4183,28 +4573,6 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 
 </li>
 </ul>
-]]></content>
-      <categories>
-        <category>performance-web</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>004-高性能网站建设笔记-05样式表放在顶部、06脚本放在底部</title>
-    <url>/articles/20200213/372b80cc.html</url>
-    <content><![CDATA[<p>摘要：</p>
-<a id="more"></a>
-
-<h1 id="05样式表放在顶部【必须】"><a href="#05样式表放在顶部【必须】" class="headerlink" title="05样式表放在顶部【必须】"></a>05样式表放在顶部【必须】</h1><p>将样式表放在 head中，在html规范中，也明确规定Link需出现下head中，不限次数</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">link</span> <span class="attr">href</span>=<span class="string">"//storage.jd.com/sy-static.jd.com/1564972561844_index.min.css"</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
-<p>避免了白屏和无样式内容的闪烁问题</p>
-<h1 id="06脚本放在底部"><a href="#06脚本放在底部" class="headerlink" title="06脚本放在底部"></a>06脚本放在底部</h1><p>DOM 加载是顺序加载<a href="http://blog.bjlhx.top/categories/html_jd_css">more</a></p>
-<p>如果脚本在页面头部，可能会造成，页面阻塞。</p>
-<h2 id="并行下载-无意义，会发生脚本阻塞下载"><a href="#并行下载-无意义，会发生脚本阻塞下载" class="headerlink" title="并行下载-无意义，会发生脚本阻塞下载"></a>并行下载-无意义，会发生脚本阻塞下载</h2><p>如果页面编写了 script 标签，那么每个脚本都会产生一个http请求，进而进行下载。</p>
-<p>在http 1.1规范，建议浏览器从每个主机名并行下载两个组件。简单理解，默认同时下载两个文件。</p>
-<p>增加并行下载数量：可以简单使用CNAME（DNS别名）来将组件分别放到多个主机域名中。</p>
-<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>增加了带宽以及cpu的使用</p>
-<h2 id="脚本阻塞下载"><a href="#脚本阻塞下载" class="headerlink" title="脚本阻塞下载"></a>脚本阻塞下载</h2><p>并行下载组件的优点多多，但是，在下载脚本时并行下载实际上是被禁用的–即使用了不同的主机名，浏览器也不会启动其他的下载。<br>原因：<br>1、脚本可能使用了document.write来修改页面内容，因此浏览器会等待，以确保页面能够恰当的布局。<br>2、为了保证脚本能够按照正确的顺序执行。</p>
-<p>如果并行下载多个脚本，就无法保证响应是按照特定顺序到达浏览器的。如后面的先下载，结果后面的执行了，但内部有依赖于上一个脚本的代码，或导致js错误</p>
 ]]></content>
       <categories>
         <category>performance-web</category>
@@ -4234,12 +4602,12 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <!-- maore -->
 
 <h1 id="解说"><a href="#解说" class="headerlink" title="解说"></a>解说</h1><p>打开用chrome console，可以看到如下</p>
-<p><img src="/images/post/performance-web/chrome-console.jpg" alt=""></p>
+<p><img src="/images/post/performance-web/chrome-console.jpg" alt></p>
 <p>可以看到页面加载的时间窗口。此时可以将鼠标放置 右侧的waterfall上，可以查看具体耗时</p>
-<p><img src="/images/post/performance-web/chrome-console2.jpg" alt=""></p>
+<p><img src="/images/post/performance-web/chrome-console2.jpg" alt></p>
 <h2 id="瀑布流中各项指标含义如下："><a href="#瀑布流中各项指标含义如下：" class="headerlink" title="瀑布流中各项指标含义如下："></a>瀑布流中各项指标含义如下：</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Queueing：浏览器将资源放入队列时间，比如：遇到更高优先级的请求或请求并发超过6了。</span><br><span class="line">Stalled：因放入队列时间而发生的停滞时间。</span><br><span class="line">Proxy negotiation：与代理服务器协商时间。</span><br><span class="line">DNS Lookup：DNS解析时间，浏览器需要将域名转换成IP。</span><br><span class="line">Initial Connection：在浏览器发送请求前，需要建立HTTP连接的时间。</span><br><span class="line">SSL：如果网站使用了HTTPS，这个就是浏览器与服务器建立安全性连接的时间。</span><br><span class="line">Request sent：请求发送的时间。</span><br><span class="line">Waiting (TTFB)：等待服务端返回数据的时间，这个时间受制于服务端处理性能。</span><br><span class="line">Content Download：浏览器下载资源的时间，这个时间受制于文件大小和带宽。</span><br></pre></td></tr></table></figure>
 
-<p>如何优化，请参看：<a href="http://blog.bjlhx.top/categories/performance-web">http://blog.bjlhx.top/categories/performance-web</a></p>
+<p>如何优化，请参看：<a href="http://blog.bjlhx.top/categories/performance-web" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/performance-web</a></p>
 ]]></content>
       <categories>
         <category>performance</category>
@@ -4328,37 +4696,6 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
       </categories>
   </entry>
   <entry>
-    <title>001-网站的性能指标及指标测试方法</title>
-    <url>/articles/20200213/ea81502f.html</url>
-    <content><![CDATA[<p>摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式</p>
-<a id="more"></a>
-
-<h1 id="常用网站性能参数"><a href="#常用网站性能参数" class="headerlink" title="常用网站性能参数"></a>常用网站性能参数</h1><h2 id="并发数"><a href="#并发数" class="headerlink" title="并发数"></a>并发数</h2><p>是指系统同时能处理的请求数量，这个也是反应了系统的负载能力。</p>
-<h2 id="响应时间-RT"><a href="#响应时间-RT" class="headerlink" title="响应时间(RT)"></a>响应时间(RT)</h2><p>响应时间是一个系统最重要的指标之一，它的数值大小直接反应了系统的快慢。响应时间是指执行一个请求从开始到最后收到响应数据所花费的总体时间。</p>
-<h2 id="吞吐量-Throughput-TPS"><a href="#吞吐量-Throughput-TPS" class="headerlink" title="吞吐量(Throughput)-TPS"></a>吞吐量(Throughput)-TPS</h2><p>吞吐量是指单位时间内系统能处理的请求数量，体现系统处理请求的能力，这是目前最常用的性能测试指标。</p>
-<p>QPS（每秒查询数）、TPS（每秒事务数）是吞吐量的常用量化指标，另外还有HPS（每秒HTTP请求数）。</p>
-<p>跟吞吐量有关的几个重要是：并发数、响应时间。</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">QPS（TPS）&#x3D; 并发数 &#x2F; 平均响应时间</span><br></pre></td></tr></table></figure>
-
-<h3 id="QPS和TPS有什么区别？"><a href="#QPS和TPS有什么区别？" class="headerlink" title="QPS和TPS有什么区别？"></a>QPS和TPS有什么区别？</h3><p>TPS是每秒处理的请求数，是统计每秒用户的请求次数。QPS是每秒处理的查询次数，是统计每秒对于服务器查询的次数。用户一次请求，tps+1，而可能该请求中对应3次服务器查询次数，则qps+3。</p>
-<p>例如输入一个url，返回html内容，对应查询服务器一次，而有可能在html中再次出现一个url，还需查询同样的服务器一次，则此时QPS&gt;TPS。</p>
-<h2 id="页面浏览量-PV"><a href="#页面浏览量-PV" class="headerlink" title="页面浏览量(PV)"></a>页面浏览量(PV)</h2><p>PV即Page View的简写, 即页面浏览量或点击量，用户每次刷新即被计算一次。<br>单台服务器每天PV计算：<br>公式1：每天总PV = QPS * 3600 * 6<br>公式2：每天总PV = QPS * 3600 * 8</p>
-<h2 id="网站独立访客-UV"><a href="#网站独立访客-UV" class="headerlink" title="网站独立访客(UV)"></a>网站独立访客(UV)</h2><p>UV即Unique Visitor的简写，访问您网站的一台电脑客户端为一个访客。00:00-24:00内相同的客户端只被计算一次<br>服务器数量。<br>机器：峰值时间每秒QPS / 单台机器的QPS = 需要的机器<br>机器：ceil( 每天总PV / 单台服务器每天总PV )</p>
-<h2 id="峰值QPS和机器计算公式"><a href="#峰值QPS和机器计算公式" class="headerlink" title="峰值QPS和机器计算公式"></a>峰值QPS和机器计算公式</h2><p>原理：每天80%的访问集中在20%的时间里，这20%时间叫做峰值时间<br>公式：( 总PV数 * 80% ) / ( 每天秒数 * 20% ) = 峰值时间每秒请求数(QPS)<br>机器：峰值时间每秒QPS / 单台机器的QPS = 需要的机器</p>
-<p>例子：<br>每天300万PV的在单台机器上，这台机器需要多少QPS？<br>答：( 3000000 * 0.8 ) / (86400 * 0.2 ) = 139 (QPS)<br>如果一台机器的QPS是58，需要几台机器来支持？<br>答：139 / 58 = 3</p>
-<h1 id="如何评估网站性能参数"><a href="#如何评估网站性能参数" class="headerlink" title="如何评估网站性能参数"></a>如何评估网站性能参数</h1><h2 id="针对中小型站点"><a href="#针对中小型站点" class="headerlink" title="针对中小型站点"></a>针对中小型站点</h2><ul>
-<li>方式一、使用：ab，可参看：<a href="http://blog.bjlhx.top/categories/test-ab">http://blog.bjlhx.top/categories/test-ab</a></li>
-</ul>
-<p>初步评估 站点TPS等性能参数</p>
-<ul>
-<li>方式二、jemter评估</li>
-</ul>
-<h2 id="大型-对应性能团队"><a href="#大型-对应性能团队" class="headerlink" title="大型-对应性能团队"></a>大型-对应性能团队</h2>]]></content>
-      <categories>
-        <category>performance</category>
-      </categories>
-  </entry>
-  <entry>
     <title>002-性能测试方法及性能优化分类</title>
     <url>/articles/20200213/7add234f.html</url>
     <content><![CDATA[<p>摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式</p>
@@ -4397,6 +4734,37 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
       </categories>
   </entry>
   <entry>
+    <title>001-网站的性能指标及指标测试方法</title>
+    <url>/articles/20200213/ea81502f.html</url>
+    <content><![CDATA[<p>摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式</p>
+<a id="more"></a>
+
+<h1 id="常用网站性能参数"><a href="#常用网站性能参数" class="headerlink" title="常用网站性能参数"></a>常用网站性能参数</h1><h2 id="并发数"><a href="#并发数" class="headerlink" title="并发数"></a>并发数</h2><p>是指系统同时能处理的请求数量，这个也是反应了系统的负载能力。</p>
+<h2 id="响应时间-RT"><a href="#响应时间-RT" class="headerlink" title="响应时间(RT)"></a>响应时间(RT)</h2><p>响应时间是一个系统最重要的指标之一，它的数值大小直接反应了系统的快慢。响应时间是指执行一个请求从开始到最后收到响应数据所花费的总体时间。</p>
+<h2 id="吞吐量-Throughput-TPS"><a href="#吞吐量-Throughput-TPS" class="headerlink" title="吞吐量(Throughput)-TPS"></a>吞吐量(Throughput)-TPS</h2><p>吞吐量是指单位时间内系统能处理的请求数量，体现系统处理请求的能力，这是目前最常用的性能测试指标。</p>
+<p>QPS（每秒查询数）、TPS（每秒事务数）是吞吐量的常用量化指标，另外还有HPS（每秒HTTP请求数）。</p>
+<p>跟吞吐量有关的几个重要是：并发数、响应时间。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">QPS（TPS）&#x3D; 并发数 &#x2F; 平均响应时间</span><br></pre></td></tr></table></figure>
+
+<h3 id="QPS和TPS有什么区别？"><a href="#QPS和TPS有什么区别？" class="headerlink" title="QPS和TPS有什么区别？"></a>QPS和TPS有什么区别？</h3><p>TPS是每秒处理的请求数，是统计每秒用户的请求次数。QPS是每秒处理的查询次数，是统计每秒对于服务器查询的次数。用户一次请求，tps+1，而可能该请求中对应3次服务器查询次数，则qps+3。</p>
+<p>例如输入一个url，返回html内容，对应查询服务器一次，而有可能在html中再次出现一个url，还需查询同样的服务器一次，则此时QPS&gt;TPS。</p>
+<h2 id="页面浏览量-PV"><a href="#页面浏览量-PV" class="headerlink" title="页面浏览量(PV)"></a>页面浏览量(PV)</h2><p>PV即Page View的简写, 即页面浏览量或点击量，用户每次刷新即被计算一次。<br>单台服务器每天PV计算：<br>公式1：每天总PV = QPS * 3600 * 6<br>公式2：每天总PV = QPS * 3600 * 8</p>
+<h2 id="网站独立访客-UV"><a href="#网站独立访客-UV" class="headerlink" title="网站独立访客(UV)"></a>网站独立访客(UV)</h2><p>UV即Unique Visitor的简写，访问您网站的一台电脑客户端为一个访客。00:00-24:00内相同的客户端只被计算一次<br>服务器数量。<br>机器：峰值时间每秒QPS / 单台机器的QPS = 需要的机器<br>机器：ceil( 每天总PV / 单台服务器每天总PV )</p>
+<h2 id="峰值QPS和机器计算公式"><a href="#峰值QPS和机器计算公式" class="headerlink" title="峰值QPS和机器计算公式"></a>峰值QPS和机器计算公式</h2><p>原理：每天80%的访问集中在20%的时间里，这20%时间叫做峰值时间<br>公式：( 总PV数 * 80% ) / ( 每天秒数 * 20% ) = 峰值时间每秒请求数(QPS)<br>机器：峰值时间每秒QPS / 单台机器的QPS = 需要的机器</p>
+<p>例子：<br>每天300万PV的在单台机器上，这台机器需要多少QPS？<br>答：( 3000000 * 0.8 ) / (86400 * 0.2 ) = 139 (QPS)<br>如果一台机器的QPS是58，需要几台机器来支持？<br>答：139 / 58 = 3</p>
+<h1 id="如何评估网站性能参数"><a href="#如何评估网站性能参数" class="headerlink" title="如何评估网站性能参数"></a>如何评估网站性能参数</h1><h2 id="针对中小型站点"><a href="#针对中小型站点" class="headerlink" title="针对中小型站点"></a>针对中小型站点</h2><ul>
+<li>方式一、使用：ab，可参看：<a href="http://blog.bjlhx.top/categories/test-ab" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/test-ab</a></li>
+</ul>
+<p>初步评估 站点TPS等性能参数</p>
+<ul>
+<li>方式二、jemter评估</li>
+</ul>
+<h2 id="大型-对应性能团队"><a href="#大型-对应性能团队" class="headerlink" title="大型-对应性能团队"></a>大型-对应性能团队</h2>]]></content>
+      <categories>
+        <category>performance</category>
+      </categories>
+  </entry>
+  <entry>
     <title>001-高性能网站建设笔记-整体规则</title>
     <url>/articles/20200213/90bc3718.html</url>
     <content><![CDATA[<p>摘要：web性能优化，指导规则；性能黄金法则：只有10%-20%的最终用户响应时间花在了下载HTML文档上；其余的80%-90%的时间花在了下载页面中的所有组件上。</p>
@@ -4419,7 +4787,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <li>规则13——配置ETag- </li>
 <li>规则14——使AjaX可缓存</li>
 </ul>
-<h1 id="跟踪web页面性能方法"><a href="#跟踪web页面性能方法" class="headerlink" title="跟踪web页面性能方法"></a>跟踪web页面性能方法</h1><p>获取页面耗时，请参看：<a href="http://blog.bjlhx.top/categories/performance">http://blog.bjlhx.top/categories/performance</a> 关于使用Chrome 瀑布流<br>获取接口耗时，请参看：<a href="http://blog.bjlhx.top/categories/test-ab">http://blog.bjlhx.top/categories/test-ab</a> </p>
+<h1 id="跟踪web页面性能方法"><a href="#跟踪web页面性能方法" class="headerlink" title="跟踪web页面性能方法"></a>跟踪web页面性能方法</h1><p>获取页面耗时，请参看：<a href="http://blog.bjlhx.top/categories/performance" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/performance</a> 关于使用Chrome 瀑布流<br>获取接口耗时，请参看：<a href="http://blog.bjlhx.top/categories/test-ab" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/test-ab</a> </p>
 <h1 id="http协议概述"><a href="#http协议概述" class="headerlink" title="http协议概述"></a>http协议概述</h1><p>参看：<a href="https://www.cnblogs.com/bjlhx/p/10987051.html" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/p/10987051.html</a></p>
 <p>关于gzip压缩、http缓存控制和缓存校验【Pragma、Expires、Cache-Control、max-age、Last-Modified、用户刷新访问、避免过度304】<br>参看：<a href="https://www.cnblogs.com/bjlhx/p/10338625.html" target="_blank" rel="noopener">https://www.cnblogs.com/bjlhx/p/10338625.html</a></p>
 <p>nginx开启压缩：<a href="https://www.cnblogs.com/bjlhx/p/12034531.html" target="_blank" rel="noopener">006-nginx.conf详解-error_page 使用、压缩</a></p>
@@ -4980,7 +5348,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
     <content><![CDATA[<p>摘要：MySQL InnoDB数据存储是以B+树索引方式存储<br>存储单元、mysql InnoDB-B+树组织数据、查询数据、mysql InnoDB-B+树存储数据量、实际操作查看</p>
 <a id="more"></a>
 
-<h1 id="mysql知识储备"><a href="#mysql知识储备" class="headerlink" title="mysql知识储备"></a>mysql知识储备</h1><p>参看：<a href="http://blog.bjlhx.top/categories/db-mysql-core/">http://blog.bjlhx.top/categories/db-mysql-core/</a></p>
+<h1 id="mysql知识储备"><a href="#mysql知识储备" class="headerlink" title="mysql知识储备"></a>mysql知识储备</h1><p>参看：<a href="http://blog.bjlhx.top/categories/db-mysql-core/" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/db-mysql-core/</a></p>
 <ol>
 <li>InnoDB为聚集主键类型的引擎，数据会按照主键进行排序</li>
 <li>mysql 的索引是B+tree，聚集索引使用主键，没有主键默认生成一个隐式主键rowId，辅助索引保存的是主键</li>
@@ -5159,7 +5527,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 
 
 <h1 id="InnoDB-内存中的结构"><a href="#InnoDB-内存中的结构" class="headerlink" title="InnoDB 内存中的结构"></a>InnoDB 内存中的结构</h1><p>参看原理图 03-存储引擎层、InnoDB 架构</p>
-<p><img src="/images/post/db-mysql/innodb-struct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/innodb-struct.webp" alt></p>
 <p>内存中的结构主要包括 Buffer Pool，Change Buffer、Adaptive Hash Index以及 Log Buffer 四部分。</p>
 <p>如果从内存上来看，Change Buffer 和 Adaptive Hash Index 占用的内存都属于 Buffer Pool，Log Buffer占用的内存与 Buffer Pool独立。</p>
 <p>缓冲池缓存的数据包括Page Cache、Change Buffer、Data Dictionary Cache等，通常 MySQL 服务器的 80% 的物理内存会分配给 Buffer Pool。</p>
@@ -5180,7 +5548,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">----------------------</span><br><span class="line">BUFFER POOL AND MEMORY</span><br><span class="line">----------------------</span><br><span class="line">Total large memory allocated 137428992 # 分配给InnoDB缓存池的内存(字节)</span><br><span class="line">Dictionary memory allocated 102398  # 分配给InnoDB数据字典的内存(字节)</span><br><span class="line">Buffer pool size   8191 # 缓存池的页数目</span><br><span class="line">Free buffers       7893 # 缓存池空闲链表的页数目</span><br><span class="line">Database pages     298  # 缓存池LRU链表的页数目</span><br><span class="line">Modified db pages  0    # 修改过的页数目</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
 
 <p>Innodb的这个缓存区就是Innodb_buffer_pool，当读取数据时，就会先从缓存中查看是否数据的页（page）存在，不存在的话才去磁盘上检索，查到后缓存到这个pool里。<br>同理，插入、修改、删除也是先操作缓存里数据，之后再以一定频率更新到磁盘上。控制刷盘的机制，叫做Checkpoint。</p>
-<p><img src="/images/post/db-mysql/innodb_buffer_pool.png" alt=""></p>
+<p><img src="/images/post/db-mysql/innodb_buffer_pool.png" alt></p>
 <p>注意，左边那两个不在Innodb_buffer_pool里，是另外一块内存。只不过大部分的内存都属于Innodb_buffer_pool的。</p>
 <p>mysql安装后，默认pool的大小是128M，可以通过show variables like ‘innodb_buffer_pool%’;命令查看。</p>
 <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'innodb_buffer_pool%'</span>;</span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_at_shutdown	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_dump_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_filename	ib_buffer_pool</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_instances	8</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_abort	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_at_startup	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_load_now	OFF</span></span><br><span class="line"><span class="comment"># innodb_buffer_pool_size	134217728</span></span><br></pre></td></tr></table></figure>
@@ -5273,7 +5641,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Ibuf：size	已经合并页的数量</span><br><span class="line">free list len	空闲列表长度</span><br><span class="line">seg size	Insert Buffer大小</span><br><span class="line">merges	合并次数</span><br><span class="line">merged operations 	</span><br><span class="line">                    Change Buffer中每个操作次数；</span><br><span class="line">                    insert代表Insert Buffer;</span><br><span class="line">                    delete mark代表Delete Buffer；</span><br><span class="line">                    delete代表Purge Buffer;</span><br><span class="line">discarded operations	Change Buffer中无需合并的次数</span><br><span class="line">hash searches&#x2F;s	通过hash索引查询</span><br><span class="line">non-hash searches&#x2F;s	不能通过hash索引查询</span><br></pre></td></tr></table></figure>
 
 <p>可以通过 innodb_change_buffering 配置是否缓存辅助索引页的修改，默认为 all，即缓存 insert/delete-mark/purge 操作<br>(注：MySQL 删除数据通常分为两步，第一步是delete-mark，即只标记，而purge才是真正的删除数据)。</p>
-<p><img src="/images/post/db-mysql/changebuffer.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/changebuffer.webp" alt></p>
 <h3 id="ADAPTIVE-HASH-INDEX"><a href="#ADAPTIVE-HASH-INDEX" class="headerlink" title="ADAPTIVE HASH INDEX"></a>ADAPTIVE HASH INDEX</h3><p>自适应哈希索引(AHI)查询非常快，一般时间复杂度为 O(1)，相比 B+ 树通常要查询 3~4次，效率会有很大提升。</p>
 <p>innodb 通过观察索引页上的查询次数，如果发现建立哈希索引可以提升查询效率，则会自动建立哈希索引，称之为自适应哈希索引，不需要人工干预，可以通过 innodb_adaptive_hash_index 开启，MySQL5.7 默认开启。</p>
 <p>考虑到不同系统的差异，有些系统开启自适应哈希索引可能会导致性能提升不明显，而且为监控索引页查询次数增加了多余的性能损耗，</p>
@@ -5303,7 +5671,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <p>注意，除了 MySQL 的缓冲区，操作系统本身也有内核缓冲区。</p>
 <p>Log Buffer是 重做日志在内存中的缓冲区，大小由 innodb_log_buffer_size 定义，默认是 16M。</p>
 <p>一个大的 Log Buffer可以让大事务在提交前不必将日志中途刷到磁盘，可以提高效率。如果你的系统有很多修改很多行记录的大事务，可以增大该值。</p>
-<p><img src="/images/post/db-mysql/innodb_flush_log_at_trx_commit.png" alt=""></p>
+<p><img src="/images/post/db-mysql/innodb_flush_log_at_trx_commit.png" alt></p>
 <p>innodb_flush_log_at_timeout 可以配置刷新日志缓存到磁盘的频率，默认是1秒。注意刷磁盘的频率并不保证就正好是这个时间，可能因为MySQL的一些操作导致推迟或提前。<br>而这个 “flush” 方法并不是C标准库的 fflush 方法(fflush是将C标准库的缓冲写到内核缓冲区，并不保证刷到磁盘)，它通过 innodb_flush_method 配置的，默认是 fsync，即日志和数据都通过 fsync 系统调用刷到磁盘。</p>
 <p>可以发现，InnoDB 基本每秒都会将 Log buffer落盘。而InnoDB中使用的 redo log 和 undo log，它们是分开存储的。<br>redo log在内存中有log buffer，在磁盘对应ib_logfile文件。而undo log是记录在表空间ibd文件中的，InnoDB为undo log会生成undo页，对undo log本身的操作（比如向undo log插入一条记录），也会记录redo log，因此undo log并不需要马上落盘。<br>而 redo log则通常会分配一块连续的磁盘空间，然后先写到log buffer，并每秒刷一次磁盘。redo log必须在数据落盘前先落盘(Write Ahead Log)，从而保证数据持久性和一致性。而数据本身的修改可以先驻留在内存缓冲池中，再根据特定的策略定期刷到磁盘。</p>
 <h2 id="BUFFER-POOL-AND-MEMORY"><a href="#BUFFER-POOL-AND-MEMORY" class="headerlink" title="BUFFER POOL AND MEMORY"></a>BUFFER POOL AND MEMORY</h2><p>innodb_buffer_pool包含数据页、索引页、undo页、insert buffer、数据字典、自适应哈希索引、锁信息等。数据库缓冲池是通过LRU列表管理的。</p>
@@ -5352,7 +5720,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <h3 id="方式一、直接按页存储【假想】"><a href="#方式一、直接按页存储【假想】" class="headerlink" title="方式一、直接按页存储【假想】"></a>方式一、直接按页存储【假想】</h3><p>数据表中的数据都是存储在页中的，所以一个页中能存储多少行数据呢？假设一行数据的大小是 1K，那么一个页可以存放 16 行这样的数据。</p>
 <p>如果数据库按这样的方式存储，那么查找数据就成为一个问题。不知道要查找的数据存在哪个页中，每次查询都需要把所有的页遍历一遍，时间复杂度为 n。</p>
 <h3 id="方式二、用-B-树的方式组织数据【实际】"><a href="#方式二、用-B-树的方式组织数据【实际】" class="headerlink" title="方式二、用 B+ 树的方式组织数据【实际】"></a>方式二、用 B+ 树的方式组织数据【实际】</h3><p>示例一、2层b+ tree</p>
-<p><img src="source/images/post/db-mysql/ecengbtree.png" alt=""></p>
+<p><img src="source/images/post/db-mysql/ecengbtree.png" alt></p>
 <p>这个树只有2层，首先每个page都有自己的唯一编号，将来就要通过编号来找对应的page。根页做为一个第一层的索引页，里面是不存在叶子数据（行数据）的，只存放Key，同时还包含了pageNo信息，用来将来去找对应的页。</p>
 <p>所有的记录节点都是按键值的大小顺序存放在同一层的叶子节点上，由各叶子节点指针进行连接（双向指针）。所以查询时，无论正序倒序，其实是一样的扫描速度。</p>
 <p>每一层的最左边节点页面的最左边位置，会有一个Min记录，该记录由2部分组成，第一部分就是一个Min标记，代表这就是 最小值；第二部分是一个pageNo指针，指向下一层中最左边的记录。注意看根页的Min记录，就是这样的。而33号page的Min记录由于没有下一层了，所以没有pageNo指针。</p>
@@ -5363,7 +5731,7 @@ LR    从左到右</code></pre><figure class="highlight plain"><table><tr><td cl
 <p>通过这样的方式，我们就知道了一颗树是怎么构成的了。</p>
 <p>示例解说：</p>
 <ol>
-<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt=""></li>
+<li>B+树-组织数据<br><img src="/images/post/db-mysql/001/index-01.jpg" alt></li>
 </ol>
 <p>先将数据记录按主键进行排序，分别存放在不同的页中（为了便于理解这里一个页中只存放 3 条记录，实际情况可以存放很多）。</p>
 <p>除了存放数据的页以外，还有存放键值+指针的页，如图中 page number=3 的页，该页存放键值和指向数据页的指针，这样的页由 N 个键值+指针组成。</p>
@@ -5378,7 +5746,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>小结：  InnoDB 中主键索引 B+ 树是如何组织数据、查询数据</p>
 <p>InnoDB 存储引擎的最小存储单元是页，页可以用于存放数据也可以用于存放键值+指针，在 B+ 树中叶子节点存放数据，非叶子节点存放键值+指针。</p>
 <p>索引组织表通过非叶子节点的二分查找法以及指针确定数据在哪个页中，进而在去数据页中查找到需要的数据。</p>
-<h3 id="Page内详细结构"><a href="#Page内详细结构" class="headerlink" title="Page内详细结构"></a>Page内详细结构</h3><p><img src="/images/post/db-mysql/page.png" alt=""></p>
+<h3 id="Page内详细结构"><a href="#Page内详细结构" class="headerlink" title="Page内详细结构"></a>Page内详细结构</h3><p><img src="/images/post/db-mysql/page.png" alt></p>
 <p>page内的存储，共16K的空间,分为几个部分，文件管理头信息、页面头信息、页面尾信息、最小记录最大记录、用户记录、可重用空间、未使用空间、页面槽信息。</p>
 <p>用户记录就是行数据，可重用就是曾经被分配过数据后来被删了，未使用就是没分配过的空间。</p>
 <h4 id="文件管理头信息"><a href="#文件管理头信息" class="headerlink" title="文件管理头信息"></a>文件管理头信息</h4><p>它占用38个字节，里面存储的东西主要有:</p>
@@ -5472,7 +5840,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 
 <h1 id="用树的概念理解mysql数据库"><a href="#用树的概念理解mysql数据库" class="headerlink" title="用树的概念理解mysql数据库"></a>用树的概念理解mysql数据库</h1><h2 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a>二叉查找树</h2><p>树的基础：<a href="https://www.cnblogs.com/bjlhx/p/10870875.html" target="_blank" rel="noopener">006-数据结构-树形结构-二叉树、二叉查找树、平衡二叉查找树-AVL树</a></p>
 <p>数据库表 对应 二叉查找树</p>
-<p><img src="/images/post/db-mysql/002/erchachazhao.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/erchachazhao.jpg" alt></p>
 <p>从图中可以看到，为 user 表（用户信息表）建立了一个二叉查找树的索引。</p>
 <p>图中的圆为二叉查找树的节点，节点中存储了键（key）和数据（data）。键对应 user 表中的 id，数据对应 user 表中的行数据。</p>
 <p>二叉查找树的特点就是任何节点的左子节点的键值都小于当前节点的键值，右子节点的键值都大于当前节点的键值。顶端的节点我们称为根节点，没有子节点的节点我们称之为叶节点。</p>
@@ -5484,13 +5852,13 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 </ol>
 <p>利用二叉查找树我们只需要 3 次即可找到匹配的数据。如果在表中一条条的查找的话，需要 6 次才能找到。</p>
 <h2 id="平衡二叉树"><a href="#平衡二叉树" class="headerlink" title="平衡二叉树"></a>平衡二叉树</h2><p>上面利用二叉查找树可以快速的找到数据。但是，如果上面的二叉查找树是这样的构造【以5为根节点】：</p>
-<p><img src="/images/post/db-mysql/002/pinghengerchashu.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/pinghengerchashu.jpg" alt></p>
 <p>可以看到二叉查找树变成了一个链表。如果需要查找 id=17 的用户信息，需要查找 7 次，也就相当于全表扫描了。</p>
 <p>导致这个现象的原因其实是二叉查找树变得不平衡了，也就是高度太高了，从而导致查找效率的不稳定。</p>
 <p>为了解决这个问题，需要保证二叉查找树一直保持平衡，就需要用到平衡二叉树。</p>
 <p>平衡二叉树又称 AVL 树，在满足二叉查找树特性的基础上，要求每个节点的左右子树的高度差不能超过 1。</p>
 <p>下面是平衡二叉树和非平衡二叉树的对比：</p>
-<p><img src="/images/post/db-mysql/002/pinghengerchashu-2.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/pinghengerchashu-2.jpg" alt></p>
 <p>由平衡二叉树的构造可以发现第一张图中的二叉树其实就是一棵平衡二叉树。</p>
 <p>平衡二叉树保证了树的构造是平衡的，当插入或删除数据导致不满足平衡二叉树不平衡时，平衡二叉树会进行调整树上的节点来保持平衡。具体的调整方式,参看。</p>
 <p>平衡二叉树相比于二叉查找树来说，查找效率更稳定，总体的查找速度也更快。</p>
@@ -5501,11 +5869,11 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>如果用树这种数据结构作为索引的数据结构，那每查找一次数据就需要从磁盘中读取一个节点，也就是一个磁盘块。</p>
 <p>平衡二叉树是每个节点只存储一个键值和数据的。那说明什么？说明每个磁盘块仅仅存储一个键值和数据！那如果要存储海量的数据呢</p>
 <p>可以想象到二叉树的节点将会非常多，高度也会极其高，查找数据时也会进行很多次磁盘 IO，查找数据的效率将会极低！</p>
-<p><img src="/images/post/db-mysql/002/btree-1.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/btree-1.jpg" alt></p>
 <p>为了解决平衡二叉树的这个弊端，应该寻找一种单个节点可以存储多个键值和数据的平衡树。也就是我们接下来要说的 B 树。</p>
 <p>B 树（Balance Tree）即为平衡树的意思，下图即是一棵 B 树：</p>
 <p>B树，<a href="https://www.cnblogs.com/bjlhx/p/10898059.html" target="_blank" rel="noopener">参看</a></p>
-<p><img src="/images/post/db-mysql/002/btree-2.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/btree-2.jpg" alt></p>
 <p>图中的 p 节点为指向子节点的指针，二叉查找树和平衡二叉树其实也有。</p>
 <p>图中的每个节点称为页，页就是上面说的磁盘块，在 MySQL 中数据读取的基本单位都是页，所以这里叫做页更符合 MySQL 中索引的底层数据结构。</p>
 <p>从上图可以看出，B 树相对于平衡二叉树，每个节点存储了更多的键值（key）和数据（data），并且每个节点拥有更多的子节点，子节点的个数一般称为阶，上述图中的 B 树为 3 阶 B 树，高度也会很低。</p>
@@ -5518,7 +5886,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 </ul>
 <h2 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h2><p><a href="https://www.cnblogs.com/bjlhx/p/10898373.html" target="_blank" rel="noopener">参看</a></p>
 <p>B+ 树是对 B 树的进一步优化。看下 B+ 树的结构图：</p>
-<p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/btree-3.jpg" alt></p>
 <p>根据上图看下 B+ 树和 B 树有什么不同：</p>
 <p>①B+ 树非叶子节点上是不存储数据的，仅存储键值，而 B 树节点中不仅存储键值，也会存储数据。</p>
 <p>之所以这么做是因为在数据库中页的大小是固定的，InnoDB 中页的默认大小是 16KB。</p>
@@ -5537,7 +5905,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>其中非叶子结点存储的是子页的最小的键值和子页的页号，叶子结点存储的是数据，数据按照索引键排序。</p>
 <p>同一层的页之间用双向链表连接(前面提到的FIL Header中PREV PAGE 和 NEXT PAGE)，同一页内的记录用单向链表连接(Record Header中记录了下一条记录的偏移)。</p>
 <p>每一页设置了两个虚拟记录Infimum和Supremum用于标识页的开始和结束。</p>
-<p><img src="/images/post/db-mysql/bptreestruct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/bptreestruct.webp" alt></p>
 <p>在InnoDB中根据辅助索引查询，如果除了主键外还有其他字段，则需要查询两遍，先根据辅助索引查询主键的值，然后再到主索引中查询得到记录。</p>
 <p>此外，因为辅助索引的数据部分是主键值，主键不能过大，否则会导致辅助索引占用空间变大，用自增ID做主键是个不错的选择。</p>
 <h2 id="聚集索引-VS-非聚集索引-概念"><a href="#聚集索引-VS-非聚集索引-概念" class="headerlink" title="聚集索引 VS 非聚集索引 概念"></a>聚集索引 VS 非聚集索引 概念</h2><p>在上面介绍 B+ 树索引的时候，提到了图中的索引其实是聚集索引的实现方式。</p>
@@ -5553,7 +5921,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>将来能通过这个索引找到数据行的ID。要查数据时，就根据ID去聚簇索引那棵B+tree去查，这就是回表。</p>
 <p>最后，索引是方便查询的，索引列的数据不适合放大的，它占用的空间一多，那么B+tree一层中能放的个数就越少。</p>
 <p>索引列一多，插入就越慢，如果没有索引，插入一行时只需要对主键进行排序即可。如果有很多列都有索引，那么插入时，就要做很多次排序,以及多个B+tree的结构变化。</p>
-<h3 id="利用聚集索引查找数据"><a href="#利用聚集索引查找数据" class="headerlink" title="利用聚集索引查找数据"></a>利用聚集索引查找数据</h3><p><img src="/images/post/db-mysql/002/btree-3.jpg" alt=""></p>
+<h3 id="利用聚集索引查找数据"><a href="#利用聚集索引查找数据" class="headerlink" title="利用聚集索引查找数据"></a>利用聚集索引查找数据</h3><p><img src="/images/post/db-mysql/002/btree-3.jpg" alt></p>
 <p>聚集索引，表中的数据存储在其中。</p>
 <p>现在假设要查找 id&gt;=18 并且 id&lt;40 的用户数据。对应的 sql 语句为：</p>
 <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">id</span>&gt;=<span class="number">18</span> <span class="keyword">and</span> <span class="keyword">id</span> &lt;<span class="number">40</span></span><br></pre></td></tr></table></figure>
@@ -5572,16 +5940,16 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>最终我们找到满足条件的所有数据，总共 12 条记录：</p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">(18,kl),(19,kl),(22,hj),(24,io),(25,vg),(29,jk),(31,jk),(33,rt),(34,ty),(35,yu),(37,rt),(39,rt)。</span><br></pre></td></tr></table></figure>
 <p>具体的查找流程图：</p>
-<p><img src="/images/post/db-mysql/002/jucu-chazhao.jpeg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/jucu-chazhao.jpeg" alt></p>
 <h3 id="利用非聚集索引查找数据"><a href="#利用非聚集索引查找数据" class="headerlink" title="利用非聚集索引查找数据"></a>利用非聚集索引查找数据</h3><p>上述表结构 只有主键 和 名称，扩展下表</p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">id  name    luckyNum</span><br><span class="line">1   zs      23</span><br><span class="line">2   ls      7</span><br></pre></td></tr></table></figure>
 <p>使用 luckyNum 建立非聚集索引</p>
 <p>在叶子节点中，不再存储所有的数据了，存储的是键值和主键。对于叶子节点中的 x-y，比如 1-1。左边的 1 表示的是索引的键值，右边的 1 表示的是主键值。</p>
-<p><img src="/images/post/db-mysql/002/feijuji-1.jpeg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/feijuji-1.jpeg" alt></p>
 <p>如果要找到幸运数字为 33 的用户信息，对应的 sql 语句为：</p>
 <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> luckNum=<span class="number">33</span></span><br></pre></td></tr></table></figure>
 <p>查找的流程跟聚集索引一样，最终会找到主键值 47，找到主键后,需要再到聚集索引中查找具体对应的数据信息，此时又回到了聚集索引的查找流程。</p>
-<p><img src="/images/post/db-mysql/002/feijuji-chazhao.jpeg" alt=""></p>
+<p><img src="/images/post/db-mysql/002/feijuji-chazhao.jpeg" alt></p>
 <p>在 MyISAM 中，聚集索引和非聚集索引的叶子节点都会存储数据的文件地址。</p>
 <p>因为 B 树不管叶子节点还是非叶子节点，都会保存数据，这样导致在非叶子节点中能保存的指针数量变少（有些资料也称为扇出）。<br>指针少的情况下要保存大量数据，只能增加树的高度，导致 IO 操作变多，查询性能变低。</p>
 <p>参看地址：<a href="https://blog.51cto.com/14480698/2451603" target="_blank" rel="noopener">https://blog.51cto.com/14480698/2451603</a></p>
@@ -5683,7 +6051,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <h1 id="表空间物理结构-页、区、段"><a href="#表空间物理结构-页、区、段" class="headerlink" title="表空间物理结构-页、区、段"></a>表空间物理结构-页、区、段</h1><p>磁盘最小单位是512字节，操作系统是4KB，mysql里最小的是page（页面）有16K。</p>
 <p>ibd就是放索引树的，但总不能一个树就摊在一个txt文档里，所以必须还要有一种文件组织结构。所有的数据都放在page里，用一种规则来把N个page连一起，让它们形成一些关联，才能便于查询，要先找到page，再找到page内的数据。</p>
 <p>B+树是离不开页面page</p>
-<p><img src="/images/post/db-mysql/006/tablespace.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/006/tablespace.webp" alt></p>
 <h2 id="段（segment）"><a href="#段（segment）" class="headerlink" title="段（segment）"></a>段（segment）</h2><p>段是表空间文件中的主要组织结构，它是一个逻辑概念，用来管理物理文件，是构成索引、表、回滚段的基本元素。</p>
 <p>表空间是由各个段组成的，常见的段有数据段、索引段、回滚段等。</p>
 <p>InnoDB存储引擎表是索引组织的（index organized），因此数据即索引，索引即数据。那么数据段即为B+树的页节点（上图的leaf node segment），索引段即为B+树的非索引节点（上图的non-leaf node segment）。</p>
@@ -5696,11 +6064,11 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>一个段所管理的空间大小是无限的，可一直扩展下去，但是扩展的最小单位就是簇。注意，每个簇是一块连续的硬盘空间，但多个簇之间可不是连续的。</p>
 <p>同样，两个段之间，在硬盘上也没有什么关系。</p>
 <h2 id="页（page）"><a href="#页（page）" class="headerlink" title="页（page）"></a>页（page）</h2><h3 id="页存储单元"><a href="#页存储单元" class="headerlink" title="页存储单元"></a>页存储单元</h3><p>磁盘扇区、文件系统、InnoDB 存储引擎都有各自的最小存储单元。存储数据的最小单位。</p>
-<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt></p>
 <ul>
 <li><p>磁盘扇区存储单元-扇区-512字节<br>在计算机中磁盘存储数据最小单元是扇区，一个扇区的大小是 512 字节</p>
 </li>
-<li><p>文件系统存储单元-块-4k<br>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。<br>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]<br><img src="/images/post/db-mysql/001/file-0k.jpg" alt="">  <img src="/images/post/db-mysql/001/file-1k.jpg" alt=""></p>
+<li><p>文件系统存储单元-块-4k<br>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。<br>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]<br><img src="/images/post/db-mysql/001/file-0k.jpg" alt>  <img src="/images/post/db-mysql/001/file-1k.jpg" alt></p>
 </li>
 <li><p>InnoDB存储单元-页-16k<br>InnoDB 存储引擎也有自己的最小储存单元——页(Page)，一个页的大小是 16K。<br>InnoDB 的所有数据文件(后缀为 ibd 的文件)，他的大小始终都是 16384(16K)的整数倍。  </p>
 </li>
@@ -5710,7 +6078,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>InnoDB有页（page）的概念，可以理解为簇的细化。页是InnoDB磁盘管理的最小单位。</p>
 <h3 id="页结构"><a href="#页结构" class="headerlink" title="页结构"></a>页结构</h3><p>所有页的结构都是一样的，分为文件头(前38字节)，页数据和文件尾(后8字节)。页数据根据页的类型不同而不一样。</p>
 <p>页的头尾除了一些元信息外，还有Checksum校验值，这些校验值在写入磁盘前计算得到，当从磁盘中读取时，重新计算校验值并与数据页中存储的对比，如果发现不同，则会导致 MySQL 崩溃。</p>
-<p><img src="/images/post/db-mysql/page-struct.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/page-struct.jpg" alt></p>
 <h4 id="File-Header-记录页的一些头信息，共占用38字节，组成部分如"><a href="#File-Header-记录页的一些头信息，共占用38字节，组成部分如" class="headerlink" title="File Header 记录页的一些头信息，共占用38字节，组成部分如:"></a>File Header 记录页的一些头信息，共占用38字节，组成部分如:</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_SPACE_OR_CHKSUM	4	当mysql4.0.14之前，值是0，之后该值代表页的checksum值</span><br><span class="line">FIL_PAGE_OFFSET	        4	表空间中页的偏移量。。如某独立表空间a.ibd的大小为1GB，如果页的大小为16KB，那么总共有65536个页。</span><br><span class="line">                            FILE_PAGE_OFFSET表示该页在所有页中的位置。若此表空间的ID为10，那么搜索页（10，1）就表示查找表a中的第二页</span><br><span class="line">FIL_PAGE_PREV	        4	该页的上一个页，B+tree特性决定了叶子节点必须是双向列表</span><br><span class="line">FIL_PAGE_NEXT	        4	该页的下一个页，B+tree特性决定了叶子节点必须是双向列表</span><br><span class="line">FIL_PAGE_LSN	        8	该页最后被修改的LSN日志序列位置（Log Sequence Number）</span><br><span class="line">FIL_PAGE_TYPE	        2	该页的类型，0x45BF为数据页,实际行记录的存储空间</span><br><span class="line">FIL_PAGE_FILE_FLUSH_LSN	8	独立表空间中为0，如在系统表空间表示一个页的定义，代表文件至少被更新到了该LSN值</span><br><span class="line">FIL_PAGE_ARCH_LOG_NO	4	从4.1开始，该页属于哪一个表空间</span><br></pre></td></tr></table></figure>
 
 <h5 id="页类型【innodb存储引擎中】"><a href="#页类型【innodb存储引擎中】" class="headerlink" title="页类型【innodb存储引擎中】"></a>页类型【innodb存储引擎中】</h5><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_INDEX          0x45BF  数据页，B+树叶节点，索引页的叶子结点的data就是数据，如聚集索引存储的行数据，辅助索引存储的主键值。</span><br><span class="line">FIL_PAGE_UNDO_LOG	    0x0002  Undo页（Undo Log Page）</span><br><span class="line">FIL_PAGE_INODE	        0x0003  索引节点</span><br><span class="line">FIL_PAGE_IBUF_FREE_LIST 0x0004  插入缓冲空闲列表页（Insert Buffer Free List）</span><br><span class="line">FIL_PAGE_TYPE_ALLOCATED 0x0000  最新分配</span><br><span class="line">FIL_PAGE_IBUF_BITMAP	0x0005  插入缓冲位图页（Insert Buffer Bitmap）。用于记录 change buffer的使用情况。</span><br><span class="line">FIL_PAGE_TYPE_SYS       0x0006  系统页（System Page）</span><br><span class="line">FIL_PAGE_TYPE_TRX_SYS   0x0007  事务数据页（Transaction system Page）</span><br><span class="line">FIL_PAGE_TYPE_FSP_HDR   0x0008  File Space Header，主要用于跟踪表空间，空闲链表、碎片页以及区等信息。</span><br><span class="line">FIL_PAGE_TYPE_XDES      0x0009  扩展描述也</span><br><span class="line">FIL_PAGE_TYPE_BLOB      0x000A  BLOB Page</span><br></pre></td></tr></table></figure>
@@ -5726,7 +6094,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <h4 id="infimum和supermum-record"><a href="#infimum和supermum-record" class="headerlink" title="infimum和supermum record"></a>infimum和supermum record</h4><ul>
 <li>每个数据页中都有两个虚拟的行记录，用来限定记录（User Record）的边界（Infimum为下界，Supremum为上界）</li>
 <li>Infimum和Supremum在页被创建是自动创建，不会被删除</li>
-<li>在Compact和Redundant行记录格式下，Infimum和Supremum占用的字节数是不一样的<br><img src="/images/post/db-mysql/insupermum.jpg" alt=""></li>
+<li>在Compact和Redundant行记录格式下，Infimum和Supremum占用的字节数是不一样的<br><img src="/images/post/db-mysql/insupermum.jpg" alt></li>
 <li>5.1后有Compact（默认）和Redundant两种格式<ul>
 <li>Compact行记录格式<br>设计目标为高效存放数据，行数据越多，性能越高。<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">变长字段长度列表    |   NULL标志位     |   记录头信息   |   列1数据    |   列2数据    |   ……  |</span><br></pre></td></tr></table></figure>
 <ul>
@@ -5781,7 +6149,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 
 </li>
 </ul>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p><img src="/images/post/db-mysql/index-page-extents1.jpg" alt=""></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p><img src="/images/post/db-mysql/index-page-extents1.jpg" alt></p>
 <ol>
 <li><p>每个簇里有64个页面，都会进行编号，页面就是最小的存储单元了。在逻辑上（页面号都是从小到大连续的）及物理上都是连续的。</p>
 </li>
@@ -5798,7 +6166,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>InnoDB表空间文件.ibd文件内部存储单元是页，初始大小为 96K，而InnoDB默认页大小为 16K。当然页大小也可以通过 innodb_page_size 配置为 4K, 8K…64K 等。</p>
 <p>如果用二进制打开，以16K划分一页。在ibd文件中，0-16KB偏移量即为0号数据页，16KB-32KB的为1号数据页，以此类推。</p>
 <h2 id="ibd文件存储结构【页】"><a href="#ibd文件存储结构【页】" class="headerlink" title="ibd文件存储结构【页】"></a>ibd文件存储结构【页】</h2><ol>
-<li>图形<br><img src="/images/post/db-mysql/ibdfile.webp" alt=""><br>更为抽象一点的<br><img src="/images/post/db-mysql/index-page-extents2.png" alt=""></li>
+<li>图形<br><img src="/images/post/db-mysql/ibdfile.webp" alt><br>更为抽象一点的<br><img src="/images/post/db-mysql/index-page-extents2.png" alt></li>
 <li>sql查询<br>可以在 innodb_sys_tables 表中查到表t的表空间ID为 36，然后可以在 innodb_buffer_page查到所有页信息，一共4个页。<br>分别是 FSP_HDR, IBUF_BITMAP, INODE, INDEX。<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> INFORMATION_SCHEMA.INNODB_SYS_TABLES <span class="keyword">WHERE</span> <span class="keyword">NAME</span>=<span class="string">'test_innodb/table15w'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_buffer_page <span class="keyword">where</span> <span class="keyword">SPACE</span>=<span class="number">36</span>;</span><br></pre></td></tr></table></figure></li>
 <li>实际文件结构：</li>
 </ol>
@@ -5840,7 +6208,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 
 
 <h2 id="Index-索引页"><a href="#Index-索引页" class="headerlink" title="Index 索引页"></a>Index 索引页</h2><p>需要跳过3页面，即 49152，索引页 结构也符合基础页结构。</p>
-<p><img src="/images/post/db-mysql/index-struct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/index-struct.webp" alt></p>
 <p>同上述步骤类似</p>
 <h3 id="FIL-Header（38字节-记录文件头信息。"><a href="#FIL-Header（38字节-记录文件头信息。" class="headerlink" title="FIL Header（38字节): 记录文件头信息。"></a>FIL Header（38字节): 记录文件头信息。</h3><p>offsets:16<em>1024</em>3=49152</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 49152 -n 38 table5hang.ibd</span><br><span class="line">0000c000  3b 03 ff eb 00 00 00 03  ff ff ff ff ff ff ff ff  |;...............|</span><br><span class="line">0000c010  00 00 00 00 80 eb af c9  45 bf 00 00 00 00 00 00  |........E.......|</span><br><span class="line">0000c020  00 00 00 00 00 2c                                 |.....,|</span><br><span class="line">0000c026</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
@@ -5861,7 +6229,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">index_id    name    table_id    type    n_fields    page_no space</span><br><span class="line">60          PRIMARY 58          3       1           3       44</span><br></pre></td></tr></table></figure>
 
 <p>PAGE_BTR_SEG_LEAF和PAGE_BTR_SEG_TOP INDEX页中的根结点才有的，非根结点的为0。<br>前10字节 00 00 00 2c 00 00 00 02 00 f2 是叶子结点所在段的segment header，分别记录了叶子结点的表空间ID 0x24，INODE页的页号 2 和 INODE项偏移 0xf2。<br>后10字节 00 00 00 2c 00 00 00 02 00 32 是非叶子结点所在段的segment header，偏移分别是0xf2 和 0x32，即INODE页的前2个Entry，文件段ID分别是1和2。<br>FSEG Header中存储了该 INDEX 页的INODE项，INODE项里面则记录了该页存储所在的文件段以及文件段页的使用情况。对于 File-Per-Table情况下，每个单独的表空间文件的 FSP_HDR 页负责管理页使用情况。</p>
-<p><img src="/images/post/db-mysql/fseg.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/fseg.webp" alt></p>
 <h3 id="System-Records-26字节-infimum和supermum-record"><a href="#System-Records-26字节-infimum和supermum-record" class="headerlink" title="System Records(26字节)-infimum和supermum record"></a>System Records(26字节)-infimum和supermum record</h3><p>offset:16<em>1024</em>3+38+56 = 49246</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexdump -C -s 49246 -n 60 table5hang.ibd</span><br><span class="line">0000c05e  01 00 02 00 1c 69 6e 66  69 6d 75 6d 00 06 00 0b  |.....infimum....|</span><br><span class="line">0000c06e  00 00 73 75 70 72 65 6d  75 6d 06 00 00 00 10 00  |..supremum......|</span><br><span class="line">0000c07e  26 80 00 00 00 00 00 00  01 00 00 00 00 74 d0 9e  |&amp;............t..|</span><br><span class="line">0000c08e  00 00 01 57 01 10 6e 61  6d 65 2d 31              |...W..name-1|</span><br><span class="line">0000c09a</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">01 00 02 00 1c 69 6e 66 69 6d 75 6d 00 |.....infimum....|</span><br><span class="line">06 00 0b 00 00 73 75 70 72 65 6d 75 6d |..supremum......|</span><br></pre></td></tr></table></figure>
@@ -5934,7 +6302,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>每个页目录槽最少要包含4个记录，最多包含8个记录(包括它自己)。如果我们在表 t2 中另外插入 7 条记录，则会增加一个新的slot，即 id 为 4 的记录，如下：</p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">slot    offset  type          owned   key</span><br><span class="line">0       99      infimum       1       </span><br><span class="line">1       207     conventional  4       (i&#x3D;4)</span><br><span class="line">2       112     supremum      5</span><br></pre></td></tr></table></figure>
 <p>下图是页目录结构图，可以通过页目录的二分查找提高页内数据的查询性能。</p>
-<p><img src="/images/post/db-mysql/bptreepagestruct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/bptreepagestruct.webp" alt></p>
 <p>参考：</p>
 <p><a href="http://mysql.taobao.org/monthly/2016/02/01/" target="_blank" rel="noopener">http://mysql.taobao.org/monthly/2016/02/01/</a></p>
 <p>《MYSQL运维内参》<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html" target="_blank" rel="noopener">https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html</a></p>
@@ -5990,7 +6358,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>当新建一个表时，会给表创建一个主键primary Key，然后这个key就带着整行数据占据着一块空间，作为B+ tree的一个叶子节点里元素。</p>
 <p>可以理解为一个key-value键值对，key就是主键，value就是整行数据。如果你根本就没创建主键（不推荐），那innodb也会给你分配一个RowId来作为将来找它的主键，只是看不到。</p>
 <p>这棵拥有全量数据的b+ tree，就是将来提供数据的树，一般来说，这棵树最大一般4层，3层就能存2千万数据了，4层能达到n个亿，将来通过主键查询时，通过2-4次IO就能找到数据行。这个索引树，即——聚簇索引。</p>
-<h1 id="表空间-ibd内文件结构"><a href="#表空间-ibd内文件结构" class="headerlink" title="表空间-ibd内文件结构"></a>表空间-ibd内文件结构</h1><h2 id=""><a href="#" class="headerlink" title=""></a></h2>]]></content>
+<h1 id="表空间-ibd内文件结构"><a href="#表空间-ibd内文件结构" class="headerlink" title="表空间-ibd内文件结构"></a>表空间-ibd内文件结构</h1><h2 id><a href="#" class="headerlink" title></a></h2>]]></content>
       <categories>
         <category>db-mysql-core</category>
       </categories>
@@ -6027,7 +6395,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <li><p>其他表空间：其他表空间中Undo表空间存储的是Undo日志。除了存储在系统表空间外，Undo日志也可以存储在单独的Undo表空间中。<br>临时表空间则是非压缩的临时表的存储空间，默认是数据目录的 ibtmp1 文件，所有临时表共享，压缩的临时表用的是 File-Per-Table 表空间。</p>
 </li>
 </ul>
-<h1 id="innodb承上启下的结构"><a href="#innodb承上启下的结构" class="headerlink" title="innodb承上启下的结构"></a>innodb承上启下的结构</h1><p><img src="/images/post/db-mysql/005/innodb-jiegou.png" alt=""></p>
+<h1 id="innodb承上启下的结构"><a href="#innodb承上启下的结构" class="headerlink" title="innodb承上启下的结构"></a>innodb承上启下的结构</h1><p><img src="/images/post/db-mysql/005/innodb-jiegou.png" alt></p>
 <p>Handler API是供mysql server层调用的，server层定义了一些接口，譬如insert、delete，具体怎么实现，是由每个存储引擎自己实现的。</p>
 <p>以上图中间虚线为分界，上面的是逻辑层，每个访问都会产生事务，事务处理会产生锁（表锁、行锁），操作对象是表、索引、b+ tree。对数据页面的访问需要物理事务，为了读写一致性，需要读写锁（物理锁）。为了高效定位和管理“页”，需要用到文件管理系统。</p>
 <p>这些都是基于逻辑的处理，再往下就是物理层。</p>
@@ -6046,7 +6414,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
     <content><![CDATA[<p>摘要：物理存储文件结构</p>
 <a id="more"></a>
 
-<h1 id="物理存储文件结构"><a href="#物理存储文件结构" class="headerlink" title="物理存储文件结构"></a>物理存储文件结构</h1><p><img src="/images/post/db-mysql/005/jiegou.png" alt=""></p>
+<h1 id="物理存储文件结构"><a href="#物理存储文件结构" class="headerlink" title="物理存储文件结构"></a>物理存储文件结构</h1><p><img src="/images/post/db-mysql/005/jiegou.png" alt></p>
 <p>my.cnf，配置文件。</p>
 <p>slow.log，记录慢查询日志，当语句执行时间超过参数long_query_time的值时，会被记录到该log，需要开启配置后才有。</p>
 <p>error.log，记录错误和警告信息。</p>
@@ -6054,7 +6422,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>系统默认库有4个，存储系统信息的，表名、列名、列属性等等。</p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">information_scherma</span><br><span class="line">mysql</span><br><span class="line">performance_scherma</span><br><span class="line">sys</span><br></pre></td></tr></table></figure>
 
-<h1 id="InnoDB-架构"><a href="#InnoDB-架构" class="headerlink" title="InnoDB 架构"></a>InnoDB 架构</h1><p><img src="/images/post/db-mysql/innodb-struct.webp" alt=""></p>
+<h1 id="InnoDB-架构"><a href="#InnoDB-架构" class="headerlink" title="InnoDB 架构"></a>InnoDB 架构</h1><p><img src="/images/post/db-mysql/innodb-struct.webp" alt></p>
 <p>从上面第二张图可以看到，InnoDB 主要分为两大块：</p>
 <ul>
 <li>InnoDB In-Memory Structures【内存中的结构】</li>
@@ -6076,7 +6444,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
     <content><![CDATA[<p>摘要：Server服务层聚集了mysql的最多的逻辑，包括了请求解析、查询缓存、语义分析、查询优化、各种计算函数、扫描记录、binlog、缓存、锁、内存管理等等。</p>
 <a id="more"></a>
 
-<h1 id="表对象缓存"><a href="#表对象缓存" class="headerlink" title="表对象缓存"></a>表对象缓存</h1><p><img src="/images/post/db-mysql/store.jpg" alt=""><br><img src="/images/post/db-mysql/004/zhixing.png" alt=""></p>
+<h1 id="表对象缓存"><a href="#表对象缓存" class="headerlink" title="表对象缓存"></a>表对象缓存</h1><p><img src="/images/post/db-mysql/store.jpg" alt><br><img src="/images/post/db-mysql/004/zhixing.png" alt></p>
 <p>创建一个表，设置列、列属性，索引等，并且指定好了存储引擎（默认innodb）。</p>
 <h2 id="表结构缓存、表对象缓存"><a href="#表结构缓存、表对象缓存" class="headerlink" title="表结构缓存、表对象缓存"></a>表结构缓存、表对象缓存</h2><p>客户端发过来一个sql，如</p>
 <figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tableA <span class="keyword">where</span> <span class="keyword">id</span> =<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
@@ -6228,7 +6596,7 @@ id 是主键，我们通过这棵 B+ 树来查找，首先找到根页，怎么�
 <p>npm install 安装依赖包</p>
 <p>hexo g 生成（generate）网页。 由于我们还没创建任何博客，生成的网页会展示 Hexo 里面自带了一个 Hello World 的博客。</p>
 <p>hexo s 将生成的网页放在了本地服务器（server）</p>
-<p><a href="https://blog.bjlhx.top/categories/hexo/">更多</a></p>
+<p><a href="https://blog.bjlhx.top/categories/hexo/" target="_blank" rel="noopener">更多</a></p>
 <h3 id="新建博客并发布"><a href="#新建博客并发布" class="headerlink" title="新建博客并发布"></a>新建博客并发布</h3><p>source/_posts 放置 XX.md 文章即可，执行hexo g、hexo s查看</p>
 <p>发布，将生成的前端代码发布到：bjlhx15.github.io.git  仓库，注意不是2.3中的源码仓库 hexo-src</p>
 <p>在根目录：_config.yml 下修改deploy：</p>
@@ -6257,17 +6625,17 @@ theme: next</code></pre>
     <title>001-建站系统系列</title>
     <url>/articles/20200130/f87cfa7a.html</url>
     <content><![CDATA[<p>一步一步，搭建网站系统<br>域名申请与绑定、</p>
-<p><a href="https://blog.bjlhx.top/categories/build-site/">build-site</a></p>
+<p><a href="https://blog.bjlhx.top/categories/build-site/" target="_blank" rel="noopener">build-site</a></p>
 <a id="more"></a>
 
 <h1 id="域名申请与绑定"><a href="#域名申请与绑定" class="headerlink" title="域名申请与绑定"></a>域名申请与绑定</h1><h2 id="阿里云"><a href="#阿里云" class="headerlink" title="阿里云"></a>阿里云</h2><p><a href="https://www.aliyun.com" target="_blank" rel="noopener">https://www.aliyun.com</a></p>
 <p>控制台→域名，可以注册域名，top域名比较便宜，个人申请使用：bjlhx.top</p>
 <p><a href="https://wanwang.aliyun.com/domain/" target="_blank" rel="noopener">https://wanwang.aliyun.com/domain/</a>  首年1块</p>
 <h3 id="CNAME-域名解析"><a href="#CNAME-域名解析" class="headerlink" title="CNAME 域名解析"></a>CNAME 域名解析</h3><p>主要是一个域名解析到另一个域名</p>
-<h4 id="域名解析配置"><a href="#域名解析配置" class="headerlink" title="域名解析配置"></a>域名解析配置</h4><p><img src="/images/post/build_site/domain.png" alt=""></p>
+<h4 id="域名解析配置"><a href="#域名解析配置" class="headerlink" title="域名解析配置"></a>域名解析配置</h4><p><img src="/images/post/build_site/domain.png" alt></p>
 <h4 id="站点根目录增加"><a href="#站点根目录增加" class="headerlink" title="站点根目录增加"></a>站点根目录增加</h4><p>文件：CNAME</p>
 <p>内容：blog.bjlhx.top</p>
-<p>等待10分钟，然后访问 <a href="http://blog.bjlhx.top/">http://blog.bjlhx.top/</a> 就能看到 <a href="http://bjlhx15.github.io" target="_blank" rel="noopener">http://bjlhx15.github.io</a> 一样的页面，证明绑定成功了。 </p>
+<p>等待10分钟，然后访问 <a href="http://blog.bjlhx.top/" target="_blank" rel="noopener">http://blog.bjlhx.top/</a> 就能看到 <a href="http://bjlhx15.github.io" target="_blank" rel="noopener">http://bjlhx15.github.io</a> 一样的页面，证明绑定成功了。 </p>
 <h3 id="IP解析"><a href="#IP解析" class="headerlink" title="IP解析"></a>IP解析</h3><p>域名解析到指定的IP，A记录</p>
 ]]></content>
       <categories>

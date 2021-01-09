@@ -173,12 +173,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">25</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">114</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -304,7 +304,7 @@
 <h1 id="表空间物理结构-页、区、段"><a href="#表空间物理结构-页、区、段" class="headerlink" title="表空间物理结构-页、区、段"></a>表空间物理结构-页、区、段</h1><p>磁盘最小单位是512字节，操作系统是4KB，mysql里最小的是page（页面）有16K。</p>
 <p>ibd就是放索引树的，但总不能一个树就摊在一个txt文档里，所以必须还要有一种文件组织结构。所有的数据都放在page里，用一种规则来把N个page连一起，让它们形成一些关联，才能便于查询，要先找到page，再找到page内的数据。</p>
 <p>B+树是离不开页面page</p>
-<p><img src="/images/post/db-mysql/006/tablespace.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/006/tablespace.webp" alt></p>
 <h2 id="段（segment）"><a href="#段（segment）" class="headerlink" title="段（segment）"></a>段（segment）</h2><p>段是表空间文件中的主要组织结构，它是一个逻辑概念，用来管理物理文件，是构成索引、表、回滚段的基本元素。</p>
 <p>表空间是由各个段组成的，常见的段有数据段、索引段、回滚段等。</p>
 <p>InnoDB存储引擎表是索引组织的（index organized），因此数据即索引，索引即数据。那么数据段即为B+树的页节点（上图的leaf node segment），索引段即为B+树的非索引节点（上图的non-leaf node segment）。</p>
@@ -317,11 +317,11 @@
 <p>一个段所管理的空间大小是无限的，可一直扩展下去，但是扩展的最小单位就是簇。注意，每个簇是一块连续的硬盘空间，但多个簇之间可不是连续的。</p>
 <p>同样，两个段之间，在硬盘上也没有什么关系。</p>
 <h2 id="页（page）"><a href="#页（page）" class="headerlink" title="页（page）"></a>页（page）</h2><h3 id="页存储单元"><a href="#页存储单元" class="headerlink" title="页存储单元"></a>页存储单元</h3><p>磁盘扇区、文件系统、InnoDB 存储引擎都有各自的最小存储单元。存储数据的最小单位。</p>
-<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/001/mysql-disk.jpg" alt></p>
 <ul>
 <li><p>磁盘扇区存储单元-扇区-512字节<br>在计算机中磁盘存储数据最小单元是扇区，一个扇区的大小是 512 字节</p>
 </li>
-<li><p>文件系统存储单元-块-4k<br>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。<br>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]<br><img src="/images/post/db-mysql/001/file-0k.jpg" alt="">  <img src="/images/post/db-mysql/001/file-1k.jpg" alt=""></p>
+<li><p>文件系统存储单元-块-4k<br>文件系统(例如 XFS/EXT4)他的最小单元是块，一个块的大小是 4K。<br>文件系统中一个文件大小只有 1 个字节，但不得不占磁盘上 4KB 的空间。[0k不占空间]<br><img src="/images/post/db-mysql/001/file-0k.jpg" alt>  <img src="/images/post/db-mysql/001/file-1k.jpg" alt></p>
 </li>
 <li><p>InnoDB存储单元-页-16k<br>InnoDB 存储引擎也有自己的最小储存单元——页(Page)，一个页的大小是 16K。<br>InnoDB 的所有数据文件(后缀为 ibd 的文件)，他的大小始终都是 16384(16K)的整数倍。  </p>
 </li>
@@ -331,7 +331,7 @@
 <p>InnoDB有页（page）的概念，可以理解为簇的细化。页是InnoDB磁盘管理的最小单位。</p>
 <h3 id="页结构"><a href="#页结构" class="headerlink" title="页结构"></a>页结构</h3><p>所有页的结构都是一样的，分为文件头(前38字节)，页数据和文件尾(后8字节)。页数据根据页的类型不同而不一样。</p>
 <p>页的头尾除了一些元信息外，还有Checksum校验值，这些校验值在写入磁盘前计算得到，当从磁盘中读取时，重新计算校验值并与数据页中存储的对比，如果发现不同，则会导致 MySQL 崩溃。</p>
-<p><img src="/images/post/db-mysql/page-struct.jpg" alt=""></p>
+<p><img src="/images/post/db-mysql/page-struct.jpg" alt></p>
 <h4 id="File-Header-记录页的一些头信息，共占用38字节，组成部分如"><a href="#File-Header-记录页的一些头信息，共占用38字节，组成部分如" class="headerlink" title="File Header 记录页的一些头信息，共占用38字节，组成部分如:"></a>File Header 记录页的一些头信息，共占用38字节，组成部分如:</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_SPACE_OR_CHKSUM	4	当mysql4.0.14之前，值是0，之后该值代表页的checksum值</span><br><span class="line">FIL_PAGE_OFFSET	        4	表空间中页的偏移量。。如某独立表空间a.ibd的大小为1GB，如果页的大小为16KB，那么总共有65536个页。</span><br><span class="line">                            FILE_PAGE_OFFSET表示该页在所有页中的位置。若此表空间的ID为10，那么搜索页（10，1）就表示查找表a中的第二页</span><br><span class="line">FIL_PAGE_PREV	        4	该页的上一个页，B+tree特性决定了叶子节点必须是双向列表</span><br><span class="line">FIL_PAGE_NEXT	        4	该页的下一个页，B+tree特性决定了叶子节点必须是双向列表</span><br><span class="line">FIL_PAGE_LSN	        8	该页最后被修改的LSN日志序列位置（Log Sequence Number）</span><br><span class="line">FIL_PAGE_TYPE	        2	该页的类型，0x45BF为数据页,实际行记录的存储空间</span><br><span class="line">FIL_PAGE_FILE_FLUSH_LSN	8	独立表空间中为0，如在系统表空间表示一个页的定义，代表文件至少被更新到了该LSN值</span><br><span class="line">FIL_PAGE_ARCH_LOG_NO	4	从4.1开始，该页属于哪一个表空间</span><br></pre></td></tr></table></figure>
 
 <h5 id="页类型【innodb存储引擎中】"><a href="#页类型【innodb存储引擎中】" class="headerlink" title="页类型【innodb存储引擎中】"></a>页类型【innodb存储引擎中】</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">名称	大小（Bytes）	描述</span><br><span class="line">FIL_PAGE_INDEX          0x45BF  数据页，B+树叶节点，索引页的叶子结点的data就是数据，如聚集索引存储的行数据，辅助索引存储的主键值。</span><br><span class="line">FIL_PAGE_UNDO_LOG	    0x0002  Undo页（Undo Log Page）</span><br><span class="line">FIL_PAGE_INODE	        0x0003  索引节点</span><br><span class="line">FIL_PAGE_IBUF_FREE_LIST 0x0004  插入缓冲空闲列表页（Insert Buffer Free List）</span><br><span class="line">FIL_PAGE_TYPE_ALLOCATED 0x0000  最新分配</span><br><span class="line">FIL_PAGE_IBUF_BITMAP	0x0005  插入缓冲位图页（Insert Buffer Bitmap）。用于记录 change buffer的使用情况。</span><br><span class="line">FIL_PAGE_TYPE_SYS       0x0006  系统页（System Page）</span><br><span class="line">FIL_PAGE_TYPE_TRX_SYS   0x0007  事务数据页（Transaction system Page）</span><br><span class="line">FIL_PAGE_TYPE_FSP_HDR   0x0008  File Space Header，主要用于跟踪表空间，空闲链表、碎片页以及区等信息。</span><br><span class="line">FIL_PAGE_TYPE_XDES      0x0009  扩展描述也</span><br><span class="line">FIL_PAGE_TYPE_BLOB      0x000A  BLOB Page</span><br></pre></td></tr></table></figure>
@@ -347,7 +347,7 @@
 <h4 id="infimum和supermum-record"><a href="#infimum和supermum-record" class="headerlink" title="infimum和supermum record"></a>infimum和supermum record</h4><ul>
 <li>每个数据页中都有两个虚拟的行记录，用来限定记录（User Record）的边界（Infimum为下界，Supremum为上界）</li>
 <li>Infimum和Supremum在页被创建是自动创建，不会被删除</li>
-<li>在Compact和Redundant行记录格式下，Infimum和Supremum占用的字节数是不一样的<br><img src="/images/post/db-mysql/insupermum.jpg" alt=""></li>
+<li>在Compact和Redundant行记录格式下，Infimum和Supremum占用的字节数是不一样的<br><img src="/images/post/db-mysql/insupermum.jpg" alt></li>
 <li>5.1后有Compact（默认）和Redundant两种格式<ul>
 <li>Compact行记录格式<br>设计目标为高效存放数据，行数据越多，性能越高。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">变长字段长度列表    |   NULL标志位     |   记录头信息   |   列1数据    |   列2数据    |   ……  |</span><br></pre></td></tr></table></figure>
 <ul>
@@ -402,7 +402,7 @@
 
 </li>
 </ul>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p><img src="/images/post/db-mysql/index-page-extents1.jpg" alt=""></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p><img src="/images/post/db-mysql/index-page-extents1.jpg" alt></p>
 <ol>
 <li><p>每个簇里有64个页面，都会进行编号，页面就是最小的存储单元了。在逻辑上（页面号都是从小到大连续的）及物理上都是连续的。</p>
 </li>
@@ -419,7 +419,7 @@
 <p>InnoDB表空间文件.ibd文件内部存储单元是页，初始大小为 96K，而InnoDB默认页大小为 16K。当然页大小也可以通过 innodb_page_size 配置为 4K, 8K…64K 等。</p>
 <p>如果用二进制打开，以16K划分一页。在ibd文件中，0-16KB偏移量即为0号数据页，16KB-32KB的为1号数据页，以此类推。</p>
 <h2 id="ibd文件存储结构【页】"><a href="#ibd文件存储结构【页】" class="headerlink" title="ibd文件存储结构【页】"></a>ibd文件存储结构【页】</h2><ol>
-<li>图形<br><img src="/images/post/db-mysql/ibdfile.webp" alt=""><br>更为抽象一点的<br><img src="/images/post/db-mysql/index-page-extents2.png" alt=""></li>
+<li>图形<br><img src="/images/post/db-mysql/ibdfile.webp" alt><br>更为抽象一点的<br><img src="/images/post/db-mysql/index-page-extents2.png" alt></li>
 <li>sql查询<br>可以在 innodb_sys_tables 表中查到表t的表空间ID为 36，然后可以在 innodb_buffer_page查到所有页信息，一共4个页。<br>分别是 FSP_HDR, IBUF_BITMAP, INODE, INDEX。<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> INFORMATION_SCHEMA.INNODB_SYS_TABLES <span class="keyword">WHERE</span> <span class="keyword">NAME</span>=<span class="string">'test_innodb/table15w'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_buffer_page <span class="keyword">where</span> <span class="keyword">SPACE</span>=<span class="number">36</span>;</span><br></pre></td></tr></table></figure></li>
 <li>实际文件结构：</li>
 </ol>
@@ -461,7 +461,7 @@
 
 
 <h2 id="Index-索引页"><a href="#Index-索引页" class="headerlink" title="Index 索引页"></a>Index 索引页</h2><p>需要跳过3页面，即 49152，索引页 结构也符合基础页结构。</p>
-<p><img src="/images/post/db-mysql/index-struct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/index-struct.webp" alt></p>
 <p>同上述步骤类似</p>
 <h3 id="FIL-Header（38字节-记录文件头信息。"><a href="#FIL-Header（38字节-记录文件头信息。" class="headerlink" title="FIL Header（38字节): 记录文件头信息。"></a>FIL Header（38字节): 记录文件头信息。</h3><p>offsets:16<em>1024</em>3=49152</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">hexdump -C -s 49152 -n 38 table5hang.ibd</span><br><span class="line">0000c000  3b 03 ff eb 00 00 00 03  ff ff ff ff ff ff ff ff  |;...............|</span><br><span class="line">0000c010  00 00 00 00 80 eb af c9  45 bf 00 00 00 00 00 00  |........E.......|</span><br><span class="line">0000c020  00 00 00 00 00 2c                                 |.....,|</span><br><span class="line">0000c026</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
@@ -482,7 +482,7 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">index_id    name    table_id    type    n_fields    page_no space</span><br><span class="line">60          PRIMARY 58          3       1           3       44</span><br></pre></td></tr></table></figure>
 
 <p>PAGE_BTR_SEG_LEAF和PAGE_BTR_SEG_TOP INDEX页中的根结点才有的，非根结点的为0。<br>前10字节 00 00 00 2c 00 00 00 02 00 f2 是叶子结点所在段的segment header，分别记录了叶子结点的表空间ID 0x24，INODE页的页号 2 和 INODE项偏移 0xf2。<br>后10字节 00 00 00 2c 00 00 00 02 00 32 是非叶子结点所在段的segment header，偏移分别是0xf2 和 0x32，即INODE页的前2个Entry，文件段ID分别是1和2。<br>FSEG Header中存储了该 INDEX 页的INODE项，INODE项里面则记录了该页存储所在的文件段以及文件段页的使用情况。对于 File-Per-Table情况下，每个单独的表空间文件的 FSP_HDR 页负责管理页使用情况。</p>
-<p><img src="/images/post/db-mysql/fseg.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/fseg.webp" alt></p>
 <h3 id="System-Records-26字节-infimum和supermum-record"><a href="#System-Records-26字节-infimum和supermum-record" class="headerlink" title="System Records(26字节)-infimum和supermum record"></a>System Records(26字节)-infimum和supermum record</h3><p>offset:16<em>1024</em>3+38+56 = 49246</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">hexdump -C -s 49246 -n 60 table5hang.ibd</span><br><span class="line">0000c05e  01 00 02 00 1c 69 6e 66  69 6d 75 6d 00 06 00 0b  |.....infimum....|</span><br><span class="line">0000c06e  00 00 73 75 70 72 65 6d  75 6d 06 00 00 00 10 00  |..supremum......|</span><br><span class="line">0000c07e  26 80 00 00 00 00 00 00  01 00 00 00 00 74 d0 9e  |&amp;............t..|</span><br><span class="line">0000c08e  00 00 01 57 01 10 6e 61  6d 65 2d 31              |...W..name-1|</span><br><span class="line">0000c09a</span><br><span class="line">(base)</span><br></pre></td></tr></table></figure>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">01 00 02 00 1c 69 6e 66 69 6d 75 6d 00 |.....infimum....|</span><br><span class="line">06 00 0b 00 00 73 75 70 72 65 6d 75 6d |..supremum......|</span><br></pre></td></tr></table></figure>
@@ -555,7 +555,7 @@
 <p>每个页目录槽最少要包含4个记录，最多包含8个记录(包括它自己)。如果我们在表 t2 中另外插入 7 条记录，则会增加一个新的slot，即 id 为 4 的记录，如下：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">slot    offset  type          owned   key</span><br><span class="line">0       99      infimum       1       </span><br><span class="line">1       207     conventional  4       (i&#x3D;4)</span><br><span class="line">2       112     supremum      5</span><br></pre></td></tr></table></figure>
 <p>下图是页目录结构图，可以通过页目录的二分查找提高页内数据的查询性能。</p>
-<p><img src="/images/post/db-mysql/bptreepagestruct.webp" alt=""></p>
+<p><img src="/images/post/db-mysql/bptreepagestruct.webp" alt></p>
 <p>参考：</p>
 <p><a href="http://mysql.taobao.org/monthly/2016/02/01/" target="_blank" rel="noopener">http://mysql.taobao.org/monthly/2016/02/01/</a></p>
 <p>《MYSQL运维内参》<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html" target="_blank" rel="noopener">https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html</a></p>
@@ -718,14 +718,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">

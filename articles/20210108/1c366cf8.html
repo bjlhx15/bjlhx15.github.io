@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.itag.top').hostname,
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"utteranc":{"text":"评论[utteranc,基于github]","order":-2},"livere":{"text":"评论[来必力,三方]","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="摘要：  springmvc和spring都是容器，容器就是管理对象的地方，例如Tomcat，就是管理servlet对象的。 springMVC容器和spring容器，就是管理bean对象的地方，springmvc就是管理controller对象的容器，spring就是管理service和dao的容器。 一般在springmvc的配置文件里配置的扫描路径就是controller的路径，而sprin">
+<meta property="og:type" content="article">
+<meta property="og:title" content="001-web容器、Spring容器、SpringMVC容器的关系">
+<meta property="og:url" content="https://blog.itag.top/articles/20210108/1c366cf8.html">
+<meta property="og:site_name" content="Blog">
+<meta property="og:description" content="摘要：  springmvc和spring都是容器，容器就是管理对象的地方，例如Tomcat，就是管理servlet对象的。 springMVC容器和spring容器，就是管理bean对象的地方，springmvc就是管理controller对象的容器，spring就是管理service和dao的容器。 一般在springmvc的配置文件里配置的扫描路径就是controller的路径，而sprin">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00103.webp">
+<meta property="og:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00104.webp">
+<meta property="og:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00105.webp">
+<meta property="og:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00101.jpg">
+<meta property="og:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00102.jpg">
+<meta property="og:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00106.webp">
+<meta property="og:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00107.webp">
+<meta property="article:published_time" content="2021-01-08T14:45:05.000Z">
+<meta property="article:modified_time" content="2021-01-09T07:26:56.029Z">
+<meta property="article:author" content="李宏旭">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.itag.top/articles/20210108/1c366cf8/00103.webp">
+
+<link rel="canonical" href="https://blog.itag.top/articles/20210108/1c366cf8.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>001-web容器、Spring容器、SpringMVC容器的关系 | Blog</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?2369ef7686f6340d44efd18b5d7e7b3e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">个人博客</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">25</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">114</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/bjlhx15" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20210108/1c366cf8.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          001-web容器、Spring容器、SpringMVC容器的关系
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-01-08 22:45:05" itemprop="dateCreated datePublished" datetime="2021-01-08T22:45:05+08:00">2021-01-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-09 15:26:56" itemprop="dateModified" datetime="2021-01-09T15:26:56+08:00">2021-01-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/java-spring-bean/" itemprop="url" rel="index">
+                    <span itemprop="name">java-spring-bean</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：</p>
+<ul>
+<li>springmvc和spring都是容器，容器就是管理对象的地方，例如Tomcat，就是管理servlet对象的。</li>
+<li>springMVC容器和spring容器，就是管理bean对象的地方，springmvc就是管理controller对象的容器，spring就是管理service和dao的容器。</li>
+<li>一般在springmvc的配置文件里配置的扫描路径就是controller的路径，而spring的配置文件里自然配的就是service和dao的路径。<a id="more"></a>
+
+</li>
+</ul>
+<h1 id="Servlet"><a href="#Servlet" class="headerlink" title="Servlet"></a>Servlet</h1><p>Servlet是JavaEE规范的一种，主要是为了扩展Java作为Web服务的功能，统一接口。由其他内部厂商如tomcat，jetty内部实现web的功能。如一个http请求到来：<br>容器将请求封装为servlet中的HttpServletRequest对象，调用init（），service（）等方法输出response,由容器包装为httpresponse返回给客户端的过程。</p>
+<p><img src="/articles/20210108/1c366cf8/00103.webp" alt></p>
+<p>在Servlet规范中，提供了ServletContext,ServletRequest,ServletResponse,Filter等诸多接口。<br>基本类图和调用关系如下：<br><img src="/articles/20210108/1c366cf8/00104.webp" alt></p>
+<p><img src="/articles/20210108/1c366cf8/00105.webp" alt></p>
+<p>接口的作用，生命周期和使用：</p>
+<h2 id="Servlet-1"><a href="#Servlet-1" class="headerlink" title="Servlet"></a>Servlet</h2><ul>
+<li>作用：用于处理请求（service方法）</li>
+<li>生命周期：加载实例化、初始化、处理客户端请求、销毁。<br> 加载实例化主要是交由web容器完成，而其他三个阶段则对应Servlet的init、service和destroy方法。<br> Servlet对象被创建出来后需要对其进行初始化操作，初始化工作可以放在以ServletConfig类型为参数的ini方法中，<br> ServletConfig为web.xml配置文件中配置的对应的初始化参数，由web容器完成web.xml配置读取并封装成ServletConfig对象；<br> 当Servlet初始化完成后，开始接受客户端的请求，这些请求被封装成ServletRequest类型的请求对象和ServletResponse类型的响应对象，<br> 通过service方法处理请求并响应客户端；当一个Servlet需要从web容器中移除时，就会调用对应的destroy方法用于释放所有的资源，<br> 并且调用destroy方法之前要保证所有正在执行service方法的线程都完成执行。</li>
+<li>使用：servlet规范中定义了GenericServlet接口，定义了通用，协议独立的servlet,他们的子接口HttpServlet就是用来处理http请求的Servlet,根据http协议扩展了不同方式的请求处理方法，如doPost,doGet.</li>
+</ul>
+<h2 id="ServletContext"><a href="#ServletContext" class="headerlink" title="ServletContext"></a>ServletContext</h2><p>Servlet与Servlet容器之间直接通信的接口,一个web应用只独有一个ServletContext.</p>
+<ul>
+<li>作用：<ul>
+<li>用于在web应用范围内存取共享数据,如setAttribute(String name, Object object)，getAttribute()</li>
+<li>获取当前Web应用的资源，如getContextPath()</li>
+<li>获取服务器端的文件系统资源，如getResourceAsStream()</li>
+<li>输出日志，如log(String msg) ： 向Servlet的日志文件中写日志</li>
+<li>在具体ServletContext 实现中，提供了添加Servlet，Filter,Listener到ServletContext里面的方法</li>
+</ul>
+</li>
+<li>生命周期：和web应用的生命周期一样</li>
+<li>使用：一般由web容器实现，如tomcat</li>
+</ul>
+<h2 id="Filter"><a href="#Filter" class="headerlink" title="Filter"></a>Filter</h2><ul>
+<li>作用：用于Web容器对请求和响应做统一处理，例如统一改变HTTP请求内容和响应内容，它可以作用在某个Servlet或一组Servlet</li>
+<li>生命周期：加载实例化、初始化（init）、处理客户端请求(doFilter)、销毁(destroy)</li>
+<li>使用：在doFilter方法中调用chain.doFilter(request, response)之前的代码可用来做一些请求校验，之后代码可用来做一些响应包装。</li>
+</ul>
+<h2 id="ServletRequest"><a href="#ServletRequest" class="headerlink" title="ServletRequest"></a>ServletRequest</h2><p>封装了客户端请求的所有信息，如果使用HTTP协议通信则包括HTTP协议的请求行和请求头。HTTP协议对应请求对象类型是HttpServletRequest类</p>
+<ul>
+<li>作用：<ul>
+<li>获取HTTP协议请求头部，如getHeader、getHeaders</li>
+<li>获取请求路径，如getContextPath、getServletPath</li>
+<li>获取cookie的方法，如getCookies</li>
+<li>获取session的方法，如getSession,session是存储在服务器内存中，返回响应的时候会写入浏览器一个sessionId的cookie，用来标示这一个会话</li>
+</ul>
+</li>
+<li>生命周期：只在servlet的service方法或过滤器的doFilter方法作用域内有效，除非启用了异步处理调用了ServletRequest接口对象的startAsync方法，此时request对象会一直有效，直到调用AsyncContext的complete方法。另外，web容器通常会为了性能而不销毁ServletRequest接口的对象，而是重复利用ServletRequest接口对象。</li>
+</ul>
+<h2 id="ServletResponse"><a href="#ServletResponse" class="headerlink" title="ServletResponse"></a>ServletResponse</h2><p>Servlet通过ServletResponse对象来生成响应结果。</p>
+<ul>
+<li>作用：定义了一系列与生成响应结果相关的方法，如:<ul>
+<li>setCharacterEncoding() —— 设置相应正文的字符编码。响应正文的默认字符编码为ISO-8859-1；</li>
+<li>setContentLength() —— 设置响应正文的长度；</li>
+<li>setBufferSize() —— 设置用于存放响应正文数据的缓冲区的大小</li>
+<li>getBufferSize() —— 获得用于存放响应正文数据的缓冲区的大小；</li>
+<li>reset() —— 清空缓冲区内的正文数据，并且清空响应状态代码及响应头</li>
+<li>resetBuffer() —— 仅仅清空缓冲区的正文数据，不清空响应状态代码及响应头；</li>
+<li>flushBuffer() —— 强制性地把缓冲区内的响应正文数据发送到客户端；</li>
+<li>isCommitted() —— 返回一个boolean类型的值，如果为true，表示缓冲区内的数据已经提交给客户，即数据已经发送到客户端；</li>
+<li>getOutputStream() —— 返回一个ServletOutputStream对象，Servlet用它来输出二进制的正文数据；</li>
+<li>getWriter() —— 返回一个PrinterWriter对象，Servlet用它来输出字符串形式的正文数据；</li>
+</ul>
+</li>
+</ul>
+<p>为了提高输出数据的效率，ServletOutputStream和PrintWriter首先把数据写到缓冲区内。当缓冲区内的数据被提交给客户后，ServletResponse的isComitted方法返回true。</p>
+<ul>
+<li>生命周期：ServletResponse接口只在Servlet的service方法或过滤器的doFilter方法作用域内有效，除非它关联的ServletResponse接口调用了startAsync方法启用异步处理，此时ServletResponse接口会一直有效，直到调用AsyncContext的complete方法。另外，web容器通常会为了性能而不销毁ServletResponse接口对象，而是重复利用ServletResponse接口对象。</li>
+</ul>
+<h2 id="Listener"><a href="#Listener" class="headerlink" title="Listener"></a>Listener</h2><p>当触发某个事件，如servlet context初始化完成时，需要做一些事情，servlet规范中定义了若干个Listener用于监听这些事件。</p>
+<ul>
+<li>作用：用于对特定对象的生命周期和特定事件进行响应处理，主要用于对Session,request,context等进行监控。<ul>
+<li>监听域对象自身的创建和销毁的事件监听器<ul>
+<li>ServletContextListener：ServletContext的创建和销毁：contextInitialized方法和contextDestroyed方法，作为定时器、加载全局属性对象、创建全局数据库连接、加载缓存信息等</li>
+<li>HttpSessionListener：HttpSession的创建和销毁：sessionCreated和sessionDestroyed方法，可用于统计在线人数、记录访问日志等</li>
+<li>ServletRequestListener： ServletRequest的创建和销毁：requestInitialized和requestDestroyed方法</li>
+</ul>
+</li>
+<li>监听域对象中的属性的增加和删除的事件监听器<ul>
+<li>ServletContextAttributeListener、HttpSessionAttributeListener、ServletRequestAttributeListener接口。</li>
+<li>实现方法：attributeAdded、attributeRemoved、attributeReplaced</li>
+</ul>
+</li>
+<li>监听绑定到HttpSeesion域中的某个对象的状态的事件监听器(创建普通JavaBean)<ul>
+<li>HttpSession中的对象状态：绑定→解除绑定；钝化→活化</li>
+<li>实现接口及方法：HttpSessionBindingListener接口(valueBound和valueUnbound方法)、HttpSessionActivationListener接口(sessionWillPassivate和sessionDidActivate方法)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="web容器-tomcat"><a href="#web容器-tomcat" class="headerlink" title="web容器-tomcat"></a>web容器-tomcat</h1><h2 id="web容器使用spring管理bean"><a href="#web容器使用spring管理bean" class="headerlink" title="web容器使用spring管理bean"></a>web容器使用spring管理bean</h2><p>  web容器是管理servlet，以及监听器(Listener)和过滤器(Filter)的。这些都是在web容器的掌控范围里。但他们不在spring和springmvc的掌控范围里。<br>  因此，我们无法在这些类中直接使用Spring注解的方式来注入我们需要的对象，是无效的，web容器是无法识别的。</p>
+<p>  但我们有时候又确实会有这样的需求，比如在容器启动的时候，做一些验证或者初始化操作，这时可能会在监听器里用到bean对象；又或者需要定义一个过滤器做一些拦截操作，也可能会用到bean对象。<br>  那么在这些地方怎么获取spring的bean对象呢？下面我提供两个方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">contextInitialized</span><span class="params">(ServletContextEvent sce)</span> </span>&#123;</span><br><span class="line">　　ApplicationContext context = (ApplicationContext) sce.getServletContext().getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE); </span><br><span class="line">　　UserService userService = (UserService) context.getBean(<span class="string">"userService"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">contextInitialized</span><span class="params">(ServletContextEvent sce)</span> </span>&#123;</span><br><span class="line">　　WebApplicationContext webApplicationContext = WebApplicationContextUtils.getWebApplicationContext(sce.getServletContext()); </span><br><span class="line">　　UserService userService = (UserService) webApplicationContext.getBean(<span class="string">"userService"</span>); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意：以上代码有一个前提，那就是servlet容器在实例化ConfigListener并调用其方法之前，要确保spring容器已经初始化完毕！而spring容器的初始化也是由Listener（ContextLoaderListener）完成，<br>因此只需在web.xml中先配置初始化spring容器的Listener，然后在配置自己的Listener。</p>
+<h2 id="Servlet、spring核心关系图"><a href="#Servlet、spring核心关系图" class="headerlink" title="Servlet、spring核心关系图"></a>Servlet、spring核心关系图</h2><p><img src="/articles/20210108/1c366cf8/00101.jpg" alt></p>
+<ul>
+<li>web容器中有servlet容器，spring项目部署后存在spring容器和springmvc容器。其中spring控制service层和dao层的bean对象。springmvc容器控制controller层bean对象。</li>
+<li>servlet容器控制servlet对象。项目启动是，首先 servlet初始化，初始化过程中通过web.xml中spring的配置加载spring配置，初始化spring容器和springmvc容器。待容器加载完成。servlet初始化完成，则完成启动。</li>
+<li>HTTP请求到达web容器后，会到达Servlet容器，容器通过分发器分发到具体的spring的Controller层。执行业务操作后返回结果。</li>
+</ul>
+<p><img src="/articles/20210108/1c366cf8/00102.jpg" alt>   </p>
+<p>小结：</p>
+<ul>
+<li>Tomcat在启动时给每个Web应用创建一个全局的上下文环境，这个上下文就是ServletContext，其为后面的Spring容器提供宿主环境。</li>
+<li>Tomcat在启动过程中触发容器初始化事件，Spring的ContextLoaderListener会监听到这个事件，它的contextInitialized方法会被调用，在这个方法中，Spring会初始化全局的Spring根容器，这个就是Spring的IoC容器，IoC容器初始化完毕后，Spring将其存储到ServletContext中，便于以后来获取。</li>
+<li>Tomcat在启动过程中还会扫描Servlet，一个Web应用中的Servlet可以有多个，以SpringMVC中的DispatcherServlet为例，这个Servlet实际上是一个标准的前端控制器，用以转发、匹配、处理每个Servlet请求。</li>
+<li>Servlet一般会延迟加载，当第一个请求达到时，Tomcat&amp;Jetty发现DispatcherServlet还没有被实例化，就调用DispatcherServlet的init方法，DispatcherServlet在初始化的时候会建立自己的容器，叫做SpringMVC 容器，用来持有Spring MVC相关的Bean。同时，Spring MVC还会通过ServletContext拿到Spring根容器，并将Spring根容器设为SpringMVC容器的父容器，请注意，Spring MVC容器可以访问父容器中的Bean，但是父容器不能访问子容器的Bean， 也就是说Spring根容器不能访问SpringMVC容器里的Bean。说的通俗点就是，在Controller里可以访问Service对象，但是在Service里不可以访问Controller对象。   </li>
+</ul>
+<p>tomcat等容器其实就是web服务的实现，暴露端口，按照特定资源URL找到处理的servlet。然后处理请求。<br>web.xml其实tomcat在启动时候需要加载的配置欢迎页、Filter、Listener、Servlet等类的定义。当然不止加载这些东西，这些东西是需要加载到JVM堆内存中实例化的对象。</p>
+<h2 id="Tomcat启动时加载资源三个阶段"><a href="#Tomcat启动时加载资源三个阶段" class="headerlink" title="Tomcat启动时加载资源三个阶段"></a>Tomcat启动时加载资源三个阶段</h2><ul>
+<li>第一阶段：JVM相关资源<ul>
+<li>$JAVA_HOME/jre/lib/ext/*.jar</li>
+<li>系统classpath环境变量中的<em>.jar和</em>.class </li>
+</ul>
+</li>
+<li>第二阶段：Tomcat自身相关资源<ul>
+<li>$CATALINA_HOME/common/classes/*.class  </li>
+<li>$CATALINA_HOME/commons/endorsed/*.jar   </li>
+<li>$CATALINA_HOME/commons/i18n/*.jar   </li>
+<li>$CATALINA_HOME/common/lib/*.jar   </li>
+<li>$CATALINA_HOME/server/classes/*.class   </li>
+<li>$CATALINA_HOME/server/lib/*.jar   </li>
+<li>$CATALINA_BASE/shared/classes/*.class   </li>
+<li>$CATALINA_BASE/shared/lib/*.jar </li>
+</ul>
+</li>
+<li>第三阶段：Web应用相关资源<ul>
+<li>具体应用的webapp目录: /WEB-INF/classes/*.class   </li>
+<li>具体应用的webapp: /WEB-INF/lib/*.jar<br>在tomcat目录${CATALINA_HOME}/conf下和web应用目录${CATALINA_HOME}/webapps/WebDemo(WebDemo为web应用名)下都有web.xml这个文件，但是内容不一样。</li>
+</ul>
+</li>
+</ul>
+<p>Tomcat在激活、加载、部署web应用时，会解析加载${CATALINA_HOME}/conf目录下所有web应用通用的web.xml，然后解析加载web应用目录中的WEB-INF/web.xml。<br>其实根据他们的位置，我们就可以知道，conf/web.xml文件中的设定会应用于所有的web应用程序，而某些web应用程序的WEB-INF/web.xml中的设定只应用于该应用程序本身。</p>
+<p>如果没有WEB-INF/web.xml文件，tomcat会输出找不到的消息，但仍然会部署并使用web应用程序，servlet规范的作者想要实现一种能迅速并简易设定新范围的方法，以用作测试，因此，这个web.xml并不是必要的，不过通常最好还是让每一个上线的web应用程序都有一个自己的WEB-INF/web.xml。</p>
+<p>web.xml中可以配置web应用名称，图标，描述，ServletContext上下文参数，Fliter配置，Listener配置，Servlet配置，会话超时配置，MIME类型配置等等。</p>
+<h1 id="spring和springmvc"><a href="#spring和springmvc" class="headerlink" title="spring和springmvc"></a>spring和springmvc</h1><h2 id="springmvc配置"><a href="#springmvc配置" class="headerlink" title="springmvc配置"></a>springmvc配置</h2><p>spring-mvc.xml</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"com.github.bjlhx15.controller"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="spring配置"><a href="#spring配置" class="headerlink" title="spring配置"></a>spring配置</h2><p>applicationContext-service.xml</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 扫描包加载Service实现类 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"com.github.bjlhx15.service"</span>&gt;</span><span class="tag">&lt;/<span class="name">context:component-scan</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!--或者--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"com.github.bjlhx15"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">context:exclude-filter</span> <span class="attr">type</span>=<span class="string">"annotation"</span> <span class="attr">expression</span>=<span class="string">"org.springframework.stereotype.Controller"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">context:component-scan</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="spring容器和springmvc容器关系"><a href="#spring容器和springmvc容器关系" class="headerlink" title="spring容器和springmvc容器关系"></a>spring容器和springmvc容器关系</h2><pre><code>spring容器和springmvc容器的关系是父子容器的关系。   </code></pre><ul>
+<li><p>spring容器是父容器，springmvc是子容器。在子容器里可以访问父容器里的对象，但是在父容器里不可以访问子容器的对象，</p>
+</li>
+<li><p>说的通俗点就是，在controller里可以访问service对象，但是在service里不可以访问controller对象</p>
+<p>所有的bean，都是被spring或者springmvc容器管理的，他们可以直接注入。<br>然后springMVC的拦截器也是springmvc容器管理的，所以在springmvc的拦截器里，可以直接注入bean对象。如</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">mvc:interceptors</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">mvc:interceptor</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">mvc:mapping</span> <span class="attr">path</span>=<span class="string">"/employee/**"</span> &gt;</span><span class="tag">&lt;/<span class="name">mvc:mapping</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"com.smart.core.shiro.LoginInterceptor"</span> &gt;</span><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">mvc:interceptor</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">mvc:interceptors</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h1 id="web容器和spring容器结合"><a href="#web容器和spring容器结合" class="headerlink" title="web容器和spring容器结合"></a>web容器和spring容器结合</h1><h2 id="web容器servlet到springmvc的servlet"><a href="#web容器servlet到springmvc的servlet" class="headerlink" title="web容器servlet到springmvc的servlet"></a>web容器servlet到springmvc的servlet</h2><p><img src="/articles/20210108/1c366cf8/00106.webp" alt></p>
+<p>其中FrameworkServlet会和Spring的ApplicationContext联系起来，它实现了ApplicationContextAware接口。</p>
+<p><img src="/articles/20210108/1c366cf8/00107.webp" alt> </p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李宏旭
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://blog.itag.top/articles/20210108/1c366cf8.html" title="001-web容器、Spring容器、SpringMVC容器的关系">https://blog.itag.top/articles/20210108/1c366cf8.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/articles/20210107/1a42b9be.html" rel="prev" title="002-springboot测试-Mockito服务层测试">
+      <i class="fa fa-chevron-left"></i> 002-springboot测试-Mockito服务层测试
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/articles/20210108/a53d4816.html" rel="next" title="003-java-验证码Kaptcha">
+      003-java-验证码Kaptcha <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
+            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane utteranc" id="comment-utteranc">
+              
+  
+  <div class="comments">
+  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
+  </div>
+  
+  
+            </div>
+            <div class="tab-pane livere" id="comment-livere">
+              
+  <div class="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
+  </div>
+  
+            </div>
+        </div>
+      </div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Servlet"><span class="nav-number">1.</span> <span class="nav-text">Servlet</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Servlet-1"><span class="nav-number">1.1.</span> <span class="nav-text">Servlet</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ServletContext"><span class="nav-number">1.2.</span> <span class="nav-text">ServletContext</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Filter"><span class="nav-number">1.3.</span> <span class="nav-text">Filter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ServletRequest"><span class="nav-number">1.4.</span> <span class="nav-text">ServletRequest</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ServletResponse"><span class="nav-number">1.5.</span> <span class="nav-text">ServletResponse</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Listener"><span class="nav-number">1.6.</span> <span class="nav-text">Listener</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#web容器-tomcat"><span class="nav-number">2.</span> <span class="nav-text">web容器-tomcat</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#web容器使用spring管理bean"><span class="nav-number">2.1.</span> <span class="nav-text">web容器使用spring管理bean</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Servlet、spring核心关系图"><span class="nav-number">2.2.</span> <span class="nav-text">Servlet、spring核心关系图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tomcat启动时加载资源三个阶段"><span class="nav-number">2.3.</span> <span class="nav-text">Tomcat启动时加载资源三个阶段</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#spring和springmvc"><span class="nav-number">3.</span> <span class="nav-text">spring和springmvc</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#springmvc配置"><span class="nav-number">3.1.</span> <span class="nav-text">springmvc配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spring配置"><span class="nav-number">3.2.</span> <span class="nav-text">spring配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spring容器和springmvc容器关系"><span class="nav-number">3.3.</span> <span class="nav-text">spring容器和springmvc容器关系</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#web容器和spring容器结合"><span class="nav-number">4.</span> <span class="nav-text">web容器和spring容器结合</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#web容器servlet到springmvc的servlet"><span class="nav-number">4.1.</span> <span class="nav-text">web容器servlet到springmvc的servlet</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李宏旭"
+      src="/images/about/kenan.jpeg">
+  <p class="site-author-name" itemprop="name">李宏旭</p>
+  <div class="site-description" itemprop="description">学习 总结 分享</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">114</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/bjlhx15" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;bjlhx15" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://bjlhx.cnblogs.com/" title="Cnblog → https:&#x2F;&#x2F;bjlhx.cnblogs.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>Cnblog</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李宏旭</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+});
+</script>
+
+</body>
+</html>

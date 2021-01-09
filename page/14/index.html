@@ -158,12 +158,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">24</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">25</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">109</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">114</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -220,7 +220,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/961373d8.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200214/96280786.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -234,7 +234,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200213/961373d8.html" class="post-title-link" itemprop="url">003-分析Chrome的瀑布流（Waterfall）</a>
+            <a href="/articles/20200214/96280786.html" class="post-title-link" itemprop="url">007-高性能网站建设笔记-12移除重读脚本、13配置ETag、14使用ajax</a>
         </h1>
 
         <div class="post-meta">
@@ -244,93 +244,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-13 15:16:53" itemprop="dateCreated datePublished" datetime="2020-02-13T15:16:53+08:00">2020-02-13</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-02-18 17:32:12" itemprop="dateModified" datetime="2020-02-18T17:32:12+08:00">2020-02-18</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/performance/" itemprop="url" rel="index">
-                    <span itemprop="name">performance</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>摘要：当需要调试网页或分析网站性能时，我们往往会F12打开浏览器控制台，查看网络请求，看网页加载了哪些资源，以及对应的请求方式（Method）、状态码（Status）、资源类型（Type）、大小（Size）、耗费的时间（Time）等。</p>
-<p>如果某个资源耗费的时间比较长，需要深入分析时，则需要看：瀑布流（Waterfall），在Waterfall中可以看出时间具体花在了哪些部分。</p>
-<!-- maore -->
-
-<h1 id="解说"><a href="#解说" class="headerlink" title="解说"></a>解说</h1><p>打开用chrome console，可以看到如下</p>
-<p><img src="/images/post/performance-web/chrome-console.jpg" alt=""></p>
-<p>可以看到页面加载的时间窗口。此时可以将鼠标放置 右侧的waterfall上，可以查看具体耗时</p>
-<p><img src="/images/post/performance-web/chrome-console2.jpg" alt=""></p>
-<h2 id="瀑布流中各项指标含义如下："><a href="#瀑布流中各项指标含义如下：" class="headerlink" title="瀑布流中各项指标含义如下："></a>瀑布流中各项指标含义如下：</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Queueing：浏览器将资源放入队列时间，比如：遇到更高优先级的请求或请求并发超过6了。</span><br><span class="line">Stalled：因放入队列时间而发生的停滞时间。</span><br><span class="line">Proxy negotiation：与代理服务器协商时间。</span><br><span class="line">DNS Lookup：DNS解析时间，浏览器需要将域名转换成IP。</span><br><span class="line">Initial Connection：在浏览器发送请求前，需要建立HTTP连接的时间。</span><br><span class="line">SSL：如果网站使用了HTTPS，这个就是浏览器与服务器建立安全性连接的时间。</span><br><span class="line">Request sent：请求发送的时间。</span><br><span class="line">Waiting (TTFB)：等待服务端返回数据的时间，这个时间受制于服务端处理性能。</span><br><span class="line">Content Download：浏览器下载资源的时间，这个时间受制于文件大小和带宽。</span><br></pre></td></tr></table></figure>
-
-<p>如何优化，请参看：<a href="http://blog.bjlhx.top/categories/performance-web" target="_blank" rel="noopener">http://blog.bjlhx.top/categories/performance-web</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/481fe23c.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20200213/481fe23c.html" class="post-title-link" itemprop="url">002-高性能网站建设笔记-01减少http请求、02使用内容发布网络CDN</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-02-13 11:02:53" itemprop="dateCreated datePublished" datetime="2020-02-13T11:02:53+08:00">2020-02-13</time>
+              <time title="创建时间：2020-02-14 09:04:11" itemprop="dateCreated datePublished" datetime="2020-02-14T09:04:11+08:00">2020-02-14</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -362,10 +276,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：减少http请求：图片地图、css scripts、内联图片和脚本、样式表的合并</p>
+          <p>摘要：</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200213/481fe23c.html#more" rel="contents">
+              <a class="btn" href="/articles/20200214/96280786.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -389,7 +303,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/629a2186.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200214/d6bed999.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -403,7 +317,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200213/629a2186.html" class="post-title-link" itemprop="url">002-使用、参数讲解</a>
+            <a href="/articles/20200214/d6bed999.html" class="post-title-link" itemprop="url">006-高性能网站建设笔记-09减少DNS查找、10精简javscript、11避免重定向</a>
         </h1>
 
         <div class="post-meta">
@@ -413,14 +327,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-13 10:48:36" itemprop="dateCreated datePublished" datetime="2020-02-13T10:48:36+08:00">2020-02-13</time>
+              <time title="创建时间：2020-02-14 08:45:24" itemprop="dateCreated datePublished" datetime="2020-02-14T08:45:24+08:00">2020-02-14</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-02-25 16:59:42" itemprop="dateModified" datetime="2020-02-25T16:59:42+08:00">2020-02-25</time>
+                <time title="修改时间：2020-02-18 17:32:12" itemprop="dateModified" datetime="2020-02-18T17:32:12+08:00">2020-02-18</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -428,8 +342,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/test-ab/" itemprop="url" rel="index">
-                    <span itemprop="name">test-ab</span>
+                  <a href="/categories/performance-web/" itemprop="url" rel="index">
+                    <span itemprop="name">performance-web</span>
                   </a>
                 </span>
             </span>
@@ -445,10 +359,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：使用ab检测指定地址 处理问题能力。</p>
+          <p>摘要：</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200213/629a2186.html#more" rel="contents">
+              <a class="btn" href="/articles/20200214/d6bed999.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -472,7 +386,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/ff1f09cb.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/372b80cc.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -486,7 +400,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200213/ff1f09cb.html" class="post-title-link" itemprop="url">001-安装简介</a>
+            <a href="/articles/20200213/372b80cc.html" class="post-title-link" itemprop="url">004-高性能网站建设笔记-05样式表放在顶部、06脚本放在底部</a>
         </h1>
 
         <div class="post-meta">
@@ -496,7 +410,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-13 10:48:36" itemprop="dateCreated datePublished" datetime="2020-02-13T10:48:36+08:00">2020-02-13</time>
+              <time title="创建时间：2020-02-13 16:50:05" itemprop="dateCreated datePublished" datetime="2020-02-13T16:50:05+08:00">2020-02-13</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -511,8 +425,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/test-ab/" itemprop="url" rel="index">
-                    <span itemprop="name">test-ab</span>
+                  <a href="/categories/performance-web/" itemprop="url" rel="index">
+                    <span itemprop="name">performance-web</span>
                   </a>
                 </span>
             </span>
@@ -528,23 +442,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="AB的简介"><a href="#AB的简介" class="headerlink" title="AB的简介"></a>AB的简介</h1><p>ab是apachebench命令的缩写。Apache Bench 是 Apache 服务器的一个web压力测试工具.</p>
-<p>ab是apache自带的压力测试工具。ab非常实用，它不仅可以对apache服务器进行网站访问压力测试，也可以对或其它类型的服务器进行压力测试。比如nginx、tomcat、IIS等</p>
-<p>ab也是一个命令行工具，对发起负载的本机要求很低，根据ab命令可以创建很多的并发访问线程，模拟多个访问者同时对某一个URL地址进行访问，因此可以用来测试目标服务器的负载压力。缺点就是没有图形化结果，不能监控。</p>
-<h1 id="ab的原理"><a href="#ab的原理" class="headerlink" title="ab的原理"></a>ab的原理</h1><p>　　ab的原理：ab命令会创建多个并发访问线程，模拟多个访问者同时对某一URL地址进行访问。它的测试目标是基于URL的，因此，它既可以用来测试apache的负载压力，也可以测试nginx、lighthttp、tomcat、IIS等其它Web服务器的压力。</p>
-<p>　　ab命令对发出负载的计算机要求很低，它既不会占用很高CPU，也不会占用很多内存。但却会给目标服务器造成巨大的负载，其原理类似CC攻击。自己测试使用也需要注意，否则一次上太多的负载。可能造成目标服务器资源耗完，严重时甚至导致死机</p>
-<h1 id="ab的安装"><a href="#ab的安装" class="headerlink" title="ab的安装"></a>ab的安装</h1><h2 id="linux-上，安装命令："><a href="#linux-上，安装命令：" class="headerlink" title="linux 上，安装命令："></a>linux 上，安装命令：</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install httpd-tools</span><br></pre></td></tr></table></figure>
-<p>查看参数说明：ab –help</p>
-<h2 id="MAC中自带了Apache"><a href="#MAC中自带了Apache" class="headerlink" title="MAC中自带了Apache"></a>MAC中自带了Apache</h2><h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>在使用ab命令时，并发了过高会出现错误：Too many open files，由于系统打开文件数量限制了。</p>
-<ol>
-<li>查看系统打开文件数量<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -a </span><br><span class="line"><span class="comment"># -t: cpu time (seconds)              unlimited</span></span><br><span class="line"><span class="comment"># -f: file size (blocks)              unlimited</span></span><br><span class="line"><span class="comment"># -d: data seg size (kbytes)          unlimited</span></span><br><span class="line"><span class="comment"># -s: stack size (kbytes)             8192</span></span><br><span class="line"><span class="comment"># -c: core file size (blocks)         0</span></span><br><span class="line"><span class="comment"># -v: address space (kbytes)          unlimited</span></span><br><span class="line"><span class="comment"># -l: locked-in-memory size (kbytes)  unlimited</span></span><br><span class="line"><span class="comment"># -u: processes                       1418</span></span><br><span class="line"><span class="comment"># -n: file descriptors                8192</span></span><br></pre></td></tr></table></figure></li>
-<li>修改打开文件数量，修改成1024，<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -n 1024</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ol>
-
+          <p>摘要：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/articles/20200213/372b80cc.html#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -563,7 +469,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/ea81502f.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/ac31f31.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -577,7 +483,7 @@
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
           
-            <a href="/articles/20200213/ea81502f.html" class="post-title-link" itemprop="url">001-网站的性能指标及指标测试方法</a>
+            <a href="/articles/20200213/ac31f31.html" class="post-title-link" itemprop="url">005-高性能网站建设笔记-07避免CSS表达式、08使用外部的js和css</a>
         </h1>
 
         <div class="post-meta">
@@ -587,7 +493,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-13 10:00:50" itemprop="dateCreated datePublished" datetime="2020-02-13T10:00:50+08:00">2020-02-13</time>
+              <time title="创建时间：2020-02-13 16:50:05" itemprop="dateCreated datePublished" datetime="2020-02-13T16:50:05+08:00">2020-02-13</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -602,8 +508,8 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/performance/" itemprop="url" rel="index">
-                    <span itemprop="name">performance</span>
+                  <a href="/categories/performance-web/" itemprop="url" rel="index">
+                    <span itemprop="name">performance-web</span>
                   </a>
                 </span>
             </span>
@@ -619,10 +525,93 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>摘要：并发数、响应时间(RT)、吞吐量(Throughput)、页面浏览量(PV)、网站独立访客(UV)、峰值QPS和机器计算公式</p>
+          <p>摘要：</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/articles/20200213/ea81502f.html#more" rel="contents">
+              <a class="btn" href="/articles/20200213/ac31f31.html#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200213/457472c2.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/articles/20200213/457472c2.html" class="post-title-link" itemprop="url">003-高性能网站建设笔记-03添加Expires头、04压缩组件</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-02-13 16:44:05" itemprop="dateCreated datePublished" datetime="2020-02-13T16:44:05+08:00">2020-02-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-18 17:32:12" itemprop="dateModified" datetime="2020-02-18T17:32:12+08:00">2020-02-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/performance-web/" itemprop="url" rel="index">
+                    <span itemprop="name">performance-web</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>摘要：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/articles/20200213/457472c2.html#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -646,7 +635,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/13/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span><a class="page-number" href="/page/15/">15</a><span class="space">&hellip;</span><a class="page-number" href="/page/22/">22</a><a class="extend next" rel="next" href="/page/15/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/13/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span><a class="page-number" href="/page/15/">15</a><span class="space">&hellip;</span><a class="page-number" href="/page/23/">23</a><a class="extend next" rel="next" href="/page/15/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -714,14 +703,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
