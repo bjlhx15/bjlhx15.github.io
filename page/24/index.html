@@ -46,31 +46,29 @@
   };
 </script>
 
-  <meta name="description" content="摘要：事务">
-<meta property="og:type" content="article">
-<meta property="og:title" content="003-事务、锁总结">
-<meta property="og:url" content="https://blog.itag.top/articles/20200219/6fd41f87.html">
+  <meta name="description" content="学习 总结 分享">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Blog">
+<meta property="og:url" content="https://blog.itag.top/page/24/index.html">
 <meta property="og:site_name" content="Blog">
-<meta property="og:description" content="摘要：事务">
+<meta property="og:description" content="学习 总结 分享">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-02-19T06:26:17.000Z">
-<meta property="article:modified_time" content="2020-04-22T02:55:18.831Z">
 <meta property="article:author" content="李宏旭">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://blog.itag.top/articles/20200219/6fd41f87.html">
+<link rel="canonical" href="https://blog.itag.top/page/24/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome: false,
-    isPost: true
+    isHome: true,
+    isPost: false
   };
 </script>
 
-  <title>003-事务、锁总结 | Blog</title>
+  <title>Blog</title>
   
 
 
@@ -218,11 +216,11 @@
             
 
   <div class="posts-expand">
-      
+        
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20200219/6fd41f87.html">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20190526/26856f5b.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/about/kenan.jpeg">
@@ -235,7 +233,8 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          003-事务、锁总结
+          
+            <a href="/articles/20190526/26856f5b.html" class="post-title-link" itemprop="url">java 基础</a>
         </h1>
 
         <div class="post-meta">
@@ -245,14 +244,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-19 14:26:17" itemprop="dateCreated datePublished" datetime="2020-02-19T14:26:17+08:00">2020-02-19</time>
+              <time title="创建时间：2019-05-26 12:12:57" itemprop="dateCreated datePublished" datetime="2019-05-26T12:12:57+08:00">2019-05-26</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-22 10:55:18" itemprop="dateModified" datetime="2020-04-22T10:55:18+08:00">2020-04-22</time>
+                <time title="修改时间：2020-01-30 23:03:20" itemprop="dateModified" datetime="2020-01-30T23:03:20+08:00">2020-01-30</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -260,20 +259,13 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/db-mysql-qa/" itemprop="url" rel="index">
-                    <span itemprop="name">db-mysql-qa</span>
+                  <a href="/categories/java/" itemprop="url" rel="index">
+                    <span itemprop="name">java</span>
                   </a>
                 </span>
             </span>
 
           
-            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span id="busuanzi_value_page_pv"></span>
-            </span>
 
         </div>
       </header>
@@ -284,118 +276,17 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>摘要：事务</p>
-<a id="more"></a>
+          <p>第一个测试程序</p>
 
-<h1 id="什么是事务"><a href="#什么是事务" class="headerlink" title="什么是事务"></a>什么是事务</h1><p>事务是一系列的操作,他们要符合ACID特性.常见的理解就是:事务中的操作要么全部成功,要么全部失败.</p>
-<h2 id="ACID"><a href="#ACID" class="headerlink" title="ACID"></a>ACID</h2><ul>
-<li><p>A=Atomicity 原子性<br>就是上面说的,要么全部成功,要么全部失败.不可能只执行一部分操作.</p>
-</li>
-<li><p>C=Consistency 一致性<br>系统(数据库)总是从一个一致性的状态转移到另一个一致性的状态,不会存在中间状态.</p>
-</li>
-<li><p>I=Isolation 隔离性<br>通常来说:一个事务在完全提交之前,对其他事务是不可见的.注意前面的通常来说加了红色,意味着有例外情况.</p>
-</li>
-<li><p>D=Durability 持久性<br>一旦事务提交,那么就永远是这样子了,哪怕系统崩溃也不会影响到这个事务的结果.</p>
-</li>
-</ul>
-<h1 id="MYSQL支持事务吗？"><a href="#MYSQL支持事务吗？" class="headerlink" title="MYSQL支持事务吗？"></a>MYSQL支持事务吗？</h1><p>5.5之前 是 myISAM<br>在缺省模式下，MYSQL是autocommit模式的，所有的数据库更新操作都会即时提交，所以在缺省情况下，mysql是不支持事务的。</p>
-<p>但是如果你的MYSQL表类型是使用InnoDB Tables 或 BDB tables的话，你的MYSQL就可以使用事务处理,使用SET<br>AUTOCOMMIT=0就可以使MYSQL允许在非autocommit模式，在非autocommit模式下，你必须使用COMMIT来提交你的更改，或者用ROLLBACK来回滚你的更改。<br>5.5之后是InnoDB,支持事务</p>
-<h1 id="同时有多个事务在进行会怎么样呢"><a href="#同时有多个事务在进行会怎么样呢" class="headerlink" title="同时有多个事务在进行会怎么样呢?"></a>同时有多个事务在进行会怎么样呢?</h1><p>多事务的并发进行一般会造成以下几个问题:</p>
-<ul>
-<li>脏读: A事务读取到了B事务未提交的内容,而B事务后面进行了回滚.</li>
-<li>不可重复读: 当设置A事务只能读取B事务已经提交的部分,会造成在A事务内的两次查询,结果竟然不一样,因为在此期间B事务进行了提交操作.</li>
-<li>幻读: A事务读取了一个范围的内容,而同时B事务在此期间插入了一条数据.造成”幻觉”.</li>
-</ul>
-<h1 id="MySQL的四种隔离级别"><a href="#MySQL的四种隔离级别" class="headerlink" title="MySQL的四种隔离级别"></a>MySQL的四种隔离级别</h1><ul>
-<li>未提交读(READ UNCOMMITTED) 读到未提交数据<br>这就是上面所说的例外情况了,这个隔离级别下,其他事务可以看到本事务没有提交的部分修改.因此会造成脏读的问题(读取到了其他事务未提交的部分,而之后该事务进行了回滚).</li>
-</ul>
-<p>这个级别的性能没有足够大的优势,但是又有很多的问题,因此很少使用.</p>
-<ul>
-<li>已提交读(READ COMMITTED) 脏读，不可重复读</li>
-</ul>
-<p>其他事务只能读取到本事务已经提交的部分.这个隔离级别有 不可重复读的问题,在同一个事务内的两次读取,拿到的结果竟然不一样,因为另外一个事务对数据进行了修改.</p>
-<ul>
-<li>REPEATABLE READ(可重复读)(InnoDB默认使用)</li>
-</ul>
-<p>可重复读隔离级别解决了上面不可重复读的问题,但是仍然有一个新问题,就是 幻读,当你读取id&gt; 10 的数据行时,对涉及到的所有行加上了读锁,此时例外一个事务新插入了一条id=11的数据,因为是新插入的,所以不会触发上面的锁的排斥,那么进行本事务进行下一次的查询时会发现有一条id=11的数据,而上次的查询操作并没有获取到,再进行插入就会有主键冲突的问题.</p>
-<ul>
-<li>SERIALIZABLE(可串行化事务)</li>
-</ul>
-<p>这是最高的隔离级别,可以解决上面提到的所有问题,因为他强制将所以的操作串行执行,这会导致并发性能极速下降,因此也不是很常用.</p>
-<h1 id="mysql-锁"><a href="#mysql-锁" class="headerlink" title="mysql 锁"></a>mysql 锁</h1><p>当数据库有并发事务的时候,可能会产生数据的不一致,这时候需要一些机制来保证访问的次序,锁机制就是这样的一个机制.</p>
-<p>例如，酒店的房间,如果大家随意进出,就会出现多人抢夺同一个房间的情况,而在房间上装上锁,申请到钥匙的人才可以入住并且将房间锁起来,其他人只有等他使用完毕才可以再次使用.</p>
-<h1 id="MySQL都有哪些锁"><a href="#MySQL都有哪些锁" class="headerlink" title="MySQL都有哪些锁?"></a>MySQL都有哪些锁?</h1><p>从锁的类别上来讲,有共享锁和排他锁.</p>
-<p>共享锁: 又叫做读锁. 当用户要进行数据的读取时,对数据加上共享锁.共享锁可以同时加上多个.</p>
-<p>排他锁: 又叫做写锁. 当用户要进行数据的写入时,对数据加上排他锁.排他锁只可以加一个,他和其他的排他锁,共享锁都相斥.</p>
-<h2 id="锁的粒度"><a href="#锁的粒度" class="headerlink" title="锁的粒度"></a>锁的粒度</h2><p>锁的粒度取决于具体的存储引擎,InnoDB实现了行级锁,页级锁,表级锁.</p>
-<ul>
-<li>表锁，系统开销最小，会锁定整张表，加锁快；不会出现死锁；锁定粒度大，发生锁冲突的概率最高，并发度最低。MyIsam使用表锁。</li>
-<li>行锁，开销大，加锁慢；会出现死锁；锁定粒度最小，发生锁冲突的概率最低，并发度也最高。InnoDB使用行锁。</li>
-<li>页面锁：开销和加锁时间界于表锁和行锁之间；会出现死锁；锁定粒度界于表锁和行锁之间，并发度一般。<br>他们的加锁开销从大到小,并发能力也是从大到小.</li>
-</ul>
-<h1 id="锁作用"><a href="#锁作用" class="headerlink" title="锁作用"></a>锁作用</h1><p>加锁是实现数据库并发控制的一个非常重要的技术。当事务在对某个数据对象进行操作前，先向系统发出请求，对其加锁。加锁后事务就对该数据对象有了一定的控制，在该事务释放锁之前，其他的事务不能对此数据对象进行更新操作。</p>
-
+      
     </div>
 
     
     
     
-        <div class="reward-container">
-  <div>一分也是爱，两分情更浓【还没有人赞赏，支持一下呗】</div>
-  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
-    打赏
-  </button>
-  <div id="qr" style="display: none;">
-      
-      <div style="display: inline-block;">
-        <img src="/images/reward/bjlhx-wx.bmp" alt="李宏旭 微信支付">
-        <p>微信支付</p>
-      </div>
-      
-      <div style="display: inline-block;">
-        <img src="/images/reward/bjlhx-zfb.bmp" alt="李宏旭 支付宝">
-        <p>支付宝</p>
-      </div>
-
-  </div>
-</div>
-
-        
-
-<div>
-<ul class="post-copyright">
-  <li class="post-copyright-author">
-    <strong>本文作者： </strong>李宏旭
-  </li>
-  <li class="post-copyright-link">
-    <strong>本文链接：</strong>
-    <a href="https://blog.itag.top/articles/20200219/6fd41f87.html" title="003-事务、锁总结">https://blog.itag.top/articles/20200219/6fd41f87.html</a>
-  </li>
-  <li class="post-copyright-license">
-    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
-  </li>
-</ul>
-</div>
-
-
       <footer class="post-footer">
-
-        
-
-
-        
-    <div class="post-nav">
-      <div class="post-nav-item">
-    <a href="/articles/20200219/24069596.html" rel="prev" title="002-索引总结">
-      <i class="fa fa-chevron-left"></i> 002-索引总结
-    </a></div>
-      <div class="post-nav-item">
-    <a href="/articles/20200219/56a0d34f.html" rel="next" title="004-数据类型">
-      004-数据类型 <i class="fa fa-chevron-right"></i>
-    </a></div>
-    </div>
+        <div class="post-eof"></div>
       </footer>
-    
   </article>
   
   
@@ -403,33 +294,15 @@
 
   </div>
 
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/page/23/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/23/">23</a><span class="page-number current">24</span>
+  </nav>
+
+
 
           </div>
           
-      <div class="tabs tabs-comment">
-        <ul class="nav-tabs">
-            <li class="tab"><a href="#comment-utteranc">评论[utteranc,基于github]</a></li>
-            <li class="tab"><a href="#comment-livere">评论[来必力,三方]</a></li>
-        </ul>
-        <div class="tab-content">
-            <div class="tab-pane utteranc" id="comment-utteranc">
-              
-  
-  <div class="comments">
-  <script src="https://utteranc.es/client.js" repo="bjlhx15/gitment-issues.bjlhx15.github.io" issue-term="pathname" theme="github-light" crossorigin="anonymous" async></script>
-  </div>
-  
-  
-            </div>
-            <div class="tab-pane livere" id="comment-livere">
-              
-  <div class="comments">
-    <div id="lv-container" data-id="city" data-uid="MTAyMC80ODQzNS8yNDkyOQ=="></div>
-  </div>
-  
-            </div>
-        </div>
-      </div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -476,7 +349,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#什么是事务"><span class="nav-number">1.</span> <span class="nav-text">什么是事务</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ACID"><span class="nav-number">1.1.</span> <span class="nav-text">ACID</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MYSQL支持事务吗？"><span class="nav-number">2.</span> <span class="nav-text">MYSQL支持事务吗？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#同时有多个事务在进行会怎么样呢"><span class="nav-number">3.</span> <span class="nav-text">同时有多个事务在进行会怎么样呢?</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MySQL的四种隔离级别"><span class="nav-number">4.</span> <span class="nav-text">MySQL的四种隔离级别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mysql-锁"><span class="nav-number">5.</span> <span class="nav-text">mysql 锁</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MySQL都有哪些锁"><span class="nav-number">6.</span> <span class="nav-text">MySQL都有哪些锁?</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#锁的粒度"><span class="nav-number">6.1.</span> <span class="nav-text">锁的粒度</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#锁作用"><span class="nav-number">7.</span> <span class="nav-text">锁作用</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -623,21 +495,6 @@
 
   
 
-<script>
-NexT.utils.loadComments(document.querySelector('#lv-container'), () => {
-  window.livereOptions = {
-    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
-  };
-  (function(d, s) {
-    var j, e = d.getElementsByTagName(s)[0];
-    if (typeof LivereTower === 'function') { return; }
-    j = d.createElement(s);
-    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
-    j.async = true;
-    e.parentNode.insertBefore(j, e);
-  })(document, 'script');
-});
-</script>
 
 </body>
 </html>
