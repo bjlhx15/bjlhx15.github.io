@@ -163,7 +163,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">116</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">117</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -216,6 +216,99 @@
             
 
   <div class="posts-expand">
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20210102/28ec1893.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/about/kenan.jpeg">
+      <meta itemprop="name" content="李宏旭">
+      <meta itemprop="description" content="学习 总结 分享">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+            <a href="/articles/20210102/28ec1893.html" class="post-title-link" itemprop="url">008-重新组织数据</a>
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-01-02 11:29:08 / 修改时间：11:29:20" itemprop="dateCreated datePublished" datetime="2021-01-02T11:29:08+08:00">2021-01-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%87%8D%E6%9E%84/" itemprop="url" rel="index">
+                    <span itemprop="name">重构</span>
+                  </a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>摘要：对象应该直接访问其中的数据，还是通过访问函数来访问？  </p>
+<ul>
+<li>常选择“直接访问”方式，任何时候进行这项重构（self encapsulate field）都是很简单的</li>
+<li>eplace value with object:将“哑”数据变成善表达的对象</li>
+<li>hange value to reference：有太多地方需要这一类对象，可用此方法将其变为引用对象</li>
+<li>eplace array with object：看到一个数组的行为方式很像一个数据结构。将数组变成对象，从而使这个数据结构更清晰地显露出来。move method，为这个对象加入相应行为，真正的好处才得以体现</li>
+<li>eplace magic number with symbolic constant：处理魔法数（带有特殊含义的数字）</li>
+<li>hange unidirectional association to bidirectional：将对象之间的单向关联变成双向关联</li>
+<li>hange bidirectional association to undirectional：将双向关联变成单向关联</li>
+<li>uplicate Observed data：GUI类处理不该其处理的业务：将处理业务逻辑的行为移到合适的领域类去，需要在领域类中保存这些逻辑的相关数据。一般，不喜欢重复数据，但这是一个意外，这里的重复数据不可避免</li>
+<li>ncapsulate field：封装类中公开的数据</li>
+<li>ncapsulate collection：封装类中公开的集合。集合有其特殊协议</li>
+<li>eplace recorde with data class：如果一整条记录都被裸露在外</li>
+<li>ype code：类型码，特殊数值。“与实例所属之类型相关的某些东西”。通常以枚举形式出现。通常以static final 整数实现。</li>
+<li>eplace type code with class：应用于：用来表现某种信息，且不会改变所属类型的行为。可以提供更好的类型检查和更好的平台(在未来方便地将相关的行为添加进去)</li>
+<li>eplace type code with subclasses :如果当前类型的行为受到类型码的影响</li>
+<li>eplace type code with state/strategy:更复杂的情况</li></ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/articles/20210102/28ec1893.html#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
         
   
   
@@ -531,92 +624,6 @@
   
   
 
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.itag.top/articles/20210102/1d5fb0cc.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/about/kenan.jpeg">
-      <meta itemprop="name" content="李宏旭">
-      <meta itemprop="description" content="学习 总结 分享">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          
-            <a href="/articles/20210102/1d5fb0cc.html" class="post-title-link" itemprop="url">003-重构原则</a>
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2021-01-02 09:06:54 / 修改时间：09:34:28" itemprop="dateCreated datePublished" datetime="2021-01-02T09:06:54+08:00">2021-01-02</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E9%87%8D%E6%9E%84/" itemprop="url" rel="index">
-                    <span itemprop="name">重构</span>
-                  </a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>摘要：</p>
-<ul>
-<li>何谓重构</li>
-<li>为何重构</li>
-<li>何时重构</li>
-<li>怎么对经理说</li>
-<li>重构的难题</li>
-<li>重构与设计</li>
-<li>重构与性能</li>
-<li>重构起源何处</li></ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/articles/20210102/1d5fb0cc.html#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
   </div>
 
   
@@ -689,7 +696,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">116</span>
+          <span class="site-state-item-count">117</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
